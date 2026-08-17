@@ -1,7 +1,16 @@
 # nspire-python
 
 Biblioteca de Python para la TI-Nspire CX II CAS: análisis numérico para
-Cálculo AP (`calcpy.py`) y herramientas de física (`fisica.py`).
+Cálculo AP (`calcpy.py`), herramientas de física (`fisica.py`) y un menú
+interactivo (`ap.py`) para no tener que aprenderse nada.
+
+## El único comando que necesitas
+
+Corre el programa `ap` (o teclea `ap()` en el shell) y sale un menú en
+español: eliges "punto más alto", "sube/cae vertical", "sumas de riemann",
+etc., tecleas la función tal cual (`-x^2+4*x`, con `^` y `sen()` válidos)
+y te da el resultado. Las funciones de abajo son para cuando quieras
+usarlas directo en el shell.
 
 ## Qué hay
 
@@ -41,7 +50,7 @@ mandar directo:
 
 1. Abre **TI-Nspire CX Student Software** (o la versión de prueba).
 2. Documento nuevo → **Insert → Add Python → New…** → nómbralo `calcpy`.
-3. Pega el contenido de `calcpy.py`. Repite con otra página Python para `fisica`.
+3. Pega el contenido de `calcpy.py`. Repite con páginas para `fisica` y `ap`.
 4. Guarda el documento como `biblioteca.tns`.
 5. Mándalo a la calculadora **a la carpeta `PyLib`** (Save to Handheld, o
    arrastrándolo en el panel de contenido). Lo que está en `PyLib` se puede
