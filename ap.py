@@ -6,6 +6,11 @@ from math import *
 import calcpy as c
 import fisica as fis
 
+try:
+    import formulas
+except ImportError:
+    formulas = None
+
 _NS = {"sin": sin, "cos": cos, "tan": tan, "asin": asin, "acos": acos,
        "atan": atan, "sqrt": sqrt, "exp": exp, "log": log, "ln": log,
        "log10": log10, "pi": pi, "e": e, "abs": abs,
@@ -54,6 +59,8 @@ def ap():
         print("9 sube / cae vertical")
         print("10 tiro parabolico")
         print("11 despeja mrua")
+        print("== REPASO ==")
+        print("12 formulario (formulas y tips)")
         print("0 salir")
         try:
             op = input("? ").strip()
@@ -141,6 +148,11 @@ def _corre(op):
             s = input(nombre + " = ").replace("^", "**")
             vals[nombre] = float(eval(s, _NS, {})) if s != "" else None
         fis.mrua(vals["v0"], vals["v"], vals["a"], vals["t"], vals["x"])
+    elif op == "12":
+        if formulas:
+            formulas.formulario()
+        else:
+            print("falta formulas.py (ponlo en PyLib)")
     else:
         print("no existe esa opcion")
 
