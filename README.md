@@ -25,67 +25,84 @@ corriendo `formulas` directo; navegas por tema y avanza por pantallas.
 
 ## IA PrepaTEC: gradiente descendente (`ia.py`)
 
-Regresión lineal de una variable con gradiente descendente batch, con las
-fórmulas del curso (las mismas del examen y de la guía): `e = ŷ − y`,
-`J = (1/2m)·Σe²`, derivadas `(1/m)·Σe` y `(1/m)·Σ(e·x)`, actualización
-simultánea y aprobado si `ŷ ≥ 70`. Es un programa aparte (no importa nada):
-corre `ia` y sale el menú. Lo que cambia de examen a examen (datos, cuántos
-alumnos, θ iniciales, α, iteraciones) te lo pregunta.
+Regresión lineal de una variable con gradiente descendente batch. Es un
+programa aparte (no importa nada): corre `ia` y sale el menú. Te pregunta lo
+que cambia de examen a examen (datos, cuántos alumnos, θ iniciales, α,
+iteraciones) y escribe **el procedimiento como va en el examen**: fórmula,
+sustitución, operaciones y resultado.
 
-**Fórmulas editables.** Antes de las opciones 1, 2 y 3 enseña las fórmulas
-que va a usar (`== FORMULAS (checa tu examen) ==`). Enter = son iguales a
-las del examen; su número = editarla; `0` = volver a las del curso. Se puede
-cambiar el residuo (`e = yh - y` o `e = y - yh`), el coeficiente de J y de
-cada derivada (`1/(2m)`, `1/m`, `2/m` u otro `a/(b m)`), el signo de la
-actualización (`theta := theta - alfa*dJ/dtheta` o `+`) y la calificación
-mínima para aprobar. La hipótesis `yh = theta0 + theta1*x` es fija (es la de
-regresión lineal simple). Si los signos elegidos harían que J suba, avisa
-`Ojo: con esos signos J va a subir`. Los cambios duran hasta salir.
+**Fórmulas (todas editables).** Al elegir *Resolver* enseña juntas las
+fórmulas que va a usar y pregunta `Iguales? enter = si / # = editar`. Si tu
+examen trae otra, tecleas su número y la escribes tal cual (se aceptan
+`+ - * / ^`, paréntesis, `8x`, `2m`; `t0`/`t1` = `theta0`/`theta1`). `0` vuelve
+a las del curso; la opción 5 las muestra/edita en cualquier momento.
 
-1. **Resolver**: pregunta `Valores de x`, `Valores de y` (con comas),
-   `theta0 inicial`, `theta1 inicial`, `Tasa de aprendizaje alfa` y
-   `Cuantas iteraciones`. Cada iteración sale en el orden del examen, con
-   procedimiento corto:
-   - predicciones y residuos: `x=1: yh = 5 + 8(1) = 13`, `e = 13 - 35 = -22`,
-     la tabla `x | y | yh | e` y `sum e = -22 - 29 - 39 - 50 = -140`;
-   - costo: `e^2 = (-22)^2 = 484` por alumno, la suma término por término y
-     `J = 5346/(2*4) = 5346/8 = 668.25`;
-   - derivadas: `e*x = -22(1) = -22` por alumno, `sum e*x = ... = -397`,
-     `dJ/dtheta0 = (1/4)(-140) = -35`, `dJ/dtheta1 = (1/4)(-397) = -99.25`;
-   - actualización simultánea: `theta0 = 5 - 0.02(-35) = 5.7`,
-     `theta1 = 8 - 0.02(-99.25) = 9.985`.
+| # | Del curso | Variables que puede usar |
+|---|---|---|
+| 1 | `h(x) = theta0 + theta1*x` | theta0, theta1, x |
+| 2 | `e = yh - y` | yh, y, x |
+| 3 | `J = 1/(2m) sum(e^2)` (coef y algo) | coef: m · algo: e, yh, y, x |
+| 4 | `dJ/dtheta0 = 1/m sum(e)` | igual que J |
+| 5 | `dJ/dtheta1 = 1/m sum(e*x)` | igual que J |
+| 6 | `theta := theta - alfa*dJ/dtheta` | theta, alfa, dJ/dtheta |
+| 7 | `Aprobado si yh >= 70` | número |
 
-   Al final, el resumen: J1, J2…, `J2 < J1: bajo 203.01665625, mejoro`,
-   la conclusión y los θ finales.
-2. **Solo tabla y costo J**: predicciones, tabla y J con los θ que quieras
-   (Enter = los finales de la opción 1).
-3. **Predecir**: `yh = theta0 + theta1(x) = 6.287 + 11.637(5) = 6.287 + 58.185 = 64.472`
-   y `64.472 < 70: NO APRUEBA`.
-4. **Conceptos**: la idea clave para opción múltiple e interpretación (IA y
-   tipos de aprendizaje, regresión vs clasificación, no supervisado, recta
-   h(x), residuos, costo J, gradiente descendente, comparar J y concluir, α,
-   usar el modelo para predecir).
+**Así sale** (examen: x = 1,2,3,4; y = 35,50,68,87; θ0 = 5, θ1 = 8, α = 0.02):
 
-Con el examen de ejemplo (x = 1,2,3,4; y = 35,50,68,87; θ0 = 5, θ1 = 8,
-α = 0.02) da J1 = 668.25, θ = (5.7, 9.985), J2 = 465.23334375,
-θ = (6.28675, 11.63725) y, con θ ≈ (6.287, 11.637), ŷ(5) = 64.472. Con la
-guía (y = 30,50,70,90; θ0 = θ1 = 0.1; α = 0.01): J1 = 2026.5675,
-θ = (0.6965, 1.84), J2 = 1702.352456125.
+```
+== ITERACION 1: PREDICCION ==
+h(x) = theta0 + theta1*x
+h(x) = 5 + 8x
+yh1 = 5 + 8(1) = 13
+...
+e1 = 13 - 35 = -22
+...
+-- FUNCION DE COSTO J1 --
+J1 = 1/(2m) sum(e^2)
+   = 1/(2(4))[(-22)^2 + (-29)^2 +
+     (-39)^2 + (-50)^2]
+   = 1/8(484 + 841 + 1521 + 2500)
+   = 1/8(5346)
+   = 668.25
+(J resume el error de la hipotesis
+ actual sobre los datos reales)
+-- DERIVADAS (ITERACION 1) --
+dJ/dtheta0 = 1/m sum(e)
+    = 1/4(-22 - 29 - 39 - 50)
+    = 1/4(-140)
+    = -35
+dJ/dtheta1 = 1/m sum(e*x)
+    = 1/4[(-22)(1) + (-29)(2) +
+     (-39)(3) + (-50)(4)]
+    = 1/4(-22 - 58 - 117 - 200)
+    = 1/4(-397)
+    = -99.25
+-- NUEVOS THETA (ITERACION 1) --
+theta := theta - alfa*dJ/dtheta
+theta0 = 5 - 0.02(-35) = 5.7
+theta1 = 8 - 0.02(-99.25) = 9.985
+```
 
-Las cuentas son **exactas** (fracciones con enteros largos): no se
-redondea nada y no hay ruido binario, así que los números cuadran con los
-de papel. En pantalla salen hasta 12 cifras; si hay más, se cortan y el
-número termina en `...`. Con más de 5 iteraciones usa decimales normales
-y solo muestra cómo va J, para ver el efecto de α (lento o diverge).
+En la iteración 2, después de J2 sale la decisión
+(`J2 = 465.23334375 < J1 = 668.25` → `Decision: la actualizacion mejoro`), y al
+final el resumen con J1, J2, J3 y los θ finales. Opciones del menú:
+1 Resolver · 2 Solo predicción y costo J · 3 Predecir
+(`yh = 6.287 + 11.637(5) = 6.287 + 58.185 = 64.472`, `NO APROBADO`) ·
+4 Conceptos (opción múltiple e interpretación, incluido "cómo escribirlo en
+papel") · 5 Ver o editar fórmulas.
 
-Enter reusa lo que sale entre `[ ]`; acepta `0.02`, `1/50` y `-3`. Si algo
-no se entiende o x y y no tienen los mismos valores, vuelve a preguntar ese
-dato. Cada pantalla trae máximo 9 renglones y luego `-- enter para seguir --`.
-Al salir, `ia()` lo vuelve a abrir. Probado con MicroPython 1.11 (la versión
-de la Nspire) compilado en la Mac: misma salida que Python de escritorio.
+Las cuentas son **exactas** (fracciones con enteros largos, sin `eval`): no se
+redondea nada. En pantalla salen hasta 12 cifras; si hay más, se cortan con
+`...`. Con más de 5 iteraciones usa decimales normales y solo muestra J.
+Enter reusa lo que sale entre `[ ]`; si algo no se entiende, vuelve a
+preguntar. Cada pantalla trae máximo 9 renglones y `-- enter para seguir --`.
+Probado con MicroPython 1.11 (la versión de la Nspire) compilado en la Mac:
+misma salida que Python de escritorio, y corre con solo 350 KB de memoria.
 
-Desde el shell también funciona directo:
-`gradiente([1,2,3,4], [35,50,68,87], 5, 8, 0.02, 2)`, `predice(6.287, 11.637, 5)`.
+**Pasarlo a la calculadora:** el Student Software no manda `.py`, solo `.tns`.
+Crea un documento, Insertar → Python → Nuevo (cualquier nombre), pega todo
+`ia.py`, guarda el documento como `.tns` y arrastra ese `.tns` a la
+calculadora. Ahí: abre el documento y corre el programa (ctrl+R).
 
 ## Qué hay
 
