@@ -1,10 +1,9 @@
 # ia - regresion lineal con gradiente descendente (IA PrepaTEC)
-# Adrian. Corre el programa `ia` y sale el menu: te pregunta los datos
-# y saca el procedimiento escrito como va en el examen.
+# Adrian. Corre el programa y sigue las preguntas: pide los datos en el
+# orden del examen y da cada respuesta con su procedimiento para copiar.
 #
-# Formulas del curso (arranca con estas). Antes de resolver las muestra
-# todas juntas; enter = son iguales a tu examen, o se editan escribiendo
-# la formula tal cual (1/(2m), e^2, theta0 + theta1*x...):
+# Formulas del curso (arranca con estas). Cada una se muestra justo donde
+# aparece en el examen; enter = igual, n = no y se escribe como en la hoja:
 #   h(x) = theta0 + theta1*x        e = yh - y
 #   J = 1/(2m) sum(e^2)
 #   dJ/dtheta0 = 1/m sum(e)         dJ/dtheta1 = 1/m sum(e*x)
@@ -13,8 +12,7 @@
 #
 # Cuentas EXACTAS con fracciones de enteros largos: nada se redondea
 # ni se mete ruido binario. En pantalla salen hasta 12 cifras; si hay
-# mas, se corta y termina en '...'. Con mas de 5 iteraciones usa los
-# decimales de la calc (exacto seria lentisimo) y solo muestra J.
+# mas, se corta y termina en '...'.
 # Todo ASCII, sin f-strings, sin eval y sin operadores sobrecargados:
 # el Python de la Nspire es MicroPython 1.11.
 
@@ -60,27 +58,9 @@ def _entre(a, b):
     return _q(a[0] * b[1], a[1] * b[0])
 
 
-def _f(a):
-    """Fraccion -> decimal de la calc. Achica enteros enormes antes de
-    dividir: MicroPython pasa cada uno a float y daria inf/nan."""
-    if not isinstance(a, tuple):
-        return float(a)
-    p, q = a
-    k = max(len(str(abs(p))), len(str(q))) - 20
-    if k > 0:
-        p = p // 10 ** k
-        q = max(1, q // 10 ** k)
-    return p / q
-
-
 def _cmp(a, b):
     """-1, 0 o 1 segun a < b, a == b, a > b."""
-    if isinstance(a, tuple) and isinstance(b, tuple):
-        d = a[0] * b[1] - b[0] * a[1]
-    else:
-        d = _f(a) - _f(b)
-        if d != d:
-            return 1      # nan: se desbordo, diverge
+    d = a[0] * b[1] - b[0] * a[1]
     return (d > 0) - (d < 0)
 
 
@@ -108,17 +88,6 @@ def _dec(t):
     return _q(-p if neg else p, q)
 
 
-def _a(v):
-    """int, float, texto o fraccion -> fraccion exacta."""
-    if isinstance(v, tuple):
-        return v
-    if isinstance(v, int):
-        return (v, 1)
-    if isinstance(v, str):
-        return _lee(v)
-    return _dec("{:.13g}".format(v))     # MP 1.11 falla en la cifra 15
-
-
 # ---------- formulas escritas como texto ----------
 # Nodos: ("n", fraccion, texto)  numero      ("v", nombre)   variable
 #        ("p", nodo)  (parentesis)            ("u", nodo)     -nodo
@@ -140,8 +109,19 @@ def _tokens(s):
             j = i
             while j < len(s) and (s[j].isdigit() or s[j] == "."):
                 j += 1
-            t.append(("n", s[i:j]))
-            i = j
+            numero = ("n", s[i:j])
+            if t and t[-1] == ("o", "/") and j < len(s) and s[j].isalpha():
+                # 1/2m se lee 1/(2m), como en papel
+                k = j
+                while k < len(s) and (s[k].isalpha() or s[k].isdigit()):
+                    k += 1
+                nombre = s[j:k]
+                t.extend([("o", "("), numero,
+                          ("v", _ALIAS.get(nombre, nombre)), ("o", ")")])
+                i = k
+            else:
+                t.append(numero)
+                i = j
         elif c.isalpha() or c == "_":
             j = i
             while j < len(s) and (s[j].isalpha() or s[j].isdigit()
@@ -286,56 +266,35 @@ def _ev(nodo, env):
     return r
 
 
-def _evf(nodo, env):
-    """Igual que _ev pero con decimales de la calc (modo rapido)."""
-    k = nodo[0]
-    if k == "n":
-        return _f(nodo[1])
-    if k == "v":
-        return env[nodo[1]]
-    if k == "p":
-        return _evf(nodo[1], env)
-    if k == "u":
-        return -_evf(nodo[1], env)
-    op, a, b = nodo[1], _evf(nodo[2], env), _evf(nodo[3], env)
-    try:
-        if op == "+":
-            return a + b
-        if op == "-":
-            return a - b
-        if op == "/":
-            return a / b
-        if op == "^":
-            return a ** b
-        return a * b
-    except OverflowError:
-        return float("inf")
-
-
-def _tx(nodo, env):
+def _tx(nodo, env, textos=None):
     """La formula escrita con los valores de env sustituidos:
-    theta0 + theta1*x -> 5 + 8(1);  e^2 -> (-22)^2;  1/(2m) -> 1/(2(4))."""
+    theta0 + theta1*x -> 5 + 8(1);  e^2 -> (-22)^2;  1/(2m) -> 1/(2(4)).
+    textos cambia una variable por un texto (sum -> [484 + 841...])."""
     k = nodo[0]
     if k == "n":
         return nodo[2]
     if k == "v":
+        if textos and nodo[1] in textos:
+            return textos[nodo[1]]
         if nodo[1] in env:
             s = _n(env[nodo[1]])
             return "(" + s + ")" if s.startswith("-") else s
         return _NOMBRE.get(nodo[1], nodo[1])
     if k == "p":
-        return "(" + _tx(nodo[1], env) + ")"
+        return "(" + _tx(nodo[1], env, textos) + ")"
     if k == "u":
-        s = _tx(nodo[1], env)
+        s = _tx(nodo[1], env, textos)
         return "-(" + s + ")" if s.startswith("-") else "-" + s
     op, a, b = nodo[1], nodo[2], nodo[3]
-    izq, der = _tx(a, env), _tx(b, env)
+    izq, der = _tx(a, env, textos), _tx(b, env, textos)
     if op in ("+", "-"):
         return izq + " " + op + " " + der
     if op in ("*", ""):
+        if textos and b[0] == "v" and b[1] in textos:
+            return izq + der if der[:1] in "([" else izq + " " + der
         if b[0] == "v" and b[1] in env and not der.startswith("("):
             der = "(" + der + ")"                     # 8(1)
-        pegado = der.startswith("(") or (
+        pegado = der[:1] in "([" or (
             b[0] == "v" and b[1] not in env
             and (a[0] == "n" or (a[0] == "v" and a[1] in env)))
         return izq + der if pegado else izq + "*" + der
@@ -359,24 +318,62 @@ def _terminos(nodo, env):
     return _n(_ev(nodo, env))
 
 
-# Formulas activas como texto; _FN tiene las mismas ya leidas.
+# Formulas activas como texto (_FT) y ya leidas (_FN).
 _CURSO = {"hip": "theta0 + theta1*x", "e": "yh - y",
-          "J": ("1/(2m)", "e^2"), "g0": ("1/m", "e"),
-          "g1": ("1/m", "e*x"), "act": "theta - alfa*dJ/dtheta",
+          "J": "1/(2m) sum(e^2)", "g0": "1/m sum(e)",
+          "g1": "1/m sum(e*x)", "act": "theta - alfa*dJ/dtheta",
           "umbral": (70, 1)}
+_SUMAS = ("J", "g0", "g1")
+_PERMITE = {"hip": ("theta0", "theta1", "x"), "e": ("yh", "y", "x"),
+            "act": ("theta", "alfa", "dj")}
+_ALGO = ("e", "yh", "y", "x")
 _FT = {}
 _FN = {}
 
 
+def _revisa(nodo, permite):
+    for v in _vars(nodo, []):
+        if v not in permite:
+            raise ValueError("aqui no va '" + _NOMBRE.get(v, v) + "'")
+
+
+def _separa_sum(texto):
+    """'1/(2m) sum(e^2)' -> ('1/(2m) sum', 'e^2')."""
+    s = texto.lower().replace("[", "(").replace("]", ")")
+    s = s.replace("sum (", "sum(")
+    i = s.find("sum(")
+    if i < 0 or s.find("sum(", i + 1) >= 0:
+        raise ValueError("escribe una vez sum( ... )")
+    nivel = 0
+    for j in range(i + 3, len(s)):
+        if s[j] == "(":
+            nivel += 1
+        elif s[j] == ")":
+            nivel -= 1
+            if nivel == 0:
+                return s[:i] + " sum " + s[j + 1:], s[i + 4:j]
+    raise ValueError("falta cerrar sum( )")
+
+
+def _lee_una(k, texto):
+    """Lee y revisa la formula k; truena con un mensaje si esta mal."""
+    if k in _SUMAS:
+        fuera, algo = _separa_sum(texto)
+        fuera, algo = _parse(fuera), _parse(algo)
+        _revisa(fuera, ("m", "sum"))
+        _revisa(algo, _ALGO)
+        return (fuera, algo)
+    nodo = _parse(texto)
+    _revisa(nodo, _PERMITE[k])
+    return nodo
+
+
 def _compila():
     for k in _FT:
-        v = _FT[k]
         if k == "umbral":
-            _FN[k] = v
-        elif isinstance(v, tuple):
-            _FN[k] = (_parse(v[0]), _parse(v[1]))
+            _FN[k] = _FT[k]
         else:
-            _FN[k] = _parse(v)
+            _FN[k] = _lee_una(k, _FT[k])
 
 
 def _curso():
@@ -389,8 +386,6 @@ def _curso():
 
 def _n(a):
     """Como en papel y exacto: 9.985, -99.25, 13. Mas de 12 cifras: '...'."""
-    if not isinstance(a, tuple):
-        return _nf(a)
     p, q = a
     if p == 0:
         return "0"
@@ -414,14 +409,6 @@ def _n(a):
                 cifras += 1
     if r:
         s += "..."
-    return s
-
-
-def _nf(v):
-    """Decimal de la calc (modo rapido): 10 cifras, sin .0."""
-    s = "{:.10g}".format(v)
-    if "." in s and "e" not in s:
-        s = s.rstrip("0").rstrip(".")
     return s
 
 
@@ -518,22 +505,12 @@ def _env_fila(f):
     return {"x": f[0], "y": f[1], "yh": f[2], "e": f[3]}
 
 
-def _valor_suma(k, filas):
-    """coef * sum(algo) de la formula k (J, g0 o g1), sin imprimir."""
-    coef, algo = _FN[k]
-    S = (0, 1)
-    for f in filas:
-        S = _mas(S, _ev(algo, _env_fila(f)))
-    return _por(_ev(coef, {"m": (len(filas), 1)}), S)
-
-
 def _cadena(lado, k, filas):
-    """Imprime coef * sum(algo) como en papel y regresa el valor:
+    """Imprime la formula con sum() como en papel y regresa el valor:
     J1 = 1/(2m) sum(e^2) = 1/(2(4))[(-22)^2 + ...]
        = 1/8(484 + ...) = 1/8(5346) = 668.25"""
-    coef, algo = _FN[k]
-    envm = {"m": (len(filas), 1)}
-    c = _ev(coef, envm)
+    fuera, algo = _FN[k]
+    m = (len(filas), 1)
     sust = []
     vals = []
     S = (0, 1)
@@ -543,75 +520,57 @@ def _cadena(lado, k, filas):
         vals.append(_n(v))
         sust.append(_n(v) if algo[0] == "v" else _tx(algo, env))
         S = _mas(S, v)
-    total = _por(c, S)
-    pasos = [_tx(coef, {}) + " sum(" + _tx(algo, {}) + ")"]
+    total = _ev(fuera, {"m": m, "sum": S})
+    c = _ev(fuera, {"m": m, "sum": (1, 1)})
+    lineal = (_ev(fuera, {"m": m, "sum": (0, 1)}) == (0, 1) and
+              _ev(fuera, {"m": m, "sum": (2, 1)}) == _por((2, 1), c))
+    envm = {"m": m}
+    pasos = [_tx(fuera, {}, {"sum": "sum(" + _tx(algo, {}) + ")"})]
     if sust != vals:
-        pasos.append(_tx(coef, envm) + "[" + _junta_txt(sust) + "]")
-        pasos.append(_fr(c) + "(" + _junta_txt(vals) + ")")
+        pasos.append(_tx(fuera, envm, {"sum": "[" + _junta_txt(sust) + "]"}))
     else:
-        pasos.append(_tx(coef, envm) + "(" + _junta_txt(vals) + ")")
-    pasos.append(_fr(c) + "(" + _n(S) + ")")
+        pasos.append(_tx(fuera, envm, {"sum": "(" + _junta_txt(vals) + ")"}))
+    if lineal:
+        pasos.append(_fr(c) + "(" + _junta_txt(vals) + ")")
+        pasos.append(_fr(c) + "(" + _n(S) + ")")
+    else:
+        pasos.append(_tx(fuera, envm, {"sum": "(" + _n(S) + ")"}))
     pasos.append(_n(total))
     _pasos(lado, pasos)
     return total
 
 
-def _prediccion_txt(titulo, t0, t1, filas):
-    """h(x), cada yh, cada e, la tabla y J como en el examen."""
+def _bloque_pred(t0, t1, filas, r_hip, r_yh, r_e):
+    """h(x), cada yh, cada e y la tabla, como en el examen."""
     hip = _FN["hip"]
     envt = {"theta0": t0, "theta1": t1}
-    _out(titulo)
+    if r_hip:
+        _out(r_hip)
     _out("h(x) = " + _tx(hip, {}), "h(x) = " + _tx(hip, envt))
+    if r_yh:
+        _out(r_yh)
     for i in range(len(filas)):
-        x, y, yh, e = filas[i]
-        envt["x"] = x
-        _pasos("yh" + str(i + 1), [_tx(hip, envt), _n(yh)])
+        envt["x"] = filas[i][0]
+        _pasos("yh" + str(i + 1), [_tx(hip, envt), _n(filas[i][2])])
     _pausa()
+    if r_e:
+        _out(r_e)
     _out("e = " + _tx(_FN["e"], {}))
     for i in range(len(filas)):
         x, y, yh, e = filas[i]
         _pasos("e" + str(i + 1),
                [_tx(_FN["e"], {"yh": yh, "y": y, "x": x}), _n(e)])
     _pausa()
-    t = ["x | y | yh | e"]
+    t = ["Tabla:", "x | y | yh | e"]
     for x, y, yh, e in filas:
         t.append("{} | {} | {} | {}".format(_n(x), _n(y), _n(yh), _n(e)))
     _out(*t)
     _pausa()
 
 
-def _costo_txt(k, filas, Jprev):
-    """Funcion de costo con sustitucion; si hay J anterior, decide."""
-    _out("-- FUNCION DE COSTO J{} --".format(k))
-    J = _cadena("J" + str(k), "J", filas)
-    if Jprev is None:
-        _out("(J resume el error de la hipotesis",
-             " actual sobre los datos reales)")
-    else:
-        c = _cmp(J, Jprev)
-        signo = "<" if c < 0 else (">" if c > 0 else "=")
-        _out("J{} = {} {} J{} = {}".format(k, _n(J), signo, k - 1,
-                                           _n(Jprev)))
-        if c < 0:
-            _out("Decision: la actualizacion mejoro",
-                 "el modelo (J bajo)")
-        elif c > 0:
-            _out("Decision: empeoro (J subio);",
-                 "revisa alfa o las formulas")
-        else:
-            _out("Decision: J no cambio")
-    _pausa()
-    return J
-
-
-def _iteracion(k, xs, ys, t0, t1, alfa, Jprev=None):
-    """Una iteracion con todo el procedimiento. Regresa
-    (theta0 nuevo, theta1 nuevo, J con los theta viejos)."""
-    filas = _filas(xs, ys, t0, t1)
-    _prediccion_txt("== ITERACION {}: PREDICCION ==".format(k),
-                    t0, t1, filas)
-    J = _costo_txt(k, filas, Jprev)
-    _out("-- DERIVADAS (ITERACION {}) --".format(k))
+def _bloque_act(filas, t0, t1, alfa):
+    """Derivadas y nuevos theta (simultaneo). Regresa los theta nuevos."""
+    _out("Derivadas (con los theta viejos):")
     g0 = _cadena("dJ/dtheta0", "g0", filas)
     g1 = _cadena("dJ/dtheta1", "g1", filas)
     _pausa()
@@ -620,115 +579,29 @@ def _iteracion(k, xs, ys, t0, t1, alfa, Jprev=None):
     e1 = {"theta": t1, "alfa": alfa, "dj": g1}   # con t0, t1 viejos
     n0 = _ev(act, e0)
     n1 = _ev(act, e1)
-    _out("-- NUEVOS THETA (ITERACION {}) --".format(k),
+    _out("Nuevos parametros (simultaneo):",
          "theta := " + _tx(act, {}))
     _pasos("theta0", [_tx(act, e0), _n(n0)])
     _pasos("theta1", [_tx(act, e1), _n(n1)])
-    _out("(simultanea: con los theta viejos)")
     _pausa()
-    return n0, n1, J
+    return n0, n1
 
 
-def _gd(xs, ys, t0, t1, alfa, n):
-    if n < 1:
-        raise ValueError("iteraciones >= 1")
-    if n > 5:
-        return _gd_rapido(xs, ys, t0, t1, alfa, n)
-    Js = []
-    for k in range(1, n + 1):
-        t0, t1, J = _iteracion(k, xs, ys, t0, t1, alfa,
-                               Js[-1] if Js else None)
-        Js.append(J)
-    Js.append(_valor_suma("J", _filas(xs, ys, t0, t1)))
-    _resumen(Js, t0, t1, True)
-    return t0, t1
-
-
-def _gd_rapido(xs, ys, t0, t1, alfa, n):
-    """Muchas iteraciones con decimales de la calc; solo muestra J."""
-    X = [_f(v) for v in xs]
-    Y = [_f(v) for v in ys]
-    a0, a1, al = _f(t0), _f(t1), _f(alfa)
-    m = len(X)
-    hip, fe, act = _FN["hip"], _FN["e"], _FN["act"]
-    coefs = [_evf(_FN[k][0], {"m": float(m)}) for k in ("J", "g0", "g1")]
-    algos = [_FN[k][1] for k in ("J", "g0", "g1")]
-    cada = max(1, n // 10)
-    Js = []
-    _out("== {} ITERACIONES ==".format(n))
-    for k in range(1, n + 2):
-        sumas = [0.0, 0.0, 0.0]
-        for x, y in zip(X, Y):
-            yh = _evf(hip, {"theta0": a0, "theta1": a1, "x": x})
-            env = {"x": x, "y": y, "yh": yh,
-                   "e": _evf(fe, {"yh": yh, "y": y, "x": x})}
-            for j in range(3):
-                sumas[j] += _evf(algos[j], env)
-        Js.append(coefs[0] * sumas[0])
-        if k > n:
-            break                     # esta ya es J con theta finales
-        if k == 1 or k % cada == 0:
-            _out("J{} = {}".format(k, _nf(Js[-1])))
-        g0, g1 = coefs[1] * sumas[1], coefs[2] * sumas[2]
-        a0, a1 = (_evf(act, {"theta": a0, "alfa": al, "dj": g0}),
-                  _evf(act, {"theta": a1, "alfa": al, "dj": g1}))
-    _pausa()
-    _resumen(Js, a0, a1, False)
-    return a0, a1
-
-
-def _compara_txt(antes, ahora, i, j):
-    """'J2 < J1: bajo 203.01665625, mejoro'."""
-    c = _cmp(ahora, antes)
-    if isinstance(antes, tuple) and isinstance(ahora, tuple):
-        d = _menos(antes, ahora)
-        d = (abs(d[0]), d[1])
-    else:
-        d = abs(_f(antes) - _f(ahora))
+def _decision(k, J, Jprev):
+    c = _cmp(J, Jprev)
+    signo = "<" if c < 0 else (">" if c > 0 else "=")
+    _out("J{} = {} {} J{} = {}".format(k, _n(J), signo, k - 1, _n(Jprev)))
     if c < 0:
-        return "J{} < J{}: bajo {}, mejoro".format(j, i, _n(d))
-    if c > 0:
-        return "J{} > J{}: subio {}, empeoro".format(j, i, _n(d))
-    return "J{} = J{}: igual".format(j, i)
-
-
-def _resumen(Js, t0, t1, todo):
-    """Js[k] = J(k+1); el ultimo es J con los theta finales."""
-    ult = len(Js) - 1
-    _out("== RESUMEN ==")
-    if todo:
-        for k in range(len(Js)):
-            _out("J{} = {}".format(k + 1, _n(Js[k])))
+        _out("Si mejoro el modelo: J bajo",
+             "(el error es mas chico).")
+    elif c > 0:
+        _out("No mejoro: J subio. Revisa alfa",
+             "o las formulas.")
     else:
-        _out("J1 = " + _n(Js[0]))
-        _out("J{} = {}".format(ult + 1, _n(Js[ult])))
-    _out("(J{} usa los theta finales)".format(ult + 1))
-    if todo:
-        for k in range(1, len(Js)):
-            _out(_compara_txt(Js[k - 1], Js[k], k, k + 1))
-    else:
-        _out(_compara_txt(Js[0], Js[ult], 1, ult + 1))
-        _out("(decimales de la calc, aprox.)")
-    total = _cmp(Js[ult], Js[0])
-    if total < 0:
-        _out("Conclusion: J bajo, el modelo mejoro")
-    elif total > 0:
-        _out("Conclusion: J subio; alfa muy",
-             "grande o revisa las formulas")
-    else:
-        _out("Conclusion: J no cambio")
-    _pausa()
-    _out("theta0 final = " + _n(t0), "theta1 final = " + _n(t1))
-    _pausa()
+        _out("J no cambio.")
 
 
-def _tabla_costo(xs, ys, t0, t1):
-    filas = _filas(xs, ys, t0, t1)
-    _prediccion_txt("== PREDICCION Y COSTO ==", t0, t1, filas)
-    return _costo_txt("", filas, None)
-
-
-def _predice(t0, t1, x):
+def _estimar(t0, t1, x):
     hip = _FN["hip"]
     env = {"theta0": t0, "theta1": t1, "x": x}
     yh = _ev(hip, env)
@@ -739,40 +612,165 @@ def _predice(t0, t1, x):
         _out(_n(yh) + " >= " + _n(u) + ": APROBADO")
     else:
         _out(_n(yh) + " < " + _n(u) + ": NO APROBADO")
-    return yh
 
 
-# ---------- formulas: se muestran juntas y se pueden editar ----------
+# ---------- preguntas ----------
 
-_ORDEN = ["hip", "e", "J", "g0", "g1", "act", "umbral"]
+def _pregunta(texto, previo):
+    """Hace la pregunta; si hay dato anterior lo muestra en [ ]."""
+    if previo is None:
+        return input(texto + ": ").strip()
+    return input("{} [{}]: ".format(texto, previo)).strip()
+
+
+def _lee(t):
+    """Numero tecleado, exacto: 0.02, -3, 1/50, 2^3 (sin eval)."""
+    t = t.strip()
+    try:
+        return _dec(t)
+    except ValueError:
+        return _ev(_parse(t), {})
+
+
+def _lee_numero(texto, previo):
+    """Lee un numero. Enter = lo de [ ]. Si no se entiende, repite."""
+    while True:
+        s = _pregunta(texto, None if previo is None else _n(previo))
+        if s == "":
+            if previo is not None:
+                return previo
+            print("Falta este dato.")
+            continue
+        try:
+            return _lee(s)
+        except Exception:
+            print("No entendi. Ej: 5, 0.02, -3, 1/50")
+
+
+def _pide(texto, clave, default=None):
+    """Lee un numero y lo recuerda en _D[clave] para el siguiente enter."""
+    v = _lee_numero(texto, _D.get(clave, default))
+    _D[clave] = v
+    return v
+
+
+def _pide_lista(texto, clave):
+    previa = _D.get(clave)
+    txt = None
+    if previa is not None:
+        txt = ",".join([_n(v) for v in previa])
+    while True:
+        s = _pregunta(texto, txt)
+        if s == "":
+            if previa is not None:
+                return previa
+            print("Falta este dato.")
+            continue
+        for c in "{}[]":
+            s = s.replace(c, "")
+        try:
+            vals = [_lee(t) for t in s.replace(",", " ").split()]
+        except Exception:
+            vals = []
+        if vals:
+            return vals
+        print("No entendi. Ej: 1,2,3,4")
+
+
+def _si_no(texto):
+    """enter o s = si (True); n = no (False)."""
+    while True:
+        s = input(texto).strip().lower()
+        if s in ("", "s", "si"):
+            return True
+        if s in ("n", "no"):
+            return False
+        print("Escribe solo enter (si) o n (no).")
+
+
+# ---------- formulas: se confirman donde las pide el examen ----------
+
 _LADO = {"hip": "h(x)", "e": "e", "J": "J", "g0": "dJ/dtheta0",
          "g1": "dJ/dtheta1", "act": "theta :"}
-_PERMITE = {"hip": ("theta0", "theta1", "x"), "e": ("yh", "y", "x"),
-            "coef": ("m",), "algo": ("e", "yh", "y", "x"),
-            "act": ("theta", "alfa", "dj")}
+_AYUDA = {"hip": ("theta0, theta1, x", "theta0 + theta1*x"),
+          "e": ("yh, y, x", "yh - y"),
+          "J": ("m, sum( ), e, yh, y, x", "1/(2m) sum(e^2)"),
+          "g0": ("m, sum( ), e, yh, y, x", "1/m sum(e)"),
+          "g1": ("m, sum( ), e, yh, y, x", "1/m sum(e*x)"),
+          "act": ("theta, alfa, dJ/dtheta", "theta - alfa*dJ/dtheta")}
 
 
 def _ftxt(k):
     if k == "umbral":
         return "Aprobado si yh >= " + _n(_FN["umbral"])
     v = _FN[k]
-    if k in ("J", "g0", "g1"):            # (coef, algo); los nodos
-        return "{} = {} sum({})".format(  # tambien son tuplas
-            _LADO[k], _tx(v[0], {}), _tx(v[1], {}))
-    return _LADO[k] + "= " + _tx(v, {}) if k == "act" else \
-        _LADO[k] + " = " + _tx(v, {})
+    if k in _SUMAS:
+        return _LADO[k] + " = " + _tx(v[0], {}, {
+            "sum": "sum(" + _tx(v[1], {}) + ")"})
+    if k == "act":
+        return "theta := " + _tx(v, {})
+    return _LADO[k] + " = " + _tx(v, {})
+
+
+def _confirma(claves, titulo):
+    """Muestra las formulas como van en el examen y pregunta si son
+    iguales. Si no, deja escribir la del examen."""
+    while True:
+        print("")
+        print(titulo)
+        if len(claves) == 1:
+            print(_ftxt(claves[0]))
+            if _si_no("Igual a tu examen? enter=si, n=no: "):
+                return
+            _edita(claves[0])
+        else:
+            for i in range(len(claves)):
+                print("{} {}".format(i + 1, _ftxt(claves[i])))
+            if _si_no("Iguales a tu examen? enter=si,n=no: "):
+                return
+            s = input("Cual es distinta? (1 a {}): ".format(len(claves)))
+            try:
+                i = int(s.strip())
+            except ValueError:
+                i = 0
+            if 1 <= i <= len(claves):
+                _edita(claves[i - 1])
+
+
+def _edita(k):
+    if k == "umbral":
+        print("-- Cambiar calificacion minima --")
+        _FT[k] = _lee_numero("Aprobado si yh >=", _FT[k])
+        _compila()
+        return
+    usa, ej = _AYUDA[k]
+    print("-- Escribela como en tu examen --")
+    print("Puedes usar: " + usa)
+    print("Ej: " + ej)
+    nombre = "theta :=" if k == "act" else _LADO[k] + " ="
+    while True:
+        s = input("{} [{}]: ".format(nombre, _FT[k])).strip()
+        if s == "":
+            return
+        try:
+            _FN[k] = _lee_una(k, s)
+        except Exception as err:
+            print("No entendi: " + str(err))
+            continue
+        _FT[k] = s
+        return
 
 
 def _formulas():
-    """Todas las formulas juntas. Enter = son iguales a tu examen;
-    su numero = editarla; 0 = volver a las del curso."""
+    """Opcion del menu: ver todas y cambiar la que sea."""
+    claves = ["hip", "e", "J", "g0", "g1", "act", "umbral"]
     while True:
         print("")
-        print("== FORMULAS (checa tu examen) ==")
-        for i in range(len(_ORDEN)):
-            print("{} {}".format(i + 1, _ftxt(_ORDEN[i])))
+        print("== FORMULAS QUE SE USAN ==")
+        for i in range(len(claves)):
+            print("{} {}".format(i + 1, _ftxt(claves[i])))
         print("0 volver a las del curso")
-        s = input("Iguales? enter = si / # = editar: ").strip()
+        s = input("Numero a cambiar (enter=menu): ").strip()
         if s == "":
             return
         if s == "0":
@@ -782,75 +780,167 @@ def _formulas():
             i = int(s)
         except ValueError:
             i = 0
-        if 1 <= i <= len(_ORDEN):
-            _edita(_ORDEN[i - 1])
+        if 1 <= i <= len(claves):
+            _edita(claves[i - 1])
         else:
             print("Ese numero no esta en la lista.")
 
 
-def _lee_formula(nombre, actual, permite):
-    """Pide una formula como texto; enter = dejar la actual."""
-    print("Variables: " + ", ".join([_NOMBRE.get(v, v) for v in permite]))
+# ---------- el examen paso a paso ----------
+
+def _datos():
+    print("Separa los valores con comas.")
+    xs = _pide_lista("x de la tabla (ej 1,2,3,4)", "xs")
     while True:
-        s = input("{} [{}]: ".format(nombre, actual)).strip()
+        ys = _pide_lista("y de la tabla (ej 35,50,68,87)", "ys")
+        if len(ys) == len(xs):
+            break
+        print("Pusiste {} valores de x y {} de y;".format(len(xs),
+                                                          len(ys)))
+        print("deben ser los mismos. Otra vez y.")
+    _D["xs"], _D["ys"] = xs, ys
+    return xs, ys
+
+
+def _transferencia(t0, t1, titulo, confirmar_modelo):
+    _nueva()
+    _out(titulo, "Usa los theta que da el examen",
+         "(pueden venir redondeados).")
+    _pausa()
+    t0 = _pide("theta0 para estimar", "f0", t0)
+    t1 = _pide("theta1 para estimar", "f1", t1)
+    if confirmar_modelo:
+        _confirma(["hip"], "Modelo que da tu examen:")
+    _confirma(["umbral"], "Regla para aprobar:")
+    print("")
+    print("a) Estimar la calificacion:")
+    x = _pide("x a estimar (ej 5)", "xn")
+    while True:
+        _nueva()
+        _estimar(t0, t1, x)
+        _pausa()
+        s = input("Otra x? (escribela o enter=no): ").strip()
         if s == "":
-            return actual
+            break
         try:
-            malas = [v for v in _vars(_parse(s), []) if v not in permite]
-        except Exception as err:
-            print("No entendi: " + str(err))
-            continue
-        if malas:
-            print("Aqui no se usa '{}'.".format(_NOMBRE.get(malas[0],
-                                                            malas[0])))
-            continue
-        return s
+            x = _lee(s)
+        except Exception:
+            print("No entendi; sigo.")
+            break
+    _nueva()
+    _out("b) Tipo de problema (justifica):",
+         "Es CLASIFICACION binaria: la",
+         "salida es una clase (aprobado o",
+         "no aprobado), no un numero.",
+         "Es aprendizaje SUPERVISADO: los",
+         "datos vienen etiquetados.",
+         "(Estimar calificacion = REGRESION)")
+    _pausa()
 
 
-def _edita(k):
-    if k == "umbral":
-        _FT[k] = _lee_numero("Calificacion minima para aprobar", _FT[k])
-    elif k in ("J", "g0", "g1"):
-        print("-- {} = coef sum(algo) --".format(_LADO[k]))
-        print("Ej: coef 1/(2m), algo e^2")
-        coef = _lee_formula("coef", _FT[k][0], _PERMITE["coef"])
-        algo = _lee_formula("algo", _FT[k][1], _PERMITE["algo"])
-        _FT[k] = (coef, algo)
+def _examen():
+    _nueva()
+    _out("== RESOLVER EXAMEN ==",
+         "Te pido los datos en el orden",
+         "del examen y te doy cada respuesta",
+         "con su procedimiento para copiar.",
+         "- Escribe el dato y enter.",
+         "- Lo que sale en [ ] se usa con",
+         "  solo enter.")
+    _pausa()
+
+    print("")
+    print("== DATOS DEL EXAMEN ==")
+    print("Copia la tabla del examen.")
+    xs, ys = _datos()
+    _confirma(["hip"], "Modelo que da tu examen:")
+    print("")
+    print("Parametros iniciales:")
+    t0 = _pide("theta0 (ej 5)", "t0")
+    t1 = _pide("theta1 (ej 8)", "t1")
+    print("Tasa de aprendizaje:")
+    alfa = _pide("alfa (ej 0.02)", "alfa")
+
+    _confirma(["e"], "Formula del error e:")
+    _nueva()
+    _out("== PASO 1: PREDICCION Y ERRORES ==")
+    filas = _filas(xs, ys, t0, t1)
+    _bloque_pred(t0, t1, filas, "a) Hipotesis con theta iniciales:",
+                 "b) Predicciones yh:", "c) Errores:")
+
+    _confirma(["J"], "Formula de la funcion de costo:")
+    _nueva()
+    _out("== PASO 2: FUNCION DE COSTO ==")
+    Js = [_cadena("J1", "J", filas)]
+    _out("Que resume: el error de la hipotesis",
+         "actual sobre los datos reales.")
+    _pausa()
+
+    _confirma(["g0", "g1", "act"], "Formulas de la actualizacion:")
+    _nueva()
+    _out("== PASO 3: PRIMERA ACTUALIZACION ==")
+    t0, t1 = _bloque_act(filas, t0, t1, alfa)
+
+    k = 2
+    while True:
+        filas = _filas(xs, ys, t0, t1)
+        if k == 2:
+            _out("== PASO 4: SEGUNDA ITERACION ==")
+        else:
+            _out("== ITERACION {} ==".format(k))
+        _out("a) Nuevas predicciones y J{}:".format(k))
+        _bloque_pred(t0, t1, filas, None, None, None)
+        Js.append(_cadena("J" + str(k), "J", filas))
+        _pausa()
+        _out("b) Comparar J{} con J{}:".format(k, k - 1))
+        _decision(k, Js[-1], Js[-2])
+        _pausa()
+        _out("c) Actualizacion {}:".format(k))
+        t0, t1 = _bloque_act(filas, t0, t1, alfa)
+        otra = input("Otra iteracion? s=si, enter=no: ").strip().lower()
+        if otra not in ("s", "si"):
+            break
+        k += 1
+
+    _D["f0"], _D["f1"] = t0, t1
+    _transferencia(t0, t1, "== PASO 5: TRANSFERENCIA ==", False)
+
+    _nueva()
+    _out("== REVISION FINAL ==")
+    for i in range(len(Js)):
+        _out("J{} = {}".format(i + 1, _n(Js[i])))
+    d = _menos(Js[0], Js[-1])
+    c = _cmp(Js[-1], Js[0])
+    if c < 0:
+        _out("J{} < J1: bajo {}".format(len(Js), _n(d)),
+             "Conclusion: las actualizaciones",
+             "mejoraron el modelo (J bajo).")
+    elif c > 0:
+        _out("J{} > J1: subio".format(len(Js)),
+             "Conclusion: no mejoro; revisa",
+             "alfa o las formulas.")
     else:
-        print("-- " + _ftxt(k) + " --")
-        nombre = "theta :=" if k == "act" else _LADO[k]
-        _FT[k] = _lee_formula(nombre, _FT[k], _PERMITE[k])
-    _compila()
+        _out("Conclusion: J no cambio.")
+    _out("theta0 final = " + _n(t0), "theta1 final = " + _n(t1))
+    _pausa()
 
 
-# ---------- para usar directo en el shell ----------
-
-def gradiente(xs, ys, theta0, theta1, alfa, n=2):
-    """gradiente([1,2,3,4], [35,50,68,87], 5, 8, 0.02, 2)"""
+def _instrucciones():
     _nueva()
-    t0, t1 = _gd([_a(v) for v in xs], [_a(v) for v in ys],
-                 _a(theta0), _a(theta1), _a(alfa), n)
-    return _f(t0), _f(t1)
-
-
-def costo(xs, ys, theta0, theta1):
-    """J(theta) con la formula activa, sin imprimir."""
-    return _f(_valor_suma("J", _filas([_a(v) for v in xs],
-                                      [_a(v) for v in ys],
-                                      _a(theta0), _a(theta1))))
-
-
-def tabla_costo(xs, ys, theta0, theta1):
-    """Procedimiento, tabla y J con unos theta (sin actualizar)."""
-    _nueva()
-    return _f(_tabla_costo([_a(v) for v in xs], [_a(v) for v in ys],
-                           _a(theta0), _a(theta1)))
-
-
-def predice(theta0, theta1, x):
-    """yh con la hipotesis activa y si aprueba."""
-    _nueva()
-    return _f(_predice(_a(theta0), _a(theta1), _a(x)))
+    _out("== INSTRUCCIONES ==",
+         "1 Resolver: te pregunta los datos",
+         "  en el orden del examen y da las",
+         "  respuestas con procedimiento.",
+         "2 Estimar: calificacion con los",
+         "  theta dados y si aprueba.",
+         "3 Conceptos: para explicar.",
+         "4 Formulas: ver o cambiar.")
+    _out("Al escribir: enter confirma; lo",
+         "de [ ] se usa con solo enter.",
+         "Fracciones: 1/50. Potencia: x^2.",
+         "En papel: theta = letra theta,",
+         "yh = y gorro, sum = sigma.")
+    _pausa()
 
 
 # ---------- conceptos: la idea clave para las interpretaciones ----------
@@ -942,7 +1032,7 @@ _CONCEPTOS = [
         "alfa adecuada: J baja rapido y",
         "estable.",
     ]),
-    ("Predecir", "Usar el modelo (predecir)", [
+    ("Estimar", "Usar el modelo (estimar)", [
         "yh = theta0 + theta1*x con los",
         "theta finales (sustituye x).",
         "Aprobado si yh >= 70.",
@@ -975,8 +1065,7 @@ def _conceptos():
                 s += " | {} {}".format(i + mitad + 1,
                                        _CONCEPTOS[i + mitad][0])
             print(s)
-        print("0 Regresar al menu")
-        s = input("Numero de tema: ").strip()
+        s = input("Numero de tema (enter=menu): ").strip()
         if s == "0" or s == "":
             return
         try:
@@ -991,163 +1080,44 @@ def _conceptos():
                 _out(ln)
             _pausa()
         else:
-            print("Ese tema no existe (0 a {}).".format(total))
+            print("Ese tema no existe (1 a {}).".format(total))
 
 
 # ---------- menu ----------
-
-def _lee(t):
-    """Numero tecleado, exacto: 0.02, -3, 1/50, 2^3 (sin eval)."""
-    t = t.strip()
-    try:
-        return _dec(t)
-    except ValueError:
-        return _ev(_parse(t), {})
-
-
-def _pregunta(texto, previo):
-    """Hace la pregunta; si hay dato anterior lo muestra en [ ]."""
-    if previo is None:
-        return input(texto + ": ").strip()
-    return input("{} [{}]: ".format(texto, previo)).strip()
-
-
-def _pide(texto, clave, default=None):
-    """Lee un numero y lo recuerda en _D[clave] para el siguiente enter."""
-    v = _lee_numero(texto, _D.get(clave, default))
-    _D[clave] = v
-    return v
-
-
-def _lee_numero(texto, previo):
-    """Lee un numero. Enter = lo de [ ]. Si no se entiende, repite."""
-    while True:
-        s = _pregunta(texto, None if previo is None else _n(previo))
-        if s == "":
-            if previo is not None:
-                try:
-                    return _a(previo)
-                except Exception:        # -inf de un modo rapido que diverge
-                    print("Ese dato ya no sirve; escribe otro.")
-                    previo = None
-                    continue
-            print("Falta este dato.")
-            continue
-        try:
-            return _lee(s)
-        except Exception:
-            print("No entendi. Ej: 5, 0.02, -3, 1/50")
-
-
-def _pide_entero(texto, clave, default):
-    while True:
-        p, q = _pide(texto, clave, default)
-        if q == 1 and p >= 1:
-            return p
-        print("Debe ser un entero de 1 o mas.")
-        _D[clave] = default
-
-
-def _pide_lista(texto, clave):
-    previa = _D.get(clave)
-    txt = None
-    if previa is not None:
-        txt = ",".join([_n(v) for v in previa])
-    while True:
-        s = _pregunta(texto, txt)
-        if s == "":
-            if previa is not None:
-                return previa
-            print("Falta este dato.")
-            continue
-        for c in "{}[]":
-            s = s.replace(c, "")
-        try:
-            vals = [_lee(t) for t in s.replace(",", " ").split()]
-        except Exception:
-            vals = []
-        if vals:
-            return vals
-        print("No entendi. Ej: 1,2,3,4")
-
-
-def _datos():
-    print("Separa los valores con comas.")
-    print("Enter = usar lo que sale en [ ].")
-    xs = _pide_lista("Valores de x", "xs")
-    while True:
-        ys = _pide_lista("Valores de y", "ys")
-        if len(ys) == len(xs):
-            break
-        print("Hay {} valores de x y {} de y;".format(len(xs), len(ys)))
-        print("deben ser iguales. Escribe y.")
-    _D["xs"], _D["ys"] = xs, ys
-    return xs, ys
-
 
 def ia():
     try:
         while True:
             print("")
             print("== IA: REGRESION LINEAL ==")
-            print("1 Resolver (gradiente descendente)")
-            print("2 Solo prediccion y costo J")
-            print("3 Predecir y (aprobado si >= {})".format(
-                _n(_FN["umbral"])))
-            print("4 Conceptos para explicar")
-            print("5 Ver o editar formulas")
+            print("1 Resolver examen paso a paso")
+            print("2 Solo estimar calificacion")
+            print("3 Conceptos para explicar")
+            print("4 Ver o cambiar formulas")
+            print("5 Instrucciones")
             print("0 Salir")
-            op = input("Escribe el numero de opcion: ").strip()
+            op = input("Escribe el numero y enter: ").strip()
             if op == "0":
                 break
             try:
-                _corre(op)
+                if op == "1":
+                    _examen()
+                elif op == "2":
+                    _transferencia(_D.get("f0"), _D.get("f1"),
+                                   "== ESTIMAR CALIFICACION ==", True)
+                elif op == "3":
+                    _conceptos()
+                elif op == "4":
+                    _formulas()
+                elif op == "5":
+                    _instrucciones()
+                else:
+                    print("Escribe un numero del 0 al 5.")
             except Exception as err:
                 print("Algo fallo: " + str(err))
     except KeyboardInterrupt:
         pass
     print("Para abrir otra vez: ia()")
-
-
-def _corre(op):
-    if op == "1":
-        _formulas()
-        print("-- RESOLVER: datos --")
-        xs, ys = _datos()
-        t0 = _pide("theta0 inicial", "t0")
-        t1 = _pide("theta1 inicial", "t1")
-        alfa = _pide("Tasa de aprendizaje alfa", "alfa")
-        n = _pide_entero("Cuantas iteraciones", "n", (2, 1))
-        _nueva()
-        _D["f0"], _D["f1"] = _gd(xs, ys, t0, t1, alfa, n)
-    elif op == "2":
-        print("-- PREDICCION Y COSTO: datos --")
-        xs, ys = _datos()
-        t0 = _pide("theta0 a evaluar", "f0", _D.get("t0"))
-        t1 = _pide("theta1 a evaluar", "f1", _D.get("t1"))
-        _nueva()
-        _tabla_costo(xs, ys, t0, t1)
-    elif op == "3":
-        print("-- PREDECIR: datos --")
-        t0 = _pide("theta0 a usar", "f0", _D.get("t0"))
-        t1 = _pide("theta1 a usar", "f1", _D.get("t1"))
-        while True:
-            s = input("x a predecir (enter = menu): ").strip()
-            if s == "":
-                return
-            try:
-                x = _lee(s)
-            except Exception:
-                print("No entendi. Ej: 5")
-                continue
-            _nueva()
-            _predice(t0, t1, x)
-    elif op == "4":
-        _conceptos()
-    elif op == "5":
-        _formulas()
-    else:
-        print("Esa opcion no existe (0 a 5).")
 
 
 _curso()

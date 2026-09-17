@@ -25,79 +25,48 @@ corriendo `formulas` directo; navegas por tema y avanza por pantallas.
 
 ## IA PrepaTEC: gradiente descendente (`ia.py`)
 
-Regresión lineal de una variable con gradiente descendente batch. Es un
-programa aparte (no importa nada): corre `ia` y sale el menú. Te pregunta lo
-que cambia de examen a examen (datos, cuántos alumnos, θ iniciales, α,
-iteraciones) y escribe **el procedimiento como va en el examen**: fórmula,
-sustitución, operaciones y resultado.
-
-**Fórmulas (todas editables).** Al elegir *Resolver* enseña juntas las
-fórmulas que va a usar y pregunta `Iguales? enter = si / # = editar`. Si tu
-examen trae otra, tecleas su número y la escribes tal cual (se aceptan
-`+ - * / ^`, paréntesis, `8x`, `2m`; `t0`/`t1` = `theta0`/`theta1`). `0` vuelve
-a las del curso; la opción 5 las muestra/edita en cualquier momento.
-
-| # | Del curso | Variables que puede usar |
-|---|---|---|
-| 1 | `h(x) = theta0 + theta1*x` | theta0, theta1, x |
-| 2 | `e = yh - y` | yh, y, x |
-| 3 | `J = 1/(2m) sum(e^2)` (coef y algo) | coef: m · algo: e, yh, y, x |
-| 4 | `dJ/dtheta0 = 1/m sum(e)` | igual que J |
-| 5 | `dJ/dtheta1 = 1/m sum(e*x)` | igual que J |
-| 6 | `theta := theta - alfa*dJ/dtheta` | theta, alfa, dJ/dtheta |
-| 7 | `Aprobado si yh >= 70` | número |
-
-**Así sale** (examen: x = 1,2,3,4; y = 35,50,68,87; θ0 = 5, θ1 = 8, α = 0.02):
+Para el curso de IA: regresión lineal de una variable con gradiente
+descendente, hecho para que **alguien sin experiencia** lo use. Es un programa
+aparte (no importa nada): córrelo y sigue las preguntas.
 
 ```
-== ITERACION 1: PREDICCION ==
-h(x) = theta0 + theta1*x
-h(x) = 5 + 8x
-yh1 = 5 + 8(1) = 13
-...
-e1 = 13 - 35 = -22
-...
--- FUNCION DE COSTO J1 --
-J1 = 1/(2m) sum(e^2)
-   = 1/(2(4))[(-22)^2 + (-29)^2 +
-     (-39)^2 + (-50)^2]
-   = 1/8(484 + 841 + 1521 + 2500)
-   = 1/8(5346)
-   = 668.25
-(J resume el error de la hipotesis
- actual sobre los datos reales)
--- DERIVADAS (ITERACION 1) --
-dJ/dtheta0 = 1/m sum(e)
-    = 1/4(-22 - 29 - 39 - 50)
-    = 1/4(-140)
-    = -35
-dJ/dtheta1 = 1/m sum(e*x)
-    = 1/4[(-22)(1) + (-29)(2) +
-     (-39)(3) + (-50)(4)]
-    = 1/4(-22 - 58 - 117 - 200)
-    = 1/4(-397)
-    = -99.25
--- NUEVOS THETA (ITERACION 1) --
-theta := theta - alfa*dJ/dtheta
-theta0 = 5 - 0.02(-35) = 5.7
-theta1 = 8 - 0.02(-99.25) = 9.985
+== IA: REGRESION LINEAL ==
+1 Resolver examen paso a paso
+2 Solo estimar calificacion
+3 Conceptos para explicar
+4 Ver o cambiar formulas
+5 Instrucciones
+0 Salir
 ```
 
-En la iteración 2, después de J2 sale la decisión
-(`J2 = 465.23334375 < J1 = 668.25` → `Decision: la actualizacion mejoro`), y al
-final el resumen con J1, J2, J3 y los θ finales. Opciones del menú:
-1 Resolver · 2 Solo predicción y costo J · 3 Predecir
-(`yh = 6.287 + 11.637(5) = 6.287 + 58.185 = 64.472`, `NO APROBADO`) ·
-4 Conceptos (opción múltiple e interpretación, incluido "cómo escribirlo en
-papel") · 5 Ver o editar fórmulas.
+**1 Resolver examen paso a paso** pregunta en el orden del examen y da cada
+respuesta con el procedimiento para copiar:
+
+| Pregunta | Qué da |
+|---|---|
+| Datos | x y y de la tabla, modelo, theta0 y theta1 iniciales, alfa |
+| Paso 1 (predicción y errores) | a) `h(x) = 5 + 8x` · b) `yh1 = 5 + 8(1) = 13`… · c) `e1 = 13 - 35 = -22`… y la tabla |
+| Paso 2 (función de costo) | `J1 = 1/(2m) sum(e^2) = 1/(2(4))[(-22)^2 + …] = 1/8(484 + …) = 1/8(5346) = 668.25` y qué resume |
+| Paso 3 (primera actualización) | `dJ/dtheta0 = 1/4(-22 - 29 - 39 - 50) = 1/4(-140) = -35`, `dJ/dtheta1 = … = -99.25`, `theta0 = 5 - 0.02(-35) = 5.7`, `theta1 = 8 - 0.02(-99.25) = 9.985` |
+| Paso 4 (segunda iteración) | a) nuevas predicciones y J2 · b) `J2 = 465.23334375 < J1 = 668.25`: sí mejoró · c) segunda actualización (6.28675, 11.63725) · opción de otra iteración |
+| Paso 5 (transferencia) | a) `yh = 6.287 + 11.637(5) = 6.287 + 58.185 = 64.472`: NO APROBADO · b) tipo de problema con justificación |
+| Revisión final | J1, J2, cuánto bajó, conclusión y theta finales |
+
+**Fórmulas.** Cada fórmula aparece justo donde la usa el examen (el modelo en
+los datos, `e` antes del paso 1, J antes del paso 2, las derivadas y la
+actualización antes del paso 3, la regla de aprobado en el paso 5) con
+`Igual a tu examen? enter=si, n=no`. Con `n` se escribe completa como viene en
+la hoja: `y - yh`, `sum(e^2)/(2m)`, `1/2m sum((yh - y)^2)`,
+`theta + alfa*dJ/dtheta`… (`1/2m` se lee `1/(2m)` como en papel; `t0`/`t1` =
+`theta0`/`theta1`). La opción 4 las muestra todas y `0` regresa a las del curso.
 
 Las cuentas son **exactas** (fracciones con enteros largos, sin `eval`): no se
 redondea nada. En pantalla salen hasta 12 cifras; si hay más, se cortan con
-`...`. Con más de 5 iteraciones usa decimales normales y solo muestra J.
-Enter reusa lo que sale entre `[ ]`; si algo no se entiende, vuelve a
-preguntar. Cada pantalla trae máximo 9 renglones y `-- enter para seguir --`.
+`...`. Lo de `[ ]` se usa con solo enter; si algo no se entiende, vuelve a
+preguntar ese dato. Cada pantalla trae máximo 9 renglones y
+`-- enter para seguir --`. En papel: `theta` = θ, `yh` = ŷ, `sum` = Σ.
 Probado con MicroPython 1.11 (la versión de la Nspire) compilado en la Mac:
-misma salida que Python de escritorio, y corre con solo 350 KB de memoria.
+misma salida que Python de escritorio.
 
 **Pasarlo a la calculadora:** el Student Software no manda `.py`, solo `.tns`.
 Crea un documento, Insertar → Python → Nuevo (cualquier nombre), pega todo
