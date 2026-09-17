@@ -614,7 +614,7 @@ def _parte(pre, txt):
     i = 0
     while i < len(palabras):
         w = palabras[i]
-        if w in ("+", "-", "<", ">", "|") and i + 1 < len(palabras):
+        if w in ("+", "-", "<", ">", "|", "=") and i + 1 < len(palabras):
             w = w + " " + palabras[i + 1]
             i += 1
         unidades.append(w)
@@ -770,7 +770,8 @@ def _bloque_pred(t0, t1, filas, num, tabla_va, j_en, dj_en):
     _out(*(["h(x) = " + _tx(hip, {})] + _parte("", thetas) +
            _parte("h(x) = ", hx)))
     if marcar:
-        _remarca(num + "a", ["h(x) = " + hx, "(" + thetas + ")"])
+        _remarca(num + "a", _igualdad("h(x)", _tx(hip, {}), hx) +
+                 ["(" + thetas + ")"])
     _pausa()
     if marcar:
         _proc(num + "b", "predicciones")
@@ -849,8 +850,14 @@ def _bloque_act(filas, t0, t1, alfa, num, fuente):
     _out("theta1 := " + _tx(act, {}, {"theta": "theta1",
                                       "dj": "dJ/dtheta1"}))
     _pasos("theta1", [_tx(act, e1), _terminos(act, e1), _n(n1)])
-    _remarca(num, ["dJ/dtheta0 = " + _n(g0), "dJ/dtheta1 = " + _n(g1),
-                   "theta0 = " + _n(n0), "theta1 = " + _n(n1)])
+    _remarca(num, _igualdad("dJ/dtheta0", _der_txt("g0"), _n(g0)) +
+             _igualdad("dJ/dtheta1", _der_txt("g1"), _n(g1)) +
+             ["theta0 := " + _tx(act, {}, {"theta": "theta0",
+                                           "dj": "dJ/dtheta0"}),
+              "theta0 = " + _n(n0),
+              "theta1 := " + _tx(act, {}, {"theta": "theta1",
+                                           "dj": "dJ/dtheta1"}),
+              "theta1 = " + _n(n1)])
     _pausa()
     return n0, n1
 
@@ -889,9 +896,9 @@ def _estimar(t0, t1, x, num):
         veredicto = _n(yh) + " >= " + _n(u) + ": APROBADO"
     else:
         veredicto = _n(yh) + " < " + _n(u) + ": NO APROBADO"
-    _remarca(num, ["h(x) = " + _tx(hip, {"theta0": t0, "theta1": t1}),
-                    "Con x = {} se estima yh = {}".format(_n(x), _n(yh)),
-                    veredicto])
+    _remarca(num, _igualdad("yh", _tx(hip, {}), _n(yh)) +
+             ["h(x) = " + _tx(hip, {"theta0": t0, "theta1": t1}),
+              "Con x = " + _n(x) + ": yh = " + _n(yh), veredicto])
     xs = _D.get("xs")
     if xs:
         bajo = alto = xs[0]
@@ -1000,6 +1007,21 @@ _AYUDA = {"hip": ("theta0, theta1, x", "theta0 + theta1*x"),
           "g0": ("m, sum( ), yh, y, x, e", "1/m sum(yh - y)"),
           "g1": ("m, sum( ), yh, y, x, e", "1/m sum[(yh - y)x]"),
           "act": ("theta, alfa, dJ/dtheta", "theta - alfa*dJ/dtheta")}
+
+
+def _der_txt(k):
+    """Lo que va a la derecha del '=': 1/(2m) sum(yh - y)^2."""
+    v = _FN[k]
+    return _tx(v[0], {}, {"sum": _sum_txt(v[1])})
+
+
+def _igualdad(lado, formula, valor):
+    """Para la RF: en un renglon si cabe, si no formula y resultado
+    en dos renglones, como se escribe en la hoja."""
+    uno = lado + " = " + formula + " = " + valor
+    if len(uno) <= _ANCHO - 8:
+        return [uno]
+    return [lado + " = " + formula, lado + " = " + valor]
 
 
 def _ftxt(k):
@@ -1223,9 +1245,9 @@ def _examen():
     _out("== PASO 2: FUNCION DE COSTO ==")
     _proc("2", "costo J")
     Js = [_cadena("J1", "J", filas)]
-    _remarca("2", ["J1 = " + _n(Js[0]),
-                   "Resume el error de la",
-                   "hipotesis vs los datos reales."])
+    _remarca("2", _igualdad("J1", _der_txt("J"), _n(Js[0])) +
+             ["Resume el error de la",
+              "hipotesis vs los datos reales."])
     _pausa()
 
     print("")
@@ -1251,9 +1273,10 @@ def _examen():
         _bloque_pred(t0, t1, filas, None, p + "a", p + "a", p + "c")
         Js.append(_cadena("J" + str(k), "J", filas))
         _remarca(p + "a", ["h(x) = " + _tx(_FN["hip"], {"theta0": t0,
-                                                     "theta1": t1}),
-                        "yh = " + _lista([f[2] for f in filas]),
-                        "J{} = {}".format(k, _n(Js[-1]))])
+                                                        "theta1": t1}),
+                           "yh = " + _lista([f[2] for f in filas]),
+                        ] + _igualdad("J" + str(k), _der_txt("J"),
+                                      _n(Js[-1])))
         _pausa()
         _decision(k, Js[-1], Js[-2], p + "b")
         _pausa()

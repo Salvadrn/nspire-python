@@ -67,9 +67,17 @@ yh1 = 5 + 8(1) = 13
 RF(1b)= yh = 13, 21, 29, 37
 ```
 
-La respuesta final de cada pregunta o inciso sale marcada con `RF(inciso)=`
-(`RF(2)= J1 = 668.25`, `RF(3)= theta0 = 5.7`…), con el mismo número que su
-procedimiento.
+La respuesta final de cada pregunta o inciso sale marcada con `RF(inciso)=`,
+con el mismo número que su procedimiento y con la fórmula y a lo que es igual,
+como se escribe en la hoja:
+
+```
+RF(3)= dJ/dtheta0 = 1/m sum(yh - y)
+RF(3)= dJ/dtheta0 = -35
+RF(3)= theta0 := theta0
+     - alfa*dJ/dtheta0
+RF(3)= theta0 = 5.7
+```
 
 **Fórmulas.** Cada fórmula aparece justo donde la usa el examen (el modelo en
 los datos, `e` antes del paso 1, J antes del paso 2, las derivadas y la
