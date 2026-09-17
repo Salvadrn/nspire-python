@@ -2,7 +2,8 @@
 # Adrian. Corre el programa `ia` y sale el menu: te pregunta los datos
 # y saca el procedimiento como se escribe en el examen.
 #
-# Convenciones del curso (no cambiarlas o no cuadra el solucionario):
+# Formulas del curso (arranca con estas; antes de cada opcion las muestra
+# y, si el examen trae otras, se editan ahi mismo):
 #   yh = theta0 + theta1*x          e = yh - y
 #   J = sum(e^2) / (2m)
 #   dJ/dtheta0 = sum(e)/m           dJ/dtheta1 = sum(e*x)/m
@@ -23,6 +24,21 @@ _SIGUE = "-- enter para seguir --"
 
 _D = {}        # ultimos datos tecleados: enter = reusarlos
 _lin = 0       # renglones impresos desde la ultima pausa
+
+# Formulas editables (por si el examen las cambia). Arrancan como las
+# del curso. Coeficientes (a, b) = a/(b*m); e: 1 = yh - y, -1 = y - yh;
+# act: -1 = theta - alfa*dJ, 1 = theta + alfa*dJ.
+_CURSO = {"e": 1, "J": ((1, 1), (2, 1)), "g0": ((1, 1), (1, 1)),
+          "g1": ((1, 1), (1, 1)), "act": -1, "umbral": (70, 1)}
+_F = {}
+
+
+def _curso():
+    for k in _CURSO:
+        _F[k] = _CURSO[k]
+
+
+_curso()
 
 
 # ---------- fracciones exactas: (p, q) = p/q, q > 0 ----------
@@ -271,7 +287,7 @@ def _sumas(xs, ys, t0, t1):
     se = sex = se2 = (0, 1)
     for x, y in zip(xs, ys):
         yh = _mas(t0, _por(t1, x))
-        e = _menos(yh, y)
+        e = _menos(yh, y) if _F["e"] > 0 else _menos(y, yh)
         filas.append((x, y, yh, e))
         se = _mas(se, e)
         sex = _mas(sex, _por(e, x))
@@ -279,8 +295,20 @@ def _sumas(xs, ys, t0, t1):
     return filas, se, sex, se2
 
 
+def _por_coef(k, m, S):
+    """(a/(b*m)) * S con el coeficiente de la formula k."""
+    a, b = _F[k]
+    return _entre(_por(a, S), _por(b, (m, 1)))
+
+
+def _coef_num(k, m):
+    """'1/4' para (1/m) con m = 4; '1/8' para 1/(2m)."""
+    a, b = _F[k]
+    return _n(a) + "/" + _n(_por(b, (m, 1)))
+
+
 def _costo(xs, ys, t0, t1):
-    return _entre(_sumas(xs, ys, t0, t1)[3], (2 * len(xs), 1))
+    return _por_coef("J", len(xs), _sumas(xs, ys, t0, t1)[3])
 
 
 def _hip(t0, t1):
@@ -292,11 +320,15 @@ def _predicciones(titulo, t0, t1, filas, se):
     """Pantallas de yh y e: procedimiento, tabla y sum e."""
     _out(titulo + _hip(t0, t1))
     for x, y, yh, e in filas:
+        if _F["e"] > 0:
+            resta = _junta(_n(yh), y, "-")
+        else:
+            resta = _junta(_n(y), yh, "-")
         _out("x=" + _n(x) + ": yh = " + _junta(_n(t0), t1) + _p(x)
              + " = " + _n(yh),
-             "     e = " + _junta(_n(yh), y, "-") + " = " + _n(e))
+             "     e = " + resta + " = " + _n(e))
     _pausa()
-    t = ["x | y | yh | e=yh-y"]
+    t = ["x | y | yh | " + ("e=yh-y" if _F["e"] > 0 else "e=y-yh")]
     for x, y, yh, e in filas:
         t.append("{} | {} | {} | {}".format(_n(x), _n(y), _n(yh), _n(e)))
     _out(*t)
@@ -312,9 +344,18 @@ def _costo_txt(m, filas, se2):
              + _n(_por(e, e)))
     _pasos("sum e^2", [_suma_txt([_por(f[3], f[3]) for f in filas]),
                        _n(se2)])
-    J = _entre(se2, (2 * m, 1))
-    _pasos("J", ["{}/(2*{})".format(_n(se2), m),
-                 "{}/{}".format(_n(se2), 2 * m), _n(J)])
+    a, b = _F["J"]
+    J = _por_coef("J", m, se2)
+    num = _n(se2) if a == (1, 1) else _n(a) + _p(se2)
+    if b == (1, 1):
+        pasos = ["{}/{}".format(num, m)]
+    else:
+        pasos = ["{}/({}*{})".format(num, _n(b), m)]
+    paso = _n(_por(a, se2)) + "/" + _n(_por(b, (m, 1)))
+    if paso != pasos[0]:
+        pasos.append(paso)
+    pasos.append(_n(J))
+    _pasos("J", pasos)
     _pausa()
     return J
 
@@ -323,10 +364,12 @@ def _iteracion(k, xs, ys, t0, t1, alfa):
     """Una iteracion con todo. Regresa (theta0, theta1 nuevos, J)."""
     m = len(xs)
     filas, se, sex, se2 = _sumas(xs, ys, t0, t1)
-    g0 = _entre(se, (m, 1))
-    g1 = _entre(sex, (m, 1))
-    n0 = _menos(t0, _por(alfa, g0))   # simultanea: los dos con t0, t1 viejos
-    n1 = _menos(t1, _por(alfa, g1))
+    g0 = _por_coef("g0", m, se)
+    g1 = _por_coef("g1", m, sex)
+    act = (_F["act"], 1)
+    n0 = _mas(t0, _por(act, _por(alfa, g0)))   # simultanea: los dos
+    n1 = _mas(t1, _por(act, _por(alfa, g1)))   # con t0, t1 viejos
+    op = " - " if _F["act"] < 0 else " + "
     _predicciones("ITERACION {}: ".format(k), t0, t1, filas, se)
     J = _costo_txt(m, filas, se2)
     _out("-- e*x para dJ/dtheta1 --")
@@ -337,10 +380,11 @@ def _iteracion(k, xs, ys, t0, t1, alfa):
                        _n(sex)])
     _pausa()
     _out("-- actualizacion simultanea --")
-    _pasos("dJ/dtheta0", ["(1/{})({})".format(m, _n(se)), _n(g0)])
-    _pasos("dJ/dtheta1", ["(1/{})({})".format(m, _n(sex)), _n(g1)])
-    _pasos("theta0", [_n(t0) + " - " + _n(alfa) + _p(g0), _n(n0)])
-    _pasos("theta1", [_n(t1) + " - " + _n(alfa) + _p(g1), _n(n1)])
+    _pasos("dJ/dtheta0", ["(" + _coef_num("g0", m) + ")" + _p(se), _n(g0)])
+    _pasos("dJ/dtheta1", ["(" + _coef_num("g1", m) + ")" + _p(sex),
+                          _n(g1)])
+    _pasos("theta0", [_n(t0) + op + _n(alfa) + _p(g0), _n(n0)])
+    _pasos("theta1", [_n(t1) + op + _n(alfa) + _p(g1), _n(n1)])
     _pausa()
     return n0, n1, J
 
@@ -365,22 +409,24 @@ def _gd_rapido(xs, ys, t0, t1, alfa, n):
     Y = [_f(v) for v in ys]
     a0, a1, al = _f(t0), _f(t1), _f(alfa)
     m = len(X)
+    cJ, c0, c1 = [_f(_por_coef(k, m, (1, 1))) for k in ("J", "g0", "g1")]
+    signo_e, act = _F["e"], _F["act"]
     cada = max(1, n // 10)
     Js = []
     _out("== {} ITERACIONES ==".format(n))
     for k in range(1, n + 2):
         se = sex = se2 = 0.0
         for x, y in zip(X, Y):
-            e = a0 + a1 * x - y
+            e = signo_e * (a0 + a1 * x - y)
             se += e
             sex += e * x
             se2 += e * e
-        Js.append(se2 / (2 * m))
+        Js.append(cJ * se2)
         if k > n:
             break                     # esta ya es J con theta finales
         if k == 1 or k % cada == 0:
             _out("J{} = {}".format(k, _nf(Js[-1])))
-        a0, a1 = a0 - al * (se / m), a1 - al * (sex / m)
+        a0, a1 = a0 + act * al * (c0 * se), a1 + act * al * (c1 * sex)
     _pausa()
     _resumen(Js, a0, a1, False)
     return a0, a1
@@ -443,11 +489,128 @@ def _predice(t0, t1, x):
                   _junta(_n(t0), t1) + _p(x),
                   _junta(_n(t0), _por(t1, x)),
                   _n(yh)])
-    if _cmp(yh, (70, 1)) >= 0:
-        _out(_n(yh) + " >= 70: APRUEBA")
+    u = _F["umbral"]
+    if _cmp(yh, u) >= 0:
+        _out(_n(yh) + " >= " + _n(u) + ": APRUEBA")
     else:
-        _out(_n(yh) + " < 70: NO APRUEBA")
+        _out(_n(yh) + " < " + _n(u) + ": NO APRUEBA")
     return yh
+
+
+# ---------- formulas: se muestran antes de usarlas y se pueden editar ----------
+
+_LADO = {"J": ("J", "sum(e^2)"), "g0": ("dJ/dtheta0", "sum(e)"),
+         "g1": ("dJ/dtheta1", "sum(e*x)")}
+
+
+def _coef_txt(k):
+    a, b = _F[k]
+    if b == (1, 1):
+        return _n(a) + "/m"
+    return _n(a) + "/(" + _n(b) + "m)"
+
+
+def _ftxt(k):
+    if k == "e":
+        return "e = yh - y" if _F["e"] > 0 else "e = y - yh"
+    if k == "act":
+        return "theta := theta " + ("-" if _F["act"] < 0 else "+") \
+            + " alfa*dJ/dtheta"
+    if k == "umbral":
+        return "Aprueba si yh >= " + _n(_F["umbral"])
+    lado, suma = _LADO[k]
+    return lado + " = " + _coef_txt(k) + " * " + suma
+
+
+def _signos_ok():
+    """Con estos signos, la actualizacion baja J?"""
+    for k in ("g0", "g1"):
+        a, b = _F[k]
+        if _F["e"] * _F["act"] * _cmp(_entre(a, b), (0, 1)) >= 0:
+            return False
+    return True
+
+
+def _formulas(cuales):
+    """Muestra las formulas que se van a usar. Enter = iguales al
+    examen; su numero = editarla; 0 = volver a las del curso."""
+    while True:
+        print("")
+        print("== FORMULAS (checa tu examen) ==")
+        print("yh = theta0 + theta1*x (fija)")
+        for i in range(len(cuales)):
+            print("{} {}".format(i + 1, _ftxt(cuales[i])))
+        print("0 volver a las del curso")
+        if "act" in cuales and not _signos_ok():
+            print("Ojo: con esos signos J va a subir")
+        s = input("Enter = iguales / # = editar: ").strip()
+        if s == "":
+            return
+        if s == "0":
+            _curso()
+            continue
+        try:
+            i = int(s)
+        except ValueError:
+            i = 0
+        if 1 <= i <= len(cuales):
+            _edita(cuales[i - 1])
+        else:
+            print("Ese numero no esta en la lista.")
+
+
+def _elige(titulo, opciones, actual):
+    """Menu chico; regresa la opcion elegida (enter = la actual)."""
+    print("-- " + titulo + " --")
+    for i in range(len(opciones)):
+        print("{} {}".format(i + 1, opciones[i]))
+    while True:
+        s = input("Elige [{}]: ".format(actual)).strip()
+        if s == "":
+            return actual
+        try:
+            k = int(s)
+        except ValueError:
+            k = 0
+        if 1 <= k <= len(opciones):
+            return k
+        print("Elige del 1 al {}.".format(len(opciones)))
+
+
+_COEFS = [((1, 1), (2, 1)), ((1, 1), (1, 1)), ((2, 1), (1, 1))]
+
+
+def _edita(k):
+    if k == "e":
+        r = _elige("residuo", ["e = yh - y", "e = y - yh"],
+                   1 if _F["e"] > 0 else 2)
+        _F["e"] = 1 if r == 1 else -1
+    elif k == "act":
+        r = _elige("actualizacion", ["theta := theta - alfa*dJ/dtheta",
+                                     "theta := theta + alfa*dJ/dtheta"],
+                   1 if _F["act"] < 0 else 2)
+        _F["act"] = -1 if r == 1 else 1
+    elif k == "umbral":
+        _F["umbral"] = _lee_numero("Calificacion minima para aprobar",
+                                   _F["umbral"])
+    else:
+        lado, suma = _LADO[k]
+        actual = 4
+        for i in range(len(_COEFS)):
+            if _COEFS[i] == _F[k]:
+                actual = i + 1
+        r = _elige(lado + " = ? * " + suma,
+                   ["1/(2m)", "1/m", "2/m", "otro: a/(b m)"], actual)
+        if r <= len(_COEFS):
+            _F[k] = _COEFS[r - 1]
+            return
+        print("Queda a/(b m). Ej: 1/(2m) es a=1, b=2")
+        a = _lee_numero("a (arriba)", _F[k][0])
+        b = _lee_numero("b (junto a la m)", _F[k][1])
+        if b[0] == 0:
+            print("b no puede ser 0; no se cambio.")
+        else:
+            _F[k] = (a, b)
 
 
 # ---------- para usar directo en el shell ----------
@@ -621,8 +784,14 @@ def _pregunta(texto, previo):
 
 
 def _pide(texto, clave, default=None):
+    """Lee un numero y lo recuerda en _D[clave] para el siguiente enter."""
+    v = _lee_numero(texto, _D.get(clave, default))
+    _D[clave] = v
+    return v
+
+
+def _lee_numero(texto, previo):
     """Lee un numero. Enter = lo de [ ]. Si no se entiende, repite."""
-    previo = _D.get(clave, default)
     while True:
         s = _pregunta(texto, None if previo is None else _n(previo))
         if s == "":
@@ -640,7 +809,6 @@ def _pide(texto, clave, default=None):
         except Exception:
             print("No entendi. Ej: 5, 0.02, -3, 1/50")
             continue
-        _D[clave] = v
         return v
 
 
@@ -697,7 +865,8 @@ def ia():
             print("== IA: REGRESION LINEAL ==")
             print("1 Resolver (gradiente descendente)")
             print("2 Solo tabla y costo J")
-            print("3 Predecir y (aprueba si >= 70)")
+            print("3 Predecir y (aprueba si >= {})".format(
+                _n(_F["umbral"])))
             print("4 Conceptos para explicar")
             print("0 Salir")
             op = input("Escribe el numero de opcion: ").strip()
@@ -714,7 +883,8 @@ def ia():
 
 def _corre(op):
     if op == "1":
-        print("-- RESOLVER --")
+        _formulas(["e", "J", "g0", "g1", "act"])
+        print("-- RESOLVER: datos --")
         xs, ys = _datos()
         t0 = _pide("theta0 inicial", "t0")
         t1 = _pide("theta1 inicial", "t1")
@@ -723,14 +893,16 @@ def _corre(op):
         _nueva()
         _D["f0"], _D["f1"] = _gd(xs, ys, t0, t1, alfa, n)
     elif op == "2":
-        print("-- TABLA Y COSTO J --")
+        _formulas(["e", "J"])
+        print("-- TABLA Y COSTO J: datos --")
         xs, ys = _datos()
         t0 = _pide("theta0 a evaluar", "f0", _D.get("t0"))
         t1 = _pide("theta1 a evaluar", "f1", _D.get("t1"))
         _nueva()
         _tabla_costo(xs, ys, t0, t1)
     elif op == "3":
-        print("-- PREDECIR --")
+        _formulas(["umbral"])
+        print("-- PREDECIR: datos --")
         t0 = _pide("theta0 a usar", "f0", _D.get("t0"))
         t1 = _pide("theta1 a usar", "f1", _D.get("t1"))
         while True:

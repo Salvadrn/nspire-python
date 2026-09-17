@@ -32,6 +32,16 @@ simultánea y aprobado si `ŷ ≥ 70`. Es un programa aparte (no importa nada):
 corre `ia` y sale el menú. Lo que cambia de examen a examen (datos, cuántos
 alumnos, θ iniciales, α, iteraciones) te lo pregunta.
 
+**Fórmulas editables.** Antes de las opciones 1, 2 y 3 enseña las fórmulas
+que va a usar (`== FORMULAS (checa tu examen) ==`). Enter = son iguales a
+las del examen; su número = editarla; `0` = volver a las del curso. Se puede
+cambiar el residuo (`e = yh - y` o `e = y - yh`), el coeficiente de J y de
+cada derivada (`1/(2m)`, `1/m`, `2/m` u otro `a/(b m)`), el signo de la
+actualización (`theta := theta - alfa*dJ/dtheta` o `+`) y la calificación
+mínima para aprobar. La hipótesis `yh = theta0 + theta1*x` es fija (es la de
+regresión lineal simple). Si los signos elegidos harían que J suba, avisa
+`Ojo: con esos signos J va a subir`. Los cambios duran hasta salir.
+
 1. **Resolver**: pregunta `Valores de x`, `Valores de y` (con comas),
    `theta0 inicial`, `theta1 inicial`, `Tasa de aprendizaje alfa` y
    `Cuantas iteraciones`. Cada iteración sale en el orden del examen, con
