@@ -54,7 +54,10 @@ respuesta con el procedimiento para copiar:
 
 **Procedimiento y respuesta numerados.** Cada pregunta e inciso sale como un
 par con el mismo número (1a, 1b, 1c, 2, 3, 4a, 4b, 4c, 5a, 5b; si pides más
-iteraciones se recorren solos):
+iteraciones se recorren solos). Cada pantalla que continúa un procedimiento
+empieza con `-- sigue PROCEDIMIENTO 4a --`, y las tablas dicen para qué
+número son (`Tabla (va con 1b y 1c)`, `Tabla auxiliar (para 2 y 3)`: e, e²
+y e·x con sus sumas, las que se usan en J y en las derivadas):
 
 ```
 -- PROCEDIMIENTO 1b: predicciones --

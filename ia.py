@@ -23,8 +23,14 @@ _CIFRAS = 12   # cifras significativas en pantalla
 _SIGUE = "-- enter para seguir --"
 _GRANDE = 10 ** 3000   # mas grande que esto ya no es de examen
 
+_MAXIMO = 18   # un decimal que termina en hasta 18 cifras sale completo
+_NB = "\x01"   # espacio que no se corta (dentro de un termino)
+
 _D = {}        # ultimos datos tecleados: enter = reusarlos
 _lin = 0       # renglones impresos desde la ultima pausa
+_abierto = None  # PROCEDIMIENTO en curso (para '-- sigue ... --')
+_cab = None      # encabezado que espera a su primer renglon
+_sigue = False   # hubo pausa con un procedimiento abierto
 
 
 # ---------- fracciones exactas: (p, q) = p/q, q > 0 ----------
@@ -355,6 +361,8 @@ def _tx(nodo, env, textos=None):
     op, a, b = nodo[1], nodo[2], nodo[3]
     izq, der = _tx(a, env, textos), _tx(b, env, textos)
     if op in ("+", "-"):
+        if a[0] == "v" and a[1] in env and izq.startswith("(-"):
+            izq = izq[1:-1]                           # -2.5 + 8x
         return izq + " " + op + " " + der
     if op in ("*", ""):
         if textos and b[0] == "v" and b[1] == "sum":
@@ -493,7 +501,9 @@ def _sum_txt(algo):
 # ---------- pantalla ----------
 
 def _n(a):
-    """Como en papel y exacto: 9.985, -99.25, 13. Mas de 12 cifras: '...'."""
+    """Como en papel y exacto: 9.985, -99.25, 13. Si el decimal termina
+    en pocas cifras sale completo (1702.352456125); si no, se corta a 12
+    cifras y termina en '...'."""
     p, q = a
     if p == 0:
         return "0"
@@ -509,19 +519,27 @@ def _n(a):
         return s + digs[0] + ("." + mant if mant else "") + mas + \
             "e+" + str(len(digs) - 1)
     s += digs
+    if not r:
+        return s
+    dec = ""
     cifras = len(digs) if ent else 0
-    if r and cifras < _CIFRAS:
-        s += "."
-        while r and cifras < _CIFRAS:
-            r *= 10
-            d = r // q
-            r = r % q
-            s += str(d)
-            if cifras or d:          # los ceros de 0.00x no cuentan
-                cifras += 1
-    if r:
-        s += "..."
-    return s
+    while r and cifras < _MAXIMO:
+        r *= 10
+        dec += str(r // q)
+        r = r % q
+        if cifras or dec[-1] != "0":   # los ceros de 0.00x no cuentan
+            cifras += 1
+    if not r:
+        return s + "." + dec             # termina: completo
+    corte = ""
+    cifras = len(digs) if ent else 0
+    for d in dec:
+        if cifras >= _CIFRAS:
+            break
+        corte += d
+        if cifras or d != "0":
+            cifras += 1
+    return s + "." + corte + "..."
 
 
 def _junta_txt(partes):
@@ -539,34 +557,51 @@ def _alto(s):
     return 1 + max(0, len(s) - 1) // _ANCHO
 
 
-def _out(*lineas):
+def _grupo(lineas, maximo):
     """Imprime renglones que van juntos; si no caben, pide enter antes.
-    Si el grupo no cabe ni en una pantalla, va renglon por renglon."""
-    global _lin
+    Un encabezado de PROCEDIMIENTO pendiente viaja con su primer grupo, y
+    cada pantalla que continua un procedimiento dice '-- sigue ... --'."""
+    global _lin, _cab, _sigue
+    if _cab:
+        lineas = [_cab] + lineas
+        _cab = None
     alto = 0
     for s in lineas:
         alto += _alto(s)
-    if alto > _ALTO and len(lineas) > 1:
+    if alto > maximo and len(lineas) > 1:
+        if _lin + 3 > _ALTO:
+            _pausa()
         for s in lineas:
-            _out(s)
+            _grupo([s], maximo)
         return
     if _lin + alto > _ALTO:
         _pausa()
+    if _sigue:
+        _sigue = False
+        if _abierto and not lineas[0].startswith("-- PROCEDIMIENTO"):
+            print("-- sigue PROCEDIMIENTO " + _abierto + " --")
+            _lin += 1
     for s in lineas:
-        print(s)
+        print(s.replace(_NB, " "))
     _lin += alto
 
 
+def _out(*lineas):
+    _grupo(list(lineas), _ALTO - 1)
+
+
 def _pausa():
-    global _lin
+    global _lin, _sigue
     if _lin > 0:
         input(_SIGUE)
+        _sigue = _abierto is not None
     _lin = 0
 
 
 def _nueva():
-    global _lin
+    global _lin, _sigue
     _lin = 0
+    _sigue = False
 
 
 def _parte(pre, txt):
@@ -616,10 +651,10 @@ def _pasos(lado, pasos):
     todas = []
     for g in grupos:
         todas.extend(g)
-    alto = 0
+    alto = 1 if _cab else 0
     for s in todas:
         alto += _alto(s)
-    if alto <= _ALTO:
+    if alto <= _ALTO - 1:
         _out(*todas)
     else:                       # no cabe: se corta entre un '=' y otro
         for g in grupos:
@@ -660,9 +695,9 @@ def _cadena(lado, k, filas):
         if solo_e:
             sust.append(_n(v))
         elif algo[0] == "b" and algo[1] in ("+", "-"):
-            sust.append("(" + _tx(algo, env) + ")")
+            sust.append(("(" + _tx(algo, env) + ")").replace(" ", _NB))
         else:
-            sust.append(_tx(algo, env))
+            sust.append(_tx(algo, env).replace(" ", _NB))
         S = _mas(S, v)
     total = _ev(fuera, {"m": m, "sum": S})
     try:
@@ -695,8 +730,14 @@ def _de_curso():
 
 
 def _proc(num, que):
-    """Encabezado del procedimiento: -- PROCEDIMIENTO 1b: predicciones --"""
-    _out("-- PROCEDIMIENTO " + num + ": " + que + " --")
+    """Encabezado del procedimiento; se imprime junto con su primer
+    renglon: -- PROCEDIMIENTO 1b: predicciones --"""
+    global _abierto, _cab
+    s = "-- PROCEDIMIENTO " + num + ": " + que + " --"
+    if len(s) > _ANCHO:
+        s = s[:-3]
+    _abierto = num
+    _cab = s
 
 
 def _remarca(num, textos):
@@ -705,18 +746,29 @@ def _remarca(num, textos):
     ** RESPUESTA 1b **
     yh = 13, 21, 29, 37
     ********************"""
-    lineas = ["** RESPUESTA " + num + " **"]
+    global _abierto, _sigue
+    _abierto = None
+    _sigue = False
+    cuerpo = []
     for t in textos:
-        lineas.extend(_parte("", t))
-    lineas.append("*" * 20)
-    _out(*lineas)
+        cuerpo.extend(_parte("", t))
+    tope = "** RESPUESTA " + num + " **"
+    cierre = "*" * 20
+    if len(cuerpo) + 2 <= _ALTO:
+        _grupo([tope] + cuerpo + [cierre], _ALTO)
+        return
+    while cuerpo:                # largo: en pedazos, cada uno con su numero
+        pedazo, cuerpo = cuerpo[:_ALTO - 2], cuerpo[_ALTO - 2:]
+        _pausa()
+        _grupo([tope] + pedazo + ([] if cuerpo else [cierre]), _ALTO)
+        tope = "** RESPUESTA " + num + " (sigue) **"
 
 
 def _lista(vals):
     return ", ".join([_n(v) for v in vals])
 
 
-def _bloque_pred(t0, t1, filas, num=None):
+def _bloque_pred(t0, t1, filas, num, tabla_va, j_en, dj_en):
     """h(x), cada yh, cada e y las tablas, como en el examen. Con num
     (paso 1) cada inciso lleva PROCEDIMIENTO 1a/1b/1c y su RESPUESTA."""
     hip = _FN["hip"]
@@ -733,7 +785,7 @@ def _bloque_pred(t0, t1, filas, num=None):
     _pausa()
     if marcar:
         _proc(num + "b", "predicciones")
-    _out("yh (yh1 = dato 1):")
+    _out("yh (yh1 va con el renglon 1):")
     for i in range(len(filas)):
         envt["x"] = filas[i][0]
         _pasos("yh" + str(i + 1), [_tx(hip, envt), _n(filas[i][2])])
@@ -742,7 +794,8 @@ def _bloque_pred(t0, t1, filas, num=None):
     _pausa()
     if marcar:
         _proc(num + "c", "errores")
-    _out("e = " + _tx(_FN["e"], {}) + "  (e1 = dato 1)")
+    _out(*_parte("", "e = " + _tx(_FN["e"], {}) +
+                 "  (e1 va con renglon 1)"))
     for i in range(len(filas)):
         x, y, yh, e = filas[i]
         _pasos("e" + str(i + 1),
@@ -750,31 +803,48 @@ def _bloque_pred(t0, t1, filas, num=None):
     if marcar:
         _remarca(num + "c", ["e = " + _lista([f[3] for f in filas])])
     _pausa()
-    t = ["Tabla:", "x | y | yh | e"]
+    t = ["Tabla (va con " + tabla_va + "):", "x | y | yh | e"]
     for x, y, yh, e in filas:
         t.extend(_parte("", "{} | {} | {} | {}".format(
             _n(x), _n(y), _n(yh), _n(e))))
     _out(*t)
     _pausa()
-    if _de_curso():
-        t = ["Tabla auxiliar:", "i | e | e^2 | e*x"]
-        s0 = s2 = s1 = (0, 1)
-        for i in range(len(filas)):
-            x, y, yh, e = filas[i]
-            e2, ex = _por(e, e), _por(e, x)
-            s0, s2, s1 = _mas(s0, e), _mas(s2, e2), _mas(s1, ex)
-            t.extend(_parte("", "{} | {} | {} | {}".format(
-                i + 1, _n(e), _n(e2), _n(ex))))
-        t.extend(_parte("", "sum | {} | {} | {}".format(
-            _n(s0), _n(s2), _n(s1))))
-        _out(*t)
+    if not _de_curso():
+        return
+    s0 = s2 = s1 = (0, 1)
+    renglones = []
+    for i in range(len(filas)):
+        x, y, yh, e = filas[i]
+        e2, ex = _por(e, e), _por(e, x)
+        s0, s2, s1 = _mas(s0, e), _mas(s2, e2), _mas(s1, ex)
+        renglones.append((str(i + 1), _n(e), _n(e2), _n(ex)))
+    renglones.append(("sum", _n(s0), _n(s2), _n(s1)))
+    junta = ["Tabla auxiliar (para " + j_en + " y " + dj_en + "):",
+             "i | e | e^2 | e*x"]
+    cabe = True
+    for r in renglones:
+        s = " | ".join(r)
+        cabe = cabe and len(s) <= _ANCHO
+        junta.append(s)
+    if cabe:
+        _out(*junta)
         _pausa()
+        return
+    a = ["Tabla aux. A (e^2, para " + j_en + "):", "i | e^2"]
+    b = ["Tabla aux. B (e*x, para " + dj_en + "):", "i | e | e*x"]
+    for r in renglones:
+        a.extend(_parte("", r[0] + " | " + r[2]))
+        b.extend(_parte("", r[0] + " | " + r[1] + " | " + r[3]))
+    _out(*a)
+    _pausa()
+    _out(*b)
+    _pausa()
 
 
-def _bloque_act(filas, t0, t1, alfa, num):
+def _bloque_act(filas, t0, t1, alfa, num, fuente):
     """Derivadas y nuevos theta (simultaneo). Regresa los theta nuevos."""
     _proc(num, "nuevos theta")
-    _out("Derivadas (con los theta viejos):")
+    _out("Derivadas (usa los e de " + fuente + "):")
     g0 = _cadena("dJ/dtheta0", "g0", filas)
     g1 = _cadena("dJ/dtheta1", "g1", filas)
     _pausa()
@@ -791,7 +861,7 @@ def _bloque_act(filas, t0, t1, alfa, num):
                                       "dj": "dJ/dtheta1"}))
     _pasos("theta1", [_tx(act, e1), _terminos(act, e1), _n(n1)])
     _remarca(num, ["dJ/dtheta0 = " + _n(g0), "dJ/dtheta1 = " + _n(g1),
-                      "theta0 = " + _n(n0), "theta1 = " + _n(n1)])
+                   "theta0 = " + _n(n0), "theta1 = " + _n(n1)])
     _pausa()
     return n0, n1
 
@@ -1063,9 +1133,9 @@ def _formulas():
 
 def _datos():
     print("Separa los valores con comas.")
-    xs = _pide_lista("x de la tabla (ej 1,2,3,4)", "xs")
+    xs = _pide_lista("x (ej 1,2,3,4)", "xs")
     while True:
-        ys = _pide_lista("y de la tabla (ej 35,50,68,87)", "ys")
+        ys = _pide_lista("y (ej 35,50,68,87)", "ys")
         if len(ys) == len(xs):
             break
         print("Pusiste {} valores de x y {} de y;".format(len(xs),
@@ -1075,39 +1145,55 @@ def _datos():
     return xs, ys
 
 
-def _transferencia(t0, t1, titulo, confirmar_modelo, num=""):
+def _transferencia(t0, t1, titulo, confirmar_modelo, num):
     _nueva()
     _out(titulo, "Usa los theta que da el examen",
          "(pueden venir redondeados).")
     _pausa()
-    t0 = _pide("theta0 para estimar", "f0", t0)
-    t1 = _pide("theta1 para estimar", "f1", t1)
+    t0 = _pide("theta0 a usar", "f0", t0)
+    t1 = _pide("theta1 a usar", "f1", t1)
     if confirmar_modelo:
         _confirma(["hip"], "Modelo que da tu examen:")
     _confirma(["umbral"], "Regla para aprobar:")
     print("")
     print(num + "a) Estimar la calificacion:")
     x = _pide("x a estimar (ej 5)", "xn")
+    veces = 1
     while True:
         _nueva()
-        _estimar(t0, t1, x, num + "a")
+        _estimar(t0, t1, x, num + "a" + ("-" + str(veces)
+                                         if veces > 1 else ""))
         _pausa()
-        s = input("Otra x? (escribela o enter=no): ").strip()
-        if s == "":
+        otra = None
+        while True:
+            s = input("Otra x? (escribela o enter=no): ").strip()
+            if s == "":
+                break
+            try:
+                otra = _lee(s)
+                break
+            except Exception:
+                print("No entendi. Ej: 6 o 6.5")
+        if otra is None:
             break
-        try:
-            x = _lee(s)
-        except Exception:
-            print("No entendi; sigo.")
-            break
+        x = otra
+        veces += 1
+    print("")
+    print(num + "b) Tu examen pregunta que tipo")
+    print("   de problema es?")
+    if not _si("enter=si, n=no: "):
+        return
     _nueva()
-    _proc(num + "b", "problema")
-    _remarca(num + "b", ["Es CLASIFICACION binaria: la",
-                    "salida es una clase (aprobado o",
-                    "no aprobado), no un numero.",
-                    "Es aprendizaje SUPERVISADO: los",
-                    "datos vienen etiquetados."])
-    _out("(Estimar calificacion = REGRESION)")
+    _proc(num + "b", "que tipo es")
+    _out("Salida: aprobado o no aprobado",
+         "= 2 clases, no un numero",
+         "-> CLASIFICACION binaria.",
+         "Los datos traen la y real",
+         "(etiquetas) -> SUPERVISADO.",
+         "Ojo: predecir la calificacion",
+         "(el numero) seria REGRESION.")
+    _remarca(num + "b", ["Es CLASIFICACION binaria y",
+                         "aprendizaje SUPERVISADO."])
     _pausa()
 
 
@@ -1141,7 +1227,7 @@ def _examen():
     _nueva()
     _out("== PASO 1: PREDICCION Y ERRORES ==")
     filas = _filas(xs, ys, t0, t1)
-    _bloque_pred(t0, t1, filas, "1")
+    _bloque_pred(t0, t1, filas, "1", "1b y 1c", "2", "3")
 
     _confirma(["J"], "Formula de la funcion de costo:")
     _nueva()
@@ -1162,7 +1248,7 @@ def _examen():
     _confirma(["g0", "g1", "act"], "Formulas de la actualizacion:")
     _nueva()
     _out("== PASO 3: PRIMERA ACTUALIZACION ==")
-    t0, t1 = _bloque_act(filas, t0, t1, alfa, "3")
+    t0, t1 = _bloque_act(filas, t0, t1, alfa, "3", "1c")
 
     k = 2
     while True:
@@ -1173,7 +1259,7 @@ def _examen():
         else:
             _out("== PASO {}: ITERACION {} ==".format(p, k))
         _proc(p + "a", "yh y J" + str(k))
-        _bloque_pred(t0, t1, filas)
+        _bloque_pred(t0, t1, filas, None, p + "a", p + "a", p + "c")
         Js.append(_cadena("J" + str(k), "J", filas))
         _remarca(p + "a", ["h(x) = " + _tx(_FN["hip"], {"theta0": t0,
                                                      "theta1": t1}),
@@ -1188,18 +1274,20 @@ def _examen():
         if not _si("enter=si, n=no: "):
             break
         _nueva()
-        t0, t1 = _bloque_act(filas, t0, t1, alfa, p + "c")
-        otra = input("Otra iteracion? s=si, enter=no: ").strip().lower()
-        if otra not in ("s", "si", "s\xed"):
+        t0, t1 = _bloque_act(filas, t0, t1, alfa, p + "c", p + "a")
+        print("")
+        print("Tu examen pide J{} (iteracion {})?".format(k + 1, k + 1))
+        if not _si("enter=si, n=no: "):
             break
         k += 1
 
     _D["f0"], _D["f1"] = t0, t1
+    p = str(int(p) + 1)
+    _D["paso"] = p
     print("")
-    print("Tu examen pide estimar una")
-    print("calificacion? (la guia no)")
+    print(p + ") Tu examen pide estimar una")
+    print("   calificacion? (la guia no)")
     if _si("enter=si, n=no: "):
-        p = str(int(p) + 1)
         _transferencia(t0, t1, "== PASO {}: TRANSFERENCIA ==".format(p),
                        False, p)
 
@@ -1410,7 +1498,8 @@ def ia():
                     _examen()
                 elif op == "2":
                     _transferencia(_D.get("f0"), _D.get("f1"),
-                                   "== ESTIMAR CALIFICACION ==", True)
+                                   "== ESTIMAR CALIFICACION ==", True,
+                                   _D.get("paso", "5"))
                 elif op == "3":
                     _conceptos()
                 elif op == "4":
