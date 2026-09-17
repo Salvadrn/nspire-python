@@ -213,15 +213,26 @@ def _costo(xs, ys, t0, t1):
     return _entre(_sumas(xs, ys, t0, t1)[3], (2 * len(xs), 1))
 
 
+def _hip(t0, t1):
+    """'h(x) = 5 + 8x' con el signo bien puesto."""
+    if t1[0] < 0:
+        return "h(x) = {} - {}x".format(_n(t0), _n((-t1[0], t1[1])))
+    return "h(x) = {} + {}x".format(_n(t0), _n(t1))
+
+
 def _tabla(t0, t1, filas):
-    _out("th0 = {}   th1 = {}".format(_n(t0), _n(t1)))
+    _out(_hip(t0, t1))
     _out("x | y | yh | e=yh-y")
     for x, y, yh, e in filas:
         _out("{} | {} | {} | {}".format(_n(x), _n(y), _n(yh), _n(e)))
     _pausa()
 
 
-def _sumas_txt(m, se, sex, se2):
+def _sumas_txt(m, filas, se, sex, se2):
+    """Tabla auxiliar e*x, e^2 (la de la hoja), sumas y J."""
+    _out("x | e*x | e^2")
+    for x, y, yh, e in filas:
+        _out("{} | {} | {}".format(_n(x), _n(_por(e, x)), _n(_por(e, e))))
     _out("sum e   = " + _n(se))
     _out("sum e*x = " + _n(sex))
     _out("sum e^2 = " + _n(se2))
@@ -240,7 +251,8 @@ def _iteracion(k, xs, ys, t0, t1, alfa):
     n1 = _menos(t1, _por(alfa, g1))
     _out("== ITERACION {} ==".format(k))
     _tabla(t0, t1, filas)
-    J = _sumas_txt(m, se, sex, se2)
+    J = _sumas_txt(m, filas, se, sex, se2)
+    _pausa()
     _sust("dJ/dth0", "{}/{}".format(_n(se), m), _n(g0))
     _sust("dJ/dth1", "{}/{}".format(_n(sex), m), _n(g1))
     _sust("th0", "{} - {}{}".format(_n(t0), _n(alfa), _p(g0)), _n(n0))
@@ -324,7 +336,7 @@ def _resumen(Js, t0, t1, todo):
 def _tabla_costo(xs, ys, t0, t1):
     filas, se, sex, se2 = _sumas(xs, ys, t0, t1)
     _tabla(t0, t1, filas)
-    J = _sumas_txt(len(xs), se, sex, se2)
+    J = _sumas_txt(len(xs), filas, se, sex, se2)
     _pausa()
     return J
 
@@ -342,7 +354,7 @@ def _predice(t0, t1, x):
 # ---------- para usar directo en el shell ----------
 
 def gradiente(xs, ys, th0, th1, alfa, n=2):
-    """gradiente([1,2,3,4], [20,30,40,50], 5, 8, 0.02, 2)"""
+    """gradiente([1,2,3,4], [35,50,68,87], 5, 8, 0.02, 2)"""
     _nueva()
     t0, t1 = _gd([_a(v) for v in xs], [_a(v) for v in ys],
                  _a(th0), _a(th1), _a(alfa), n)
@@ -366,6 +378,94 @@ def predice(th0, th1, x):
     """yh = th0 + th1*x y si aprueba (yh >= 70)."""
     _nueva()
     return _f(_predice(_a(th0), _a(th1), _a(x)))
+
+
+# ---------- conceptos: la idea clave para las interpretaciones ----------
+
+_CONCEPTOS = [
+    ("Que resume J (costo)", [
+        "J = sum(e^2)/(2m): un numero que",
+        "resume que tan lejos quedan las",
+        "predicciones de los datos reales.",
+        "J chica = el modelo le atina mas.",
+        "Es la mitad del error cuadratico",
+        "medio (el 2 simplifica la derivada)",
+        "Al cuadrado: los errores + y - no",
+        "se cancelan y los grandes pesan mas",
+    ]),
+    ("Residuo e = yh - y", [
+        "e < 0: la prediccion se quedo corta",
+        "e > 0: la prediccion se paso",
+        "e = 0: le atino exacto",
+    ]),
+    ("Hipotesis h(x) = th0 + th1*x", [
+        "Es una recta: regresion lineal",
+        "de una variable.",
+        "th0: lo que predice con x = 0",
+        "(ordenada al origen).",
+        "th1: cuanto cambia y por cada",
+        "unidad de x, ej. puntos por hora",
+        "de estudio (pendiente).",
+    ]),
+    ("Gradiente descendente", [
+        "Gradiente: pendiente de J con",
+        "respecto a cada th (derivadas).",
+        "th := th - alfa*gradiente: se mueve",
+        "contra la pendiente para bajar J.",
+        "Batch: cada iteracion usa los m.",
+        "Simultanea: los 2 gradientes con",
+        "los th viejos, luego se actualiza.",
+        "J nueva < J anterior: mejoro.",
+    ]),
+    ("Tasa de aprendizaje alfa", [
+        "alfa muy chica: J baja, pero muy",
+        "lento (muchas iteraciones).",
+        "alfa muy grande: se pasa del",
+        "minimo; J oscila o sube (diverge).",
+        "alfa adecuada: J baja rapido y",
+        "estable.",
+    ]),
+    ("Supervisado vs no supervisado", [
+        "Supervisado: datos etiquetados;",
+        "cada x trae su respuesta real y",
+        "(horas -> calificacion).",
+        "No supervisado: sin etiquetas;",
+        "busca grupos o patrones",
+        "(agrupamiento / clustering).",
+    ]),
+    ("Regresion vs clasificacion", [
+        "Regresion: predice un numero",
+        "continuo (calificacion 0-100).",
+        "Clasificacion: predice una clase",
+        "(aprobado / no aprobado).",
+        "Aprobado si y >= 70: clasificacion",
+        "binaria y supervisada, porque hay",
+        "ejemplos etiquetados con su clase.",
+    ]),
+]
+
+
+def _conceptos():
+    while True:
+        print("")
+        print("== CONCEPTOS ==")
+        for i in range(len(_CONCEPTOS)):
+            print("{} {}".format(i + 1, _CONCEPTOS[i][0]))
+        print("0 regresar")
+        s = input("? ").strip()
+        if s == "0" or s == "":
+            return
+        try:
+            k = int(s)
+        except ValueError:
+            continue
+        if 1 <= k <= len(_CONCEPTOS):
+            titulo, lineas = _CONCEPTOS[k - 1]
+            _nueva()
+            _out("-- " + titulo + " --")
+            for ln in lineas:
+                _out(ln)
+            _pausa()
 
 
 # ---------- menu ----------
@@ -419,6 +519,7 @@ def ia():
         print("1 gradiente descendente")
         print("2 tabla y costo J")
         print("3 predecir (aprueba si >=70)")
+        print("4 conceptos (interpretacion)")
         print("0 salir")
         try:
             op = input("? ").strip()
@@ -453,6 +554,8 @@ def _corre(op):
                 return
             _nueva()
             _predice(t0, t1, _lee(s))
+    elif op == "4":
+        _conceptos()
     else:
         print("no existe esa opcion")
 

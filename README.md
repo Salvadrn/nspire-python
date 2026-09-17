@@ -31,13 +31,21 @@ simultánea y aprobado si `y ≥ 70`. Es un programa aparte (no importa nada):
 corre `ia` y sale el menú.
 
 1. **gradiente descendente**: tecleas x y y con comas (`1,2,3,4`), θ0,
-   θ1, α e iteraciones. En cada iteración salen la tabla `x | y | yh | e`,
-   Σe, Σ(e·x), Σe², J, los gradientes y la sustitución como en papel
-   (`th1 = 8 - 0.02(-41.25) = 8.825`). Al final sale el resumen: J de cada
-   iteración, si bajó o subió, y θ finales.
-2. **tabla y costo J**: la tabla y J con los θ que quieras (Enter = los
-   finales de la opción 1).
+   θ1, α e iteraciones. En cada iteración salen la hipótesis
+   (`h(x) = 5 + 8x`), la tabla `x | y | yh | e`, la tabla auxiliar
+   `x | e*x | e^2`, Σe, Σ(e·x), Σe², J, los gradientes y la sustitución
+   como en papel (`th1 = 8 - 0.02(-99.25) = 9.985`). Al final sale el
+   resumen: J de cada iteración, si bajó o subió, y θ finales.
+2. **tabla y costo J**: las mismas tablas y J con los θ que quieras
+   (Enter = los finales de la opción 1).
 3. **predecir**: ŷ para una x nueva y si aprueba (ŷ ≥ 70).
+4. **conceptos**: la idea clave para las preguntas de interpretación
+   (qué resume J, residuo, hipótesis, gradiente descendente, efecto de α,
+   supervisado vs no supervisado, regresión vs clasificación).
+
+Con el examen de ejemplo (x = 1,2,3,4; y = 35,50,68,87; θ0 = 5, θ1 = 8,
+α = 0.02) da J1 = 668.25, θ = (5.7, 9.985), J2 = 465.23334375,
+θ = (6.28675, 11.63725) y, con θ ≈ (6.287, 11.637), ŷ(5) = 64.472.
 
 Las cuentas son **exactas** (fracciones con enteros largos): no se
 redondea nada y no hay ruido binario, así que los números cuadran con los
@@ -48,7 +56,7 @@ Enter en cualquier dato reusa el último que tecleaste; acepta `0.02`,
 `1/50` y `-3`.
 
 Desde el shell también funciona directo:
-`gradiente([1,2,3,4], [20,30,45,60], 5, 8, 0.02, 2)`, `predice(5.50325, 9.5125, 7)`.
+`gradiente([1,2,3,4], [35,50,68,87], 5, 8, 0.02, 2)`, `predice(6.287, 11.637, 5)`.
 
 ## Qué hay
 
