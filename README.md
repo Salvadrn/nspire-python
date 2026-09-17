@@ -26,42 +26,53 @@ corriendo `formulas` directo; navegas por tema y avanza por pantallas.
 ## IA PrepaTEC: gradiente descendente (`ia.py`)
 
 Regresión lineal de una variable con gradiente descendente batch, con las
-convenciones exactas del curso: `e = ŷ − y`, `J = Σe²/2m`, actualización
-simultánea y aprobado si `y ≥ 70`. Es un programa aparte (no importa nada):
-corre `ia` y sale el menú.
+fórmulas del curso (las mismas del examen y de la guía): `e = ŷ − y`,
+`J = (1/2m)·Σe²`, derivadas `(1/m)·Σe` y `(1/m)·Σ(e·x)`, actualización
+simultánea y aprobado si `ŷ ≥ 70`. Es un programa aparte (no importa nada):
+corre `ia` y sale el menú. Lo que cambia de examen a examen (datos, cuántos
+alumnos, θ iniciales, α, iteraciones) te lo pregunta.
 
-1. **Resolver**: te pregunta `Valores de x`, `Valores de y` (con comas),
+1. **Resolver**: pregunta `Valores de x`, `Valores de y` (con comas),
    `theta0 inicial`, `theta1 inicial`, `Tasa de aprendizaje alfa` y
-   `Cuantas iteraciones`. En cada iteración saca el procedimiento corto
-   como en papel: la hipótesis (`h(x) = 5 + 8x`), cada
-   `x=1: yh = 5 + 8(1) = 13` y `e = 13 - 35 = -22`, cada e·x y e², las
-   dos tablas (`x | y | yh | e` y `x | e*x | e^2`), las sumas término por
-   término (`sum e = -22 - 29 - 39 - 50 = -140`),
-   `J = 5346/(2*4) = 5346/8 = 668.25`, los gradientes
-   (`dJ/dtheta1 = (1/4)(-397) = -99.25`) y la actualización simultánea
-   (`theta1 = 8 - 0.02(-99.25) = 9.985`). Al final, el resumen con J1, J2…,
-   las comparaciones (`J2 < J1: bajo, mejoro`) y la conclusión.
-2. **Solo tabla y costo J**: el mismo procedimiento y J con los θ que
-   quieras (Enter = los finales de la opción 1).
+   `Cuantas iteraciones`. Cada iteración sale en el orden del examen, con
+   procedimiento corto:
+   - predicciones y residuos: `x=1: yh = 5 + 8(1) = 13`, `e = 13 - 35 = -22`,
+     la tabla `x | y | yh | e` y `sum e = -22 - 29 - 39 - 50 = -140`;
+   - costo: `e^2 = (-22)^2 = 484` por alumno, la suma término por término y
+     `J = 5346/(2*4) = 5346/8 = 668.25`;
+   - derivadas: `e*x = -22(1) = -22` por alumno, `sum e*x = ... = -397`,
+     `dJ/dtheta0 = (1/4)(-140) = -35`, `dJ/dtheta1 = (1/4)(-397) = -99.25`;
+   - actualización simultánea: `theta0 = 5 - 0.02(-35) = 5.7`,
+     `theta1 = 8 - 0.02(-99.25) = 9.985`.
+
+   Al final, el resumen: J1, J2…, `J2 < J1: bajo 203.01665625, mejoro`,
+   la conclusión y los θ finales.
+2. **Solo tabla y costo J**: predicciones, tabla y J con los θ que quieras
+   (Enter = los finales de la opción 1).
 3. **Predecir**: `yh = theta0 + theta1(x) = 6.287 + 11.637(5) = 6.287 + 58.185 = 64.472`
-   y si aprueba (ŷ ≥ 70).
-4. **conceptos**: la idea clave para las preguntas de interpretación
-   (qué resume J, residuo, hipótesis, gradiente descendente, efecto de α,
-   supervisado vs no supervisado, regresión vs clasificación).
+   y `64.472 < 70: NO APRUEBA`.
+4. **Conceptos**: la idea clave para opción múltiple e interpretación (IA y
+   tipos de aprendizaje, regresión vs clasificación, no supervisado, recta
+   h(x), residuos, costo J, gradiente descendente, comparar J y concluir, α,
+   usar el modelo para predecir).
 
 Con el examen de ejemplo (x = 1,2,3,4; y = 35,50,68,87; θ0 = 5, θ1 = 8,
 α = 0.02) da J1 = 668.25, θ = (5.7, 9.985), J2 = 465.23334375,
-θ = (6.28675, 11.63725) y, con θ ≈ (6.287, 11.637), ŷ(5) = 64.472.
+θ = (6.28675, 11.63725) y, con θ ≈ (6.287, 11.637), ŷ(5) = 64.472. Con la
+guía (y = 30,50,70,90; θ0 = θ1 = 0.1; α = 0.01): J1 = 2026.5675,
+θ = (0.6965, 1.84), J2 = 1702.352456125.
 
 Las cuentas son **exactas** (fracciones con enteros largos): no se
 redondea nada y no hay ruido binario, así que los números cuadran con los
 de papel. En pantalla salen hasta 12 cifras; si hay más, se cortan y el
 número termina en `...`. Con más de 5 iteraciones usa decimales normales
 y solo muestra cómo va J, para ver el efecto de α (lento o diverge).
-Enter en cualquier dato reusa lo que sale entre `[ ]` (lo último que
-tecleaste); acepta `0.02`, `1/50` y `-3`. Si algo no se entiende o x y y
-no tienen los mismos valores, vuelve a preguntar ese dato en vez de
-regresarte al menú.
+
+Enter reusa lo que sale entre `[ ]`; acepta `0.02`, `1/50` y `-3`. Si algo
+no se entiende o x y y no tienen los mismos valores, vuelve a preguntar ese
+dato. Cada pantalla trae máximo 9 renglones y luego `-- enter para seguir --`.
+Al salir, `ia()` lo vuelve a abrir. Probado con MicroPython 1.11 (la versión
+de la Nspire) compilado en la Mac: misma salida que Python de escritorio.
 
 Desde el shell también funciona directo:
 `gradiente([1,2,3,4], [35,50,68,87], 5, 8, 0.02, 2)`, `predice(6.287, 11.637, 5)`.
