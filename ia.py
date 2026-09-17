@@ -694,24 +694,49 @@ def _de_curso():
     return True
 
 
+def _remarca(inciso, textos):
+    """La respuesta final de la pregunta o inciso, en un recuadro:
+    ** RESPUESTA b) **
+    yh = 13, 21, 29, 37
+    ********************"""
+    lineas = ["** RESPUESTA " + (inciso + " " if inciso else "") + "**"]
+    for t in textos:
+        lineas.extend(_parte("", t))
+    lineas.append("*" * 20)
+    _out(*lineas)
+
+
+def _lista(vals):
+    return ", ".join([_n(v) for v in vals])
+
+
 def _bloque_pred(t0, t1, filas, r_hip, r_yh, r_e):
-    """h(x), cada yh, cada e y las tablas, como en el examen."""
+    """h(x), cada yh, cada e y las tablas, como en el examen. Con
+    etiquetas (paso 1) remarca la respuesta de a), b) y c)."""
     hip = _FN["hip"]
     envt = {"theta0": t0, "theta1": t1}
+    marcar = r_hip is not None
     if r_hip:
         _out(r_hip)
-    _out(*(["h(x) = " + _tx(hip, {})] +
-           _parte("h(x) = ", _tx(hip, envt))))
+    hx = _tx(hip, envt)
+    _out(*(["h(x) = " + _tx(hip, {})] + _parte("h(x) = ", hx)))
+    if marcar:
+        _remarca("a)", ["h(x) = " + hx])
+        _pausa()
     _out(r_yh or "yh (yh1 = dato 1):")
     for i in range(len(filas)):
         envt["x"] = filas[i][0]
         _pasos("yh" + str(i + 1), [_tx(hip, envt), _n(filas[i][2])])
+    if marcar:
+        _remarca("b)", ["yh = " + _lista([f[2] for f in filas])])
     _pausa()
     _out(r_e or "Errores (e1 = dato 1):", "e = " + _tx(_FN["e"], {}))
     for i in range(len(filas)):
         x, y, yh, e = filas[i]
         _pasos("e" + str(i + 1),
                [_tx(_FN["e"], {"yh": yh, "y": y, "x": x}), _n(e)])
+    if marcar:
+        _remarca("c)", ["e = " + _lista([f[3] for f in filas])])
     _pausa()
     t = ["Tabla:", "x | y | yh | e"]
     for x, y, yh, e in filas:
@@ -734,7 +759,7 @@ def _bloque_pred(t0, t1, filas, r_hip, r_yh, r_e):
         _pausa()
 
 
-def _bloque_act(filas, t0, t1, alfa):
+def _bloque_act(filas, t0, t1, alfa, inciso=""):
     """Derivadas y nuevos theta (simultaneo). Regresa los theta nuevos."""
     _out("Derivadas (con los theta viejos):")
     g0 = _cadena("dJ/dtheta0", "g0", filas)
@@ -752,6 +777,8 @@ def _bloque_act(filas, t0, t1, alfa):
     _out("theta1 := " + _tx(act, {}, {"theta": "theta1",
                                       "dj": "dJ/dtheta1"}))
     _pasos("theta1", [_tx(act, e1), _terminos(act, e1), _n(n1)])
+    _remarca(inciso, ["dJ/dtheta0 = " + _n(g0), "dJ/dtheta1 = " + _n(g1),
+                      "theta0 = " + _n(n0), "theta1 = " + _n(n1)])
     _pausa()
     return n0, n1
 
@@ -765,12 +792,16 @@ def _decision(k, J, Jprev):
         _out("J{} < J{}: J disminuyo.".format(k, k - 1),
              "Decision: si mejoro el modelo; se",
              "aceptan los nuevos theta.")
+        final = "J{} < J{}: si mejoro el modelo".format(k, k - 1)
     elif c > 0:
         _out("J{} > J{}: J aumento.".format(k, k - 1),
              "Decision: no mejoro; revisa alfa",
              "o las formulas.")
+        final = "J{} > J{}: no mejoro el modelo".format(k, k - 1)
     else:
         _out("J{} = J{}: J no cambio.".format(k, k - 1))
+        final = "J{} = J{}: el modelo no cambio".format(k, k - 1)
+    _remarca("b)", [final])
 
 
 def _estimar(t0, t1, x):
@@ -779,13 +810,13 @@ def _estimar(t0, t1, x):
     yh = _ev(hip, env)
     _pasos("yh", [_tx(hip, {}), _tx(hip, env), _terminos(hip, env),
                   _n(yh)])
-    _out(*_parte("", "Con x = {} se estima yh = {}".format(_n(x),
-                                                          _n(yh))))
     u = _FN["umbral"]
     if _cmp(yh, u) >= 0:
-        _out(_n(yh) + " >= " + _n(u) + ": APROBADO")
+        veredicto = _n(yh) + " >= " + _n(u) + ": APROBADO"
     else:
-        _out(_n(yh) + " < " + _n(u) + ": NO APROBADO")
+        veredicto = _n(yh) + " < " + _n(u) + ": NO APROBADO"
+    _remarca("a)", ["Con x = {} se estima yh = {}".format(_n(x), _n(yh)),
+                    veredicto])
     xs = _D.get("xs")
     if xs:
         bajo = alto = xs[0]
@@ -1054,13 +1085,13 @@ def _transferencia(t0, t1, titulo, confirmar_modelo):
             print("No entendi; sigo.")
             break
     _nueva()
-    _out("b) Tipo de problema (justifica):",
-         "Es CLASIFICACION binaria: la",
-         "salida es una clase (aprobado o",
-         "no aprobado), no un numero.",
-         "Es aprendizaje SUPERVISADO: los",
-         "datos vienen etiquetados.",
-         "(Estimar calificacion = REGRESION)")
+    _out("b) Tipo de problema (justifica):")
+    _remarca("b)", ["Es CLASIFICACION binaria: la",
+                    "salida es una clase (aprobado o",
+                    "no aprobado), no un numero.",
+                    "Es aprendizaje SUPERVISADO: los",
+                    "datos vienen etiquetados."])
+    _out("(Estimar calificacion = REGRESION)")
     _pausa()
 
 
@@ -1097,8 +1128,9 @@ def _examen():
     _nueva()
     _out("== PASO 2: FUNCION DE COSTO ==")
     Js = [_cadena("J1", "J", filas)]
-    _out("J1 resume el error de la hipotesis",
-         "actual sobre los datos reales.")
+    _remarca("", ["J1 = " + _n(Js[0]),
+                  "Resume el error de la hipotesis",
+                  "actual sobre los datos reales."])
     _pausa()
 
     print("")
@@ -1122,6 +1154,8 @@ def _examen():
         _out("a) Nuevas predicciones y J{}:".format(k))
         _bloque_pred(t0, t1, filas, None, None, None)
         Js.append(_cadena("J" + str(k), "J", filas))
+        _remarca("a)", ["yh = " + _lista([f[2] for f in filas]),
+                        "J{} = {}".format(k, _n(Js[-1]))])
         _pausa()
         _out("b) Comparar J{} con J{}:".format(k, k - 1))
         _decision(k, Js[-1], Js[-2])
@@ -1133,7 +1167,7 @@ def _examen():
             break
         _nueva()
         _out("c) Actualizacion {}:".format(k))
-        t0, t1 = _bloque_act(filas, t0, t1, alfa)
+        t0, t1 = _bloque_act(filas, t0, t1, alfa, "c)")
         otra = input("Otra iteracion? s=si, enter=no: ").strip().lower()
         if otra not in ("s", "si", "s\xed"):
             break

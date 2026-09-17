@@ -52,6 +52,15 @@ respuesta con el procedimiento para copiar:
 | Paso 5 (transferencia, si tu examen la pide) | a) `yh = 6.287 + 11.637(5) = 6.287 + 58.185 = 64.472`: NO APROBADO (y aviso de extrapolación si x queda fuera de los datos) · b) tipo de problema con justificación |
 | Revisión final | J1, J2, cuánto bajó, conclusión y theta finales |
 
+**Respuesta final remarcada.** Cada pregunta e inciso cierra con su respuesta
+en un recuadro, después del procedimiento:
+
+```
+** RESPUESTA b) **
+yh = 13, 21, 29, 37
+********************
+```
+
 **Fórmulas.** Cada fórmula aparece justo donde la usa el examen (el modelo en
 los datos, `e` antes del paso 1, J antes del paso 2, las derivadas y la
 actualización antes del paso 3, la regla de aprobado en el paso 5) con
