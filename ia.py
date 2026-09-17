@@ -865,6 +865,15 @@ def _pide_lista(texto, clave):
         print("No entendi. Ej: 1,2,3,4")
 
 
+def _si(texto):
+    """True con enter/s/si, False con n/no; si no, vuelve a preguntar."""
+    while True:
+        r, s = _respuesta(texto)
+        if r != "otro":
+            return r == "si"
+        print("Escribe solo enter (si) o n (no).")
+
+
 def _respuesta(texto):
     """'si' (enter, s, si), 'no' (n, no) u 'otro' con lo tecleado."""
     s = input(texto).strip().lower()
@@ -1075,8 +1084,6 @@ def _examen():
     print("Parametros iniciales:")
     t0 = _pide("theta0 (ej 5)", "t0")
     t1 = _pide("theta1 (ej 8)", "t1")
-    print("Tasa de aprendizaje:")
-    alfa = _pide("alfa (ej 0.02)", "alfa")
 
     _confirma(["e"], "Formula del error e:")
     _nueva()
@@ -1094,6 +1101,12 @@ def _examen():
          "actual sobre los datos reales.")
     _pausa()
 
+    print("")
+    print("== ANTES DEL PASO 3 ==")
+    print("Tasa de aprendizaje (alfa): puede")
+    print("venir con los datos o en la")
+    print("pregunta de los nuevos theta.")
+    alfa = _pide("alfa (ej 0.01 o 0.02)", "alfa")
     _confirma(["g0", "g1", "act"], "Formulas de la actualizacion:")
     _nueva()
     _out("== PASO 3: PRIMERA ACTUALIZACION ==")
@@ -1113,6 +1126,12 @@ def _examen():
         _out("b) Comparar J{} con J{}:".format(k, k - 1))
         _decision(k, Js[-1], Js[-2])
         _pausa()
+        print("")
+        print("c) Tu examen pide actualizar")
+        print("   theta otra vez? (la guia no)")
+        if not _si("enter=si, n=no: "):
+            break
+        _nueva()
         _out("c) Actualizacion {}:".format(k))
         t0, t1 = _bloque_act(filas, t0, t1, alfa)
         otra = input("Otra iteracion? s=si, enter=no: ").strip().lower()
@@ -1121,7 +1140,11 @@ def _examen():
         k += 1
 
     _D["f0"], _D["f1"] = t0, t1
-    _transferencia(t0, t1, "== PASO 5: TRANSFERENCIA ==", False)
+    print("")
+    print("Tu examen pide estimar una")
+    print("calificacion? (la guia no)")
+    if _si("enter=si, n=no: "):
+        _transferencia(t0, t1, "== PASO 5: TRANSFERENCIA ==", False)
 
     _nueva()
     _out("== REVISION FINAL ==")
