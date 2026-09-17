@@ -694,12 +694,18 @@ def _de_curso():
     return True
 
 
-def _remarca(inciso, textos):
-    """La respuesta final de la pregunta o inciso, en un recuadro:
-    ** RESPUESTA b) **
+def _proc(num, que):
+    """Encabezado del procedimiento: -- PROCEDIMIENTO 1b: predicciones --"""
+    _out("-- PROCEDIMIENTO " + num + ": " + que + " --")
+
+
+def _remarca(num, textos):
+    """La respuesta final de la pregunta o inciso, en un recuadro que
+    lleva el mismo numero que su procedimiento:
+    ** RESPUESTA 1b **
     yh = 13, 21, 29, 37
     ********************"""
-    lineas = ["** RESPUESTA " + (inciso + " " if inciso else "") + "**"]
+    lineas = ["** RESPUESTA " + num + " **"]
     for t in textos:
         lineas.extend(_parte("", t))
     lineas.append("*" * 20)
@@ -710,35 +716,39 @@ def _lista(vals):
     return ", ".join([_n(v) for v in vals])
 
 
-def _bloque_pred(t0, t1, filas, r_hip, r_yh, r_e):
-    """h(x), cada yh, cada e y las tablas, como en el examen. Con
-    etiquetas (paso 1) remarca la respuesta de a), b) y c)."""
+def _bloque_pred(t0, t1, filas, num=None):
+    """h(x), cada yh, cada e y las tablas, como en el examen. Con num
+    (paso 1) cada inciso lleva PROCEDIMIENTO 1a/1b/1c y su RESPUESTA."""
     hip = _FN["hip"]
     envt = {"theta0": t0, "theta1": t1}
-    marcar = r_hip is not None
-    if r_hip:
-        _out(r_hip)
+    marcar = num is not None
+    if marcar:
+        _proc(num + "a", "hipotesis")
     hx = _tx(hip, envt)
     thetas = "theta0 = {}, theta1 = {}".format(_n(t0), _n(t1))
     _out(*(["h(x) = " + _tx(hip, {})] + _parte("", thetas) +
            _parte("h(x) = ", hx)))
     if marcar:
-        _remarca("a)", ["h(x) = " + hx, "(" + thetas + ")"])
+        _remarca(num + "a", ["h(x) = " + hx, "(" + thetas + ")"])
     _pausa()
-    _out(r_yh or "yh (yh1 = dato 1):")
+    if marcar:
+        _proc(num + "b", "predicciones")
+    _out("yh (yh1 = dato 1):")
     for i in range(len(filas)):
         envt["x"] = filas[i][0]
         _pasos("yh" + str(i + 1), [_tx(hip, envt), _n(filas[i][2])])
     if marcar:
-        _remarca("b)", ["yh = " + _lista([f[2] for f in filas])])
+        _remarca(num + "b", ["yh = " + _lista([f[2] for f in filas])])
     _pausa()
-    _out(r_e or "Errores (e1 = dato 1):", "e = " + _tx(_FN["e"], {}))
+    if marcar:
+        _proc(num + "c", "errores")
+    _out("e = " + _tx(_FN["e"], {}) + "  (e1 = dato 1)")
     for i in range(len(filas)):
         x, y, yh, e = filas[i]
         _pasos("e" + str(i + 1),
                [_tx(_FN["e"], {"yh": yh, "y": y, "x": x}), _n(e)])
     if marcar:
-        _remarca("c)", ["e = " + _lista([f[3] for f in filas])])
+        _remarca(num + "c", ["e = " + _lista([f[3] for f in filas])])
     _pausa()
     t = ["Tabla:", "x | y | yh | e"]
     for x, y, yh, e in filas:
@@ -761,8 +771,9 @@ def _bloque_pred(t0, t1, filas, r_hip, r_yh, r_e):
         _pausa()
 
 
-def _bloque_act(filas, t0, t1, alfa, inciso=""):
+def _bloque_act(filas, t0, t1, alfa, num):
     """Derivadas y nuevos theta (simultaneo). Regresa los theta nuevos."""
+    _proc(num, "nuevos theta")
     _out("Derivadas (con los theta viejos):")
     g0 = _cadena("dJ/dtheta0", "g0", filas)
     g1 = _cadena("dJ/dtheta1", "g1", filas)
@@ -779,13 +790,14 @@ def _bloque_act(filas, t0, t1, alfa, inciso=""):
     _out("theta1 := " + _tx(act, {}, {"theta": "theta1",
                                       "dj": "dJ/dtheta1"}))
     _pasos("theta1", [_tx(act, e1), _terminos(act, e1), _n(n1)])
-    _remarca(inciso, ["dJ/dtheta0 = " + _n(g0), "dJ/dtheta1 = " + _n(g1),
+    _remarca(num, ["dJ/dtheta0 = " + _n(g0), "dJ/dtheta1 = " + _n(g1),
                       "theta0 = " + _n(n0), "theta1 = " + _n(n1)])
     _pausa()
     return n0, n1
 
 
-def _decision(k, J, Jprev):
+def _decision(k, J, Jprev, num):
+    _proc(num, "comparar J")
     c = _cmp(J, Jprev)
     _out("J{} = {}".format(k, _n(J)), "J{} = {}".format(k - 1, _n(Jprev)))
     if c < 0:
@@ -803,10 +815,11 @@ def _decision(k, J, Jprev):
     else:
         _out("J{} = J{}: J no cambio.".format(k, k - 1))
         final = "J{} = J{}: el modelo no cambio".format(k, k - 1)
-    _remarca("b)", [final])
+    _remarca(num, [final])
 
 
-def _estimar(t0, t1, x):
+def _estimar(t0, t1, x, num):
+    _proc(num, "estimar")
     hip = _FN["hip"]
     env = {"theta0": t0, "theta1": t1, "x": x}
     yh = _ev(hip, env)
@@ -817,7 +830,7 @@ def _estimar(t0, t1, x):
         veredicto = _n(yh) + " >= " + _n(u) + ": APROBADO"
     else:
         veredicto = _n(yh) + " < " + _n(u) + ": NO APROBADO"
-    _remarca("a)", ["h(x) = " + _tx(hip, {"theta0": t0, "theta1": t1}),
+    _remarca(num, ["h(x) = " + _tx(hip, {"theta0": t0, "theta1": t1}),
                     "Con x = {} se estima yh = {}".format(_n(x), _n(yh)),
                     veredicto])
     xs = _D.get("xs")
@@ -1062,7 +1075,7 @@ def _datos():
     return xs, ys
 
 
-def _transferencia(t0, t1, titulo, confirmar_modelo):
+def _transferencia(t0, t1, titulo, confirmar_modelo, num=""):
     _nueva()
     _out(titulo, "Usa los theta que da el examen",
          "(pueden venir redondeados).")
@@ -1073,11 +1086,11 @@ def _transferencia(t0, t1, titulo, confirmar_modelo):
         _confirma(["hip"], "Modelo que da tu examen:")
     _confirma(["umbral"], "Regla para aprobar:")
     print("")
-    print("a) Estimar la calificacion:")
+    print(num + "a) Estimar la calificacion:")
     x = _pide("x a estimar (ej 5)", "xn")
     while True:
         _nueva()
-        _estimar(t0, t1, x)
+        _estimar(t0, t1, x, num + "a")
         _pausa()
         s = input("Otra x? (escribela o enter=no): ").strip()
         if s == "":
@@ -1088,8 +1101,8 @@ def _transferencia(t0, t1, titulo, confirmar_modelo):
             print("No entendi; sigo.")
             break
     _nueva()
-    _out("b) Tipo de problema (justifica):")
-    _remarca("b)", ["Es CLASIFICACION binaria: la",
+    _proc(num + "b", "problema")
+    _remarca(num + "b", ["Es CLASIFICACION binaria: la",
                     "salida es una clase (aprobado o",
                     "no aprobado), no un numero.",
                     "Es aprendizaje SUPERVISADO: los",
@@ -1128,15 +1141,14 @@ def _examen():
     _nueva()
     _out("== PASO 1: PREDICCION Y ERRORES ==")
     filas = _filas(xs, ys, t0, t1)
-    _bloque_pred(t0, t1, filas, "a) Hipotesis con theta iniciales:",
-                 "b) Predicciones (yh1 = dato 1):",
-                 "c) Errores (e1 = dato 1):")
+    _bloque_pred(t0, t1, filas, "1")
 
     _confirma(["J"], "Formula de la funcion de costo:")
     _nueva()
     _out("== PASO 2: FUNCION DE COSTO ==")
+    _proc("2", "costo J")
     Js = [_cadena("J1", "J", filas)]
-    _remarca("", ["J1 = " + _n(Js[0]),
+    _remarca("2", ["J1 = " + _n(Js[0]),
                   "Resume el error de la hipotesis",
                   "actual sobre los datos reales."])
     _pausa()
@@ -1150,34 +1162,33 @@ def _examen():
     _confirma(["g0", "g1", "act"], "Formulas de la actualizacion:")
     _nueva()
     _out("== PASO 3: PRIMERA ACTUALIZACION ==")
-    t0, t1 = _bloque_act(filas, t0, t1, alfa)
+    t0, t1 = _bloque_act(filas, t0, t1, alfa, "3")
 
     k = 2
     while True:
         filas = _filas(xs, ys, t0, t1)
+        p = str(k + 2)                  # paso 4 = iteracion 2
         if k == 2:
             _out("== PASO 4: SEGUNDA ITERACION ==")
         else:
-            _out("== ITERACION {} ==".format(k))
-        _out("a) Nuevas predicciones y J{}:".format(k))
-        _bloque_pred(t0, t1, filas, None, None, None)
+            _out("== PASO {}: ITERACION {} ==".format(p, k))
+        _proc(p + "a", "yh y J" + str(k))
+        _bloque_pred(t0, t1, filas)
         Js.append(_cadena("J" + str(k), "J", filas))
-        _remarca("a)", ["h(x) = " + _tx(_FN["hip"], {"theta0": t0,
+        _remarca(p + "a", ["h(x) = " + _tx(_FN["hip"], {"theta0": t0,
                                                      "theta1": t1}),
                         "yh = " + _lista([f[2] for f in filas]),
                         "J{} = {}".format(k, _n(Js[-1]))])
         _pausa()
-        _out("b) Comparar J{} con J{}:".format(k, k - 1))
-        _decision(k, Js[-1], Js[-2])
+        _decision(k, Js[-1], Js[-2], p + "b")
         _pausa()
         print("")
-        print("c) Tu examen pide actualizar")
+        print(p + "c) Tu examen pide actualizar")
         print("   theta otra vez? (la guia no)")
         if not _si("enter=si, n=no: "):
             break
         _nueva()
-        _out("c) Actualizacion {}:".format(k))
-        t0, t1 = _bloque_act(filas, t0, t1, alfa, "c)")
+        t0, t1 = _bloque_act(filas, t0, t1, alfa, p + "c")
         otra = input("Otra iteracion? s=si, enter=no: ").strip().lower()
         if otra not in ("s", "si", "s\xed"):
             break
@@ -1188,7 +1199,9 @@ def _examen():
     print("Tu examen pide estimar una")
     print("calificacion? (la guia no)")
     if _si("enter=si, n=no: "):
-        _transferencia(t0, t1, "== PASO 5: TRANSFERENCIA ==", False)
+        p = str(int(p) + 1)
+        _transferencia(t0, t1, "== PASO {}: TRANSFERENCIA ==".format(p),
+                       False, p)
 
     _nueva()
     _out("== REVISION FINAL ==")

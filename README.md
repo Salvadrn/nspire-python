@@ -52,11 +52,16 @@ respuesta con el procedimiento para copiar:
 | Paso 5 (transferencia, si tu examen la pide) | a) `yh = 6.287 + 11.637(5) = 6.287 + 58.185 = 64.472`: NO APROBADO (y aviso de extrapolación si x queda fuera de los datos) · b) tipo de problema con justificación |
 | Revisión final | J1, J2, cuánto bajó, conclusión, hipótesis inicial y final (`h(x) = 5 + 8x` → `h(x) = 6.28675 + 11.63725x`) y theta finales |
 
-**Respuesta final remarcada.** Cada pregunta e inciso cierra con su respuesta
-en un recuadro, después del procedimiento:
+**Procedimiento y respuesta numerados.** Cada pregunta e inciso sale como un
+par con el mismo número (1a, 1b, 1c, 2, 3, 4a, 4b, 4c, 5a, 5b; si pides más
+iteraciones se recorren solos):
 
 ```
-** RESPUESTA b) **
+-- PROCEDIMIENTO 1b: predicciones --
+yh (yh1 = dato 1):
+yh1 = 5 + 8(1) = 13
+...
+** RESPUESTA 1b **
 yh = 13, 21, 29, 37
 ********************
 ```
