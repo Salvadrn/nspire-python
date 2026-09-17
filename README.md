@@ -44,13 +44,13 @@ respuesta con el procedimiento para copiar:
 
 | Pregunta | Qué da |
 |---|---|
-| Datos | x y y de la tabla, modelo, theta0 y theta1 iniciales (alfa se pide antes del paso 3, porque en la guía viene en la pregunta de los nuevos parámetros) |
+| Datos | x y y de la tabla, modelo, theta0 y theta1 iniciales y la hipótesis con ellos (`h(x) = 5 + 8x`) (alfa se pide antes del paso 3, porque en la guía viene en la pregunta de los nuevos parámetros) |
 | Paso 1 (predicción y errores) | a) `h(x) = 5 + 8x` · b) `yh1 = 5 + 8(1) = 13`… · c) `e1 = 13 - 35 = -22`… y la tabla |
 | Paso 2 (función de costo) | `J1 = 1/(2m) sum(yh - y)^2 = 1/(2(4))[(-22)^2 + …] = 1/8(484 + …) = 1/8(5346) = 668.25` y qué resume |
 | Paso 3 (primera actualización) | `dJ/dtheta0 = 1/m sum(yh - y) = 1/4(-22 - 29 - 39 - 50) = 1/4(-140) = -35`, `dJ/dtheta1 = 1/m sum[(yh - y)x] = … = -99.25`, `theta0 := theta0 - alfa*dJ/dtheta0`, `theta0 = 5 - 0.02(-35) = 5 + 0.7 = 5.7` |
 | Paso 4 (segunda iteración) | a) nuevas predicciones, tablas y J2 · b) `J1 - J2 = 668.25 - 465.23334375 = 203.01665625`, J disminuyó: sí mejoró · c) segunda actualización (6.28675, 11.63725), solo si tu examen la pide · opción de otra iteración |
 | Paso 5 (transferencia, si tu examen la pide) | a) `yh = 6.287 + 11.637(5) = 6.287 + 58.185 = 64.472`: NO APROBADO (y aviso de extrapolación si x queda fuera de los datos) · b) tipo de problema con justificación |
-| Revisión final | J1, J2, cuánto bajó, conclusión y theta finales |
+| Revisión final | J1, J2, cuánto bajó, conclusión, hipótesis inicial y final (`h(x) = 5 + 8x` → `h(x) = 6.28675 + 11.63725x`) y theta finales |
 
 **Respuesta final remarcada.** Cada pregunta e inciso cierra con su respuesta
 en un recuadro, después del procedimiento:

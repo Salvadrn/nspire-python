@@ -719,10 +719,12 @@ def _bloque_pred(t0, t1, filas, r_hip, r_yh, r_e):
     if r_hip:
         _out(r_hip)
     hx = _tx(hip, envt)
-    _out(*(["h(x) = " + _tx(hip, {})] + _parte("h(x) = ", hx)))
+    thetas = "theta0 = {}, theta1 = {}".format(_n(t0), _n(t1))
+    _out(*(["h(x) = " + _tx(hip, {})] + _parte("", thetas) +
+           _parte("h(x) = ", hx)))
     if marcar:
-        _remarca("a)", ["h(x) = " + hx])
-        _pausa()
+        _remarca("a)", ["h(x) = " + hx, "(" + thetas + ")"])
+    _pausa()
     _out(r_yh or "yh (yh1 = dato 1):")
     for i in range(len(filas)):
         envt["x"] = filas[i][0]
@@ -815,7 +817,8 @@ def _estimar(t0, t1, x):
         veredicto = _n(yh) + " >= " + _n(u) + ": APROBADO"
     else:
         veredicto = _n(yh) + " < " + _n(u) + ": NO APROBADO"
-    _remarca("a)", ["Con x = {} se estima yh = {}".format(_n(x), _n(yh)),
+    _remarca("a)", ["h(x) = " + _tx(hip, {"theta0": t0, "theta1": t1}),
+                    "Con x = {} se estima yh = {}".format(_n(x), _n(yh)),
                     veredicto])
     xs = _D.get("xs")
     if xs:
@@ -1115,6 +1118,11 @@ def _examen():
     print("Parametros iniciales:")
     t0 = _pide("theta0 (ej 5)", "t0")
     t1 = _pide("theta1 (ej 8)", "t1")
+    t0i, t1i = t0, t1
+    print("Hipotesis con parametros iniciales:")
+    for ln in _parte("h(x) = ", _tx(_FN["hip"], {"theta0": t0,
+                                                 "theta1": t1})):
+        print(ln)
 
     _confirma(["e"], "Formula del error e:")
     _nueva()
@@ -1154,7 +1162,9 @@ def _examen():
         _out("a) Nuevas predicciones y J{}:".format(k))
         _bloque_pred(t0, t1, filas, None, None, None)
         Js.append(_cadena("J" + str(k), "J", filas))
-        _remarca("a)", ["yh = " + _lista([f[2] for f in filas]),
+        _remarca("a)", ["h(x) = " + _tx(_FN["hip"], {"theta0": t0,
+                                                     "theta1": t1}),
+                        "yh = " + _lista([f[2] for f in filas]),
                         "J{} = {}".format(k, _n(Js[-1]))])
         _pausa()
         _out("b) Comparar J{} con J{}:".format(k, k - 1))
@@ -1196,6 +1206,11 @@ def _examen():
              "alfa o las formulas.")
     else:
         _out("Conclusion: J no cambio.")
+    hip = _FN["hip"]
+    _out(*(["Hipotesis inicial:"] +
+           _parte("h(x) = ", _tx(hip, {"theta0": t0i, "theta1": t1i})) +
+           ["Hipotesis final:"] +
+           _parte("h(x) = ", _tx(hip, {"theta0": t0, "theta1": t1}))))
     _out("theta0 final = " + _n(t0), "theta1 final = " + _n(t1))
     _pausa()
 
