@@ -741,27 +741,16 @@ def _proc(num, que):
 
 
 def _remarca(num, textos):
-    """La respuesta final de la pregunta o inciso, en un recuadro que
-    lleva el mismo numero que su procedimiento:
-    ** RESPUESTA 1b **
-    yh = 13, 21, 29, 37
-    ********************"""
+    """La respuesta final de la pregunta o inciso, marcada con su
+    numero: RF(1b)= yh = 13, 21, 29, 37"""
     global _abierto, _sigue
     _abierto = None
     _sigue = False
-    cuerpo = []
+    pre = "RF(" + num + ")= "
+    lineas = []
     for t in textos:
-        cuerpo.extend(_parte("", t))
-    tope = "** RESPUESTA " + num + " **"
-    cierre = "*" * 20
-    if len(cuerpo) + 2 <= _ALTO:
-        _grupo([tope] + cuerpo + [cierre], _ALTO)
-        return
-    while cuerpo:                # largo: en pedazos, cada uno con su numero
-        pedazo, cuerpo = cuerpo[:_ALTO - 2], cuerpo[_ALTO - 2:]
-        _pausa()
-        _grupo([tope] + pedazo + ([] if cuerpo else [cierre]), _ALTO)
-        tope = "** RESPUESTA " + num + " (sigue) **"
+        lineas.extend(_parte(pre, t))
+    _grupo(lineas, _ALTO)
 
 
 def _lista(vals):
@@ -1235,8 +1224,8 @@ def _examen():
     _proc("2", "costo J")
     Js = [_cadena("J1", "J", filas)]
     _remarca("2", ["J1 = " + _n(Js[0]),
-                  "Resume el error de la hipotesis",
-                  "actual sobre los datos reales."])
+                   "Resume el error de la",
+                   "hipotesis vs los datos reales."])
     _pausa()
 
     print("")

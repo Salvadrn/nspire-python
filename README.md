@@ -61,13 +61,15 @@ y e·x con sus sumas, las que se usan en J y en las derivadas):
 
 ```
 -- PROCEDIMIENTO 1b: predicciones --
-yh (yh1 = dato 1):
+yh (yh1 va con el renglon 1):
 yh1 = 5 + 8(1) = 13
 ...
-** RESPUESTA 1b **
-yh = 13, 21, 29, 37
-********************
+RF(1b)= yh = 13, 21, 29, 37
 ```
+
+La respuesta final de cada pregunta o inciso sale marcada con `RF(inciso)=`
+(`RF(2)= J1 = 668.25`, `RF(3)= theta0 = 5.7`…), con el mismo número que su
+procedimiento.
 
 **Fórmulas.** Cada fórmula aparece justo donde la usa el examen (el modelo en
 los datos, `e` antes del paso 1, J antes del paso 2, las derivadas y la
