@@ -46,19 +46,22 @@ respuesta con el procedimiento para copiar:
 |---|---|
 | Datos | x y y de la tabla, modelo, theta0 y theta1 iniciales, alfa |
 | Paso 1 (predicción y errores) | a) `h(x) = 5 + 8x` · b) `yh1 = 5 + 8(1) = 13`… · c) `e1 = 13 - 35 = -22`… y la tabla |
-| Paso 2 (función de costo) | `J1 = 1/(2m) sum(e^2) = 1/(2(4))[(-22)^2 + …] = 1/8(484 + …) = 1/8(5346) = 668.25` y qué resume |
-| Paso 3 (primera actualización) | `dJ/dtheta0 = 1/4(-22 - 29 - 39 - 50) = 1/4(-140) = -35`, `dJ/dtheta1 = … = -99.25`, `theta0 = 5 - 0.02(-35) = 5.7`, `theta1 = 8 - 0.02(-99.25) = 9.985` |
-| Paso 4 (segunda iteración) | a) nuevas predicciones y J2 · b) `J2 = 465.23334375 < J1 = 668.25`: sí mejoró · c) segunda actualización (6.28675, 11.63725) · opción de otra iteración |
-| Paso 5 (transferencia) | a) `yh = 6.287 + 11.637(5) = 6.287 + 58.185 = 64.472`: NO APROBADO · b) tipo de problema con justificación |
+| Paso 2 (función de costo) | `J1 = 1/(2m) sum(yh - y)^2 = 1/(2(4))[(-22)^2 + …] = 1/8(484 + …) = 1/8(5346) = 668.25` y qué resume |
+| Paso 3 (primera actualización) | `dJ/dtheta0 = 1/m sum(yh - y) = 1/4(-22 - 29 - 39 - 50) = 1/4(-140) = -35`, `dJ/dtheta1 = 1/m sum[(yh - y)x] = … = -99.25`, `theta0 := theta0 - alfa*dJ/dtheta0`, `theta0 = 5 - 0.02(-35) = 5 + 0.7 = 5.7` |
+| Paso 4 (segunda iteración) | a) nuevas predicciones, tablas y J2 · b) `J1 - J2 = 668.25 - 465.23334375 = 203.01665625`, J disminuyó: sí mejoró · c) segunda actualización (6.28675, 11.63725) · opción de otra iteración |
+| Paso 5 (transferencia) | a) `yh = 6.287 + 11.637(5) = 6.287 + 58.185 = 64.472`: NO APROBADO (y aviso de extrapolación si x queda fuera de los datos) · b) tipo de problema con justificación |
 | Revisión final | J1, J2, cuánto bajó, conclusión y theta finales |
 
 **Fórmulas.** Cada fórmula aparece justo donde la usa el examen (el modelo en
 los datos, `e` antes del paso 1, J antes del paso 2, las derivadas y la
 actualización antes del paso 3, la regla de aprobado en el paso 5) con
 `Igual a tu examen? enter=si, n=no`. Con `n` se escribe completa como viene en
-la hoja: `y - yh`, `sum(e^2)/(2m)`, `1/2m sum((yh - y)^2)`,
-`theta + alfa*dJ/dtheta`… (`1/2m` se lee `1/(2m)` como en papel; `t0`/`t1` =
-`theta0`/`theta1`). La opción 4 las muestra todas y `0` regresa a las del curso.
+la hoja: `y - yh`, `sum(yh - y)^2/(2m)`, `1/2m sum(e^2)`,
+`theta + alfa*dJ/dtheta`… Como en papel: `sum(yh - y)^2` es la suma de los
+cuadrados, `1/2m` y `1/2 m` se leen `1/(2m)`, y la tecla `^` de la Nspire (que
+escribe `**`) también vale. Si algo no cuadra avisa con un mensaje claro
+(`falta * en 'theta1x'`, `'x' va dentro de sum( )`, `la potencia debe ser un
+numero`…). La opción 4 las muestra todas y `0` regresa a las del curso.
 
 Las cuentas son **exactas** (fracciones con enteros largos, sin `eval`): no se
 redondea nada. En pantalla salen hasta 12 cifras; si hay más, se cortan con
