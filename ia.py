@@ -1,12 +1,12 @@
 # ia - regresion lineal con gradiente descendente (IA PrepaTEC)
-# Adrian. Corre el programa `ia` y sale el menu: tecleas los datos
-# y saca tablas y sustituciones como se escriben en el examen.
+# Adrian. Corre el programa `ia` y sale el menu: te pregunta los datos
+# y saca el procedimiento como se escribe en el examen.
 #
 # Convenciones del curso (no cambiarlas o no cuadra el solucionario):
-#   yh = th0 + th1*x              e = yh - y
+#   yh = theta0 + theta1*x          e = yh - y
 #   J = sum(e^2) / (2m)
-#   dJ/dth0 = sum(e)/m            dJ/dth1 = sum(e*x)/m
-#   th := th - alfa*dJ/dth        los DOS con los th viejos
+#   dJ/dtheta0 = sum(e)/m           dJ/dtheta1 = sum(e*x)/m
+#   theta := theta - alfa*dJ/dtheta (los DOS con los theta viejos)
 #   aprobado si y >= 70
 #
 # Cuentas EXACTAS con fracciones de enteros largos: nada se redondea
@@ -17,8 +17,9 @@
 # la Nspire es MicroPython 1.11.
 
 _ANCHO = 36    # caracteres por renglon (aprox.) en el shell
-_ALTO = 10     # renglones por pantalla antes de pedir [enter]
+_ALTO = 10     # renglones por pantalla antes de pedir enter
 _CIFRAS = 12   # cifras significativas en pantalla
+_SIGUE = "-- enter para seguir --"
 
 _D = {}        # ultimos datos tecleados: enter = reusarlos
 _lin = 0       # renglones impresos desde la ultima pausa
@@ -161,20 +162,44 @@ def _p(a):
     return "(" + _n(a) + ")"
 
 
-def _out(s=""):
-    """print que pide [enter] antes de que se salga de la pantalla."""
+def _junta(txt, b, op="+"):
+    """txt + b o txt - b como en papel: '13 - 35', no '13 + -35'."""
+    if op == "-":
+        b = (-b[0], b[1])
+    if b[0] < 0:
+        return txt + " - " + _n((-b[0], b[1]))
+    return txt + " + " + _n(b)
+
+
+def _suma_txt(vals):
+    """[-22, -29, -39] -> '-22 - 29 - 39'."""
+    s = _n(vals[0])
+    for v in vals[1:]:
+        s = _junta(s, v)
+    return s
+
+
+def _alto(s):
+    return 1 + max(0, len(s) - 1) // _ANCHO
+
+
+def _out(*lineas):
+    """Imprime renglones que van juntos; si no caben, pide enter antes."""
     global _lin
-    alto = 1 + max(0, len(s) - 1) // _ANCHO
+    alto = 0
+    for s in lineas:
+        alto += _alto(s)
     if _lin + alto > _ALTO:
         _pausa()
-    print(s)
+    for s in lineas:
+        print(s)
     _lin += alto
 
 
 def _pausa():
     global _lin
     if _lin > 0:
-        input("[enter]")
+        input(_SIGUE)
     _lin = 0
 
 
@@ -183,14 +208,41 @@ def _nueva():
     _lin = 0
 
 
-def _sust(lado, expr, valor):
-    """'th1 = 8 - 0.02(-99.25) = 9.985' en uno o dos renglones."""
-    s = "{} = {} = {}".format(lado, expr, valor)
+def _parte(pre, txt):
+    """pre + 'a - b + c' en renglones de _ANCHO, cortando entre terminos."""
+    if len(pre) + len(txt) <= _ANCHO:
+        return [pre + txt]
+    t = txt.split(" ")
+    lineas = []
+    s = pre + t[0]
+    i = 1
+    while i + 1 < len(t):
+        pieza = t[i] + " " + t[i + 1]
+        if len(s) + 1 + len(pieza) > _ANCHO:
+            lineas.append(s)
+            s = " " * len(pre) + pieza
+        else:
+            s += " " + pieza
+        i += 2
+    if i < len(t):
+        s += " " + t[i]
+    lineas.append(s)
+    return lineas
+
+
+def _pasos(lado, pasos):
+    """'J = 5346/(2*4) = 5346/8 = 668.25': en un renglon si cabe;
+    si no, cada '= paso' abajo del anterior."""
+    s = lado + " = " + " = ".join(pasos)
     if len(s) <= _ANCHO:
         _out(s)
-    else:
-        _out("{} = {}".format(lado, expr))
-        _out(" " * len(lado) + " = " + valor)
+        return
+    lineas = []
+    pre = lado + " = "
+    for paso in pasos:
+        lineas.extend(_parte(pre, paso))
+        pre = " " * len(lado) + " = "
+    _out(*lineas)
 
 
 # ---------- calculo ----------
@@ -215,34 +267,55 @@ def _costo(xs, ys, t0, t1):
 
 def _hip(t0, t1):
     """'h(x) = 5 + 8x' con el signo bien puesto."""
-    if t1[0] < 0:
-        return "h(x) = {} - {}x".format(_n(t0), _n((-t1[0], t1[1])))
-    return "h(x) = {} + {}x".format(_n(t0), _n(t1))
+    return "h(x) = " + _junta(_n(t0), t1) + "x"
 
 
-def _tabla(t0, t1, filas):
+def _procedimiento(t0, t1, filas):
+    """yh y e renglon por renglon; luego e*x y e^2."""
     _out(_hip(t0, t1))
-    _out("x | y | yh | e=yh-y")
     for x, y, yh, e in filas:
-        _out("{} | {} | {} | {}".format(_n(x), _n(y), _n(yh), _n(e)))
+        _out("x=" + _n(x) + ": yh = " + _junta(_n(t0), t1) + _p(x)
+             + " = " + _n(yh),
+             "     e = " + _junta(_n(yh), y, "-") + " = " + _n(e))
+    _pausa()
+    _out("-- e*x y e^2 --")
+    for x, y, yh, e in filas:
+        _out("x=" + _n(x) + ": e*x = " + _n(e) + _p(x)
+             + " = " + _n(_por(e, x)),
+             "     e^2 = " + _p(e) + "^2 = " + _n(_por(e, e)))
+    _pausa()
+
+
+def _tablas(filas):
+    """Las dos tablas como van en la hoja."""
+    t = ["x | y | yh | e=yh-y"]
+    for x, y, yh, e in filas:
+        t.append("{} | {} | {} | {}".format(_n(x), _n(y), _n(yh), _n(e)))
+    _out(*t)
+    t = ["x | e*x | e^2"]
+    for x, y, yh, e in filas:
+        t.append("{} | {} | {}".format(_n(x), _n(_por(e, x)),
+                                       _n(_por(e, e))))
+    _out(*t)
     _pausa()
 
 
 def _sumas_txt(m, filas, se, sex, se2):
-    """Tabla auxiliar e*x, e^2 (la de la hoja), sumas y J."""
-    _out("x | e*x | e^2")
-    for x, y, yh, e in filas:
-        _out("{} | {} | {}".format(_n(x), _n(_por(e, x)), _n(_por(e, e))))
-    _out("sum e   = " + _n(se))
-    _out("sum e*x = " + _n(sex))
-    _out("sum e^2 = " + _n(se2))
+    """Sumas termino por termino y J. Regresa J."""
+    _pasos("sum e", [_suma_txt([f[3] for f in filas]), _n(se)])
+    _pasos("sum e*x", [_suma_txt([_por(f[3], f[0]) for f in filas]),
+                       _n(sex)])
+    _pasos("sum e^2", [_suma_txt([_por(f[3], f[3]) for f in filas]),
+                       _n(se2)])
     J = _entre(se2, (2 * m, 1))
-    _sust("J", "{}/(2*{})".format(_n(se2), m), _n(J))
+    _pasos("J", ["{}/(2*{})".format(_n(se2), m),
+                 "{}/{}".format(_n(se2), 2 * m), _n(J)])
+    _pausa()
     return J
 
 
 def _iteracion(k, xs, ys, t0, t1, alfa):
-    """Una iteracion con todo. Regresa (th0, th1 nuevos, J con th viejos)."""
+    """Una iteracion con todo. Regresa (theta0, theta1 nuevos, J)."""
     m = len(xs)
     filas, se, sex, se2 = _sumas(xs, ys, t0, t1)
     g0 = _entre(se, (m, 1))
@@ -250,13 +323,14 @@ def _iteracion(k, xs, ys, t0, t1, alfa):
     n0 = _menos(t0, _por(alfa, g0))   # simultanea: los dos con t0, t1 viejos
     n1 = _menos(t1, _por(alfa, g1))
     _out("== ITERACION {} ==".format(k))
-    _tabla(t0, t1, filas)
+    _procedimiento(t0, t1, filas)
+    _tablas(filas)
     J = _sumas_txt(m, filas, se, sex, se2)
-    _pausa()
-    _sust("dJ/dth0", "{}/{}".format(_n(se), m), _n(g0))
-    _sust("dJ/dth1", "{}/{}".format(_n(sex), m), _n(g1))
-    _sust("th0", "{} - {}{}".format(_n(t0), _n(alfa), _p(g0)), _n(n0))
-    _sust("th1", "{} - {}{}".format(_n(t1), _n(alfa), _p(g1)), _n(n1))
+    _out("-- actualizacion simultanea --")
+    _pasos("dJ/dtheta0", ["(1/{})({})".format(m, _n(se)), _n(g0)])
+    _pasos("dJ/dtheta1", ["(1/{})({})".format(m, _n(sex)), _n(g1)])
+    _pasos("theta0", [_n(t0) + " - " + _n(alfa) + _p(g0), _n(n0)])
+    _pasos("theta1", [_n(t1) + " - " + _n(alfa) + _p(g1), _n(n1)])
     _pausa()
     return n0, n1, J
 
@@ -283,6 +357,7 @@ def _gd_rapido(xs, ys, t0, t1, alfa, n):
     m = len(X)
     cada = max(1, n // 10)
     Js = []
+    _out("== {} ITERACIONES ==".format(n))
     for k in range(1, n + 2):
         se = sex = se2 = 0.0
         for x, y in zip(X, Y):
@@ -292,58 +367,63 @@ def _gd_rapido(xs, ys, t0, t1, alfa, n):
             se2 += e * e
         Js.append(se2 / (2 * m))
         if k > n:
-            break                     # esta ya es J con th finales
+            break                     # esta ya es J con theta finales
         if k == 1 or k % cada == 0:
-            _out("it {}: J = {}".format(k, _nf(Js[-1])))
+            _out("J{} = {}".format(k, _nf(Js[-1])))
         a0, a1 = a0 - al * (se / m), a1 - al * (sex / m)
     _pausa()
     _resumen(Js, a0, a1, False)
     return a0, a1
 
 
-_VEREDICTO = {-1: "bajo, mejoro", 0: "igual", 1: "subio, empeoro"}
+_VEREDICTO = {-1: ("<", "bajo, mejoro"), 0: ("=", "igual"),
+              1: (">", "subio, empeoro")}
 
 
 def _resumen(Js, t0, t1, todo):
-    """Js[k] = J de la iteracion k+1; el ultimo, J con th finales."""
-    _out("== RESUMEN ==")
+    """Js[k] = J(k+1); el ultimo es J con los theta finales."""
     ult = len(Js) - 1
-    for k in range(len(Js)):
-        if not todo and 0 < k < ult:
-            continue
-        nombre = "J final" if k == ult else "J it " + str(k + 1)
-        s = nombre + " = " + _n(Js[k])
-        if todo and k > 0:
-            s += ": " + _VEREDICTO[_cmp(Js[k], Js[k - 1])]
-        _out(s)
+    _out("== RESUMEN ==")
     if todo:
-        _out("(J final usa th finales, opcion 2)")
+        for k in range(len(Js)):
+            _out("J{} = {}".format(k + 1, _n(Js[k])))
+        _out("(J{} usa los theta finales)".format(ult + 1))
+        for k in range(1, len(Js)):
+            signo, txt = _VEREDICTO[_cmp(Js[k], Js[k - 1])]
+            _out("J{} {} J{}: {}".format(k + 1, signo, k, txt))
     else:
+        _out("J1 = " + _n(Js[0]))
+        _out("J{} = {} (theta finales)".format(ult + 1, _n(Js[ult])))
+        signo, txt = _VEREDICTO[_cmp(Js[ult], Js[0])]
+        _out("J{} {} J1: {}".format(ult + 1, signo, txt))
         _out("(decimales de la calc, aprox.)")
-    _out("th0 final = " + _n(t0))
-    _out("th1 final = " + _n(t1))
+    _out("theta0 final = " + _n(t0))
+    _out("theta1 final = " + _n(t1))
     total = _cmp(Js[ult], Js[0])
     if total < 0:
-        _out("J bajo: el modelo mejoro")
+        _out("Conclusion: J bajo, el modelo mejoro")
     elif total > 0:
-        _out("J subio: alfa muy grande")
-        _out("(diverge u oscila)")
+        _out("Conclusion: J subio, alfa muy grande",
+             "(diverge u oscila)")
     else:
-        _out("J no cambio")
+        _out("Conclusion: J no cambio")
     _pausa()
 
 
 def _tabla_costo(xs, ys, t0, t1):
     filas, se, sex, se2 = _sumas(xs, ys, t0, t1)
-    _tabla(t0, t1, filas)
-    J = _sumas_txt(len(xs), filas, se, sex, se2)
-    _pausa()
-    return J
+    _out("== TABLA Y COSTO J ==")
+    _procedimiento(t0, t1, filas)
+    _tablas(filas)
+    return _sumas_txt(len(xs), filas, se, sex, se2)
 
 
 def _predice(t0, t1, x):
     yh = _mas(t0, _por(t1, x))
-    _sust("yh", "{} + {}{}".format(_n(t0), _n(t1), _p(x)), _n(yh))
+    _pasos("yh", ["theta0 + theta1(x)",
+                  _junta(_n(t0), t1) + _p(x),
+                  _junta(_n(t0), _por(t1, x)),
+                  _n(yh)])
     if _cmp(yh, (70, 1)) >= 0:
         _out(_n(yh) + " >= 70: APRUEBA")
     else:
@@ -353,31 +433,31 @@ def _predice(t0, t1, x):
 
 # ---------- para usar directo en el shell ----------
 
-def gradiente(xs, ys, th0, th1, alfa, n=2):
+def gradiente(xs, ys, theta0, theta1, alfa, n=2):
     """gradiente([1,2,3,4], [35,50,68,87], 5, 8, 0.02, 2)"""
     _nueva()
     t0, t1 = _gd([_a(v) for v in xs], [_a(v) for v in ys],
-                 _a(th0), _a(th1), _a(alfa), n)
+                 _a(theta0), _a(theta1), _a(alfa), n)
     return _f(t0), _f(t1)
 
 
-def costo(xs, ys, th0, th1):
-    """J(th) = sum(e^2)/(2m), sin imprimir."""
+def costo(xs, ys, theta0, theta1):
+    """J(theta) = sum(e^2)/(2m), sin imprimir."""
     return _f(_costo([_a(v) for v in xs], [_a(v) for v in ys],
-                     _a(th0), _a(th1)))
+                     _a(theta0), _a(theta1)))
 
 
-def tabla_costo(xs, ys, th0, th1):
-    """Tabla x | y | yh | e, sumas y J con unos th (sin actualizar)."""
+def tabla_costo(xs, ys, theta0, theta1):
+    """Procedimiento, tablas, sumas y J con unos theta (sin actualizar)."""
     _nueva()
     return _f(_tabla_costo([_a(v) for v in xs], [_a(v) for v in ys],
-                           _a(th0), _a(th1)))
+                           _a(theta0), _a(theta1)))
 
 
-def predice(th0, th1, x):
-    """yh = th0 + th1*x y si aprueba (yh >= 70)."""
+def predice(theta0, theta1, x):
+    """yh = theta0 + theta1*x y si aprueba (yh >= 70)."""
     _nueva()
-    return _f(_predice(_a(th0), _a(th1), _a(x)))
+    return _f(_predice(_a(theta0), _a(theta1), _a(x)))
 
 
 # ---------- conceptos: la idea clave para las interpretaciones ----------
@@ -398,23 +478,24 @@ _CONCEPTOS = [
         "e > 0: la prediccion se paso",
         "e = 0: le atino exacto",
     ]),
-    ("Hipotesis h(x) = th0 + th1*x", [
-        "Es una recta: regresion lineal",
-        "de una variable.",
-        "th0: lo que predice con x = 0",
+    ("Hipotesis h(x)", [
+        "h(x) = theta0 + theta1*x es una",
+        "recta: regresion lineal de una",
+        "variable.",
+        "theta0: lo que predice con x = 0",
         "(ordenada al origen).",
-        "th1: cuanto cambia y por cada",
+        "theta1: cuanto cambia y por cada",
         "unidad de x, ej. puntos por hora",
         "de estudio (pendiente).",
     ]),
     ("Gradiente descendente", [
         "Gradiente: pendiente de J con",
-        "respecto a cada th (derivadas).",
-        "th := th - alfa*gradiente: se mueve",
-        "contra la pendiente para bajar J.",
-        "Batch: cada iteracion usa los m.",
+        "respecto a cada theta (derivadas).",
+        "theta := theta - alfa*gradiente:",
+        "va contra la pendiente y baja J.",
+        "Batch: cada paso usa los m datos.",
         "Simultanea: los 2 gradientes con",
-        "los th viejos, luego se actualiza.",
+        "los theta viejos; luego actualiza.",
         "J nueva < J anterior: mejoro.",
     ]),
     ("Tasa de aprendizaje alfa", [
@@ -451,14 +532,14 @@ def _conceptos():
         print("== CONCEPTOS ==")
         for i in range(len(_CONCEPTOS)):
             print("{} {}".format(i + 1, _CONCEPTOS[i][0]))
-        print("0 regresar")
-        s = input("? ").strip()
+        print("0 Regresar al menu")
+        s = input("Numero de tema: ").strip()
         if s == "0" or s == "":
             return
         try:
             k = int(s)
         except ValueError:
-            continue
+            k = 0
         if 1 <= k <= len(_CONCEPTOS):
             titulo, lineas = _CONCEPTOS[k - 1]
             _nueva()
@@ -466,48 +547,80 @@ def _conceptos():
             for ln in lineas:
                 _out(ln)
             _pausa()
+        else:
+            print("Ese tema no existe (0 a {}).".format(len(_CONCEPTOS)))
 
 
 # ---------- menu ----------
 
-def _pide(nombre, clave, default=None):
-    """Lee un numero. Enter = el ultimo que tecleaste."""
-    previo = _D.get(clave, default)
+def _pregunta(texto, previo):
+    """Hace la pregunta; si hay dato anterior lo muestra en [ ]."""
     if previo is None:
-        s = input(nombre + " = ")
-    else:
-        s = input("{} (enter={}) = ".format(nombre, _n(previo)))
-    if s.strip() == "":
-        if previo is None:
-            raise ValueError("falta " + nombre)
-        return _a(previo)
-    v = _lee(s)
-    _D[clave] = v
-    return v
+        return input(texto + ": ").strip()
+    return input("{} [{}]: ".format(texto, previo)).strip()
 
 
-def _pide_lista(nombre, clave):
+def _pide(texto, clave, default=None):
+    """Lee un numero. Enter = lo de [ ]. Si no se entiende, repite."""
+    previo = _D.get(clave, default)
+    while True:
+        s = _pregunta(texto, None if previo is None else _n(previo))
+        if s == "":
+            if previo is not None:
+                return _a(previo)
+            print("Falta este dato.")
+            continue
+        try:
+            v = _lee(s)
+        except Exception:
+            print("No entendi. Ej: 5, 0.02, -3, 1/50")
+            continue
+        _D[clave] = v
+        return v
+
+
+def _pide_entero(texto, clave, default):
+    while True:
+        p, q = _pide(texto, clave, default)
+        if q == 1 and p >= 1:
+            return p
+        print("Debe ser un entero de 1 o mas.")
+        _D[clave] = default
+
+
+def _pide_lista(texto, clave):
     previa = _D.get(clave)
-    if previa is None:
-        s = input(nombre + " (con comas) = ")
-    else:
+    txt = None
+    if previa is not None:
         txt = ",".join([_n(v) for v in previa])
-        s = input("{} (enter={}) = ".format(nombre, txt))
-    if s.strip() == "":
-        if previa is None:
-            raise ValueError("faltan los " + nombre)
-        return previa
-    for c in "{}[]":
-        s = s.replace(c, "")
-    return [_lee(t) for t in s.replace(",", " ").split()]
+    while True:
+        s = _pregunta(texto, txt)
+        if s == "":
+            if previa is not None:
+                return previa
+            print("Falta este dato.")
+            continue
+        for c in "{}[]":
+            s = s.replace(c, "")
+        try:
+            vals = [_lee(t) for t in s.replace(",", " ").split()]
+        except Exception:
+            vals = []
+        if vals:
+            return vals
+        print("No entendi. Ej: 1,2,3,4")
 
 
 def _datos():
-    xs = _pide_lista("x", "xs")
-    ys = _pide_lista("y", "ys")
-    if len(xs) == 0 or len(xs) != len(ys):
-        raise ValueError("{} valores de x y {} de y".format(
-            len(xs), len(ys)))
+    print("Separa los valores con comas.")
+    print("Enter = usar lo que sale en [ ].")
+    xs = _pide_lista("Valores de x", "xs")
+    while True:
+        ys = _pide_lista("Valores de y", "ys")
+        if len(ys) == len(xs):
+            break
+        print("Hay {} valores de x y {} de y;".format(len(xs), len(ys)))
+        print("deben ser iguales. Escribe y.")
     _D["xs"], _D["ys"] = xs, ys
     return xs, ys
 
@@ -516,48 +629,56 @@ def ia():
     while True:
         print("")
         print("== IA: REGRESION LINEAL ==")
-        print("1 gradiente descendente")
-        print("2 tabla y costo J")
-        print("3 predecir (aprueba si >=70)")
-        print("4 conceptos (interpretacion)")
-        print("0 salir")
+        print("1 Resolver (gradiente descendente)")
+        print("2 Solo tabla y costo J")
+        print("3 Predecir y (aprueba si >= 70)")
+        print("4 Conceptos para explicar")
+        print("0 Salir")
+        op = input("Escribe el numero de opcion: ").strip()
+        if op == "0":
+            return
         try:
-            op = input("? ").strip()
-            if op == "0" or op == "":
-                return
             _corre(op)
         except Exception as err:
-            print("error:", err)
+            print("Algo fallo: " + str(err))
 
 
 def _corre(op):
     if op == "1":
+        print("-- RESOLVER --")
         xs, ys = _datos()
-        t0 = _pide("th0 inicial", "t0")
-        t1 = _pide("th1 inicial", "t1")
-        alfa = _pide("alfa", "alfa")
-        p, q = _pide("iteraciones", "n", (2, 1))
+        t0 = _pide("theta0 inicial", "t0")
+        t1 = _pide("theta1 inicial", "t1")
+        alfa = _pide("Tasa de aprendizaje alfa", "alfa")
+        n = _pide_entero("Cuantas iteraciones", "n", (2, 1))
         _nueva()
-        _D["f0"], _D["f1"] = _gd(xs, ys, t0, t1, alfa, p // q)
+        _D["f0"], _D["f1"] = _gd(xs, ys, t0, t1, alfa, n)
     elif op == "2":
+        print("-- TABLA Y COSTO J --")
         xs, ys = _datos()
-        t0 = _pide("th0", "f0", _D.get("t0"))
-        t1 = _pide("th1", "f1", _D.get("t1"))
+        t0 = _pide("theta0 a evaluar", "f0", _D.get("t0"))
+        t1 = _pide("theta1 a evaluar", "f1", _D.get("t1"))
         _nueva()
         _tabla_costo(xs, ys, t0, t1)
     elif op == "3":
-        t0 = _pide("th0", "f0", _D.get("t0"))
-        t1 = _pide("th1", "f1", _D.get("t1"))
+        print("-- PREDECIR --")
+        t0 = _pide("theta0 a usar", "f0", _D.get("t0"))
+        t1 = _pide("theta1 a usar", "f1", _D.get("t1"))
         while True:
-            s = input("x (enter=salir) = ").strip()
+            s = input("x a predecir (enter = menu): ").strip()
             if s == "":
                 return
+            try:
+                x = _lee(s)
+            except Exception:
+                print("No entendi. Ej: 5")
+                continue
             _nueva()
-            _predice(t0, t1, _lee(s))
+            _predice(t0, t1, x)
     elif op == "4":
         _conceptos()
     else:
-        print("no existe esa opcion")
+        print("Esa opcion no existe (0 a 4).")
 
 
 ia()

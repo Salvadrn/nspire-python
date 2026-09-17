@@ -30,15 +30,21 @@ convenciones exactas del curso: `e = ŷ − y`, `J = Σe²/2m`, actualización
 simultánea y aprobado si `y ≥ 70`. Es un programa aparte (no importa nada):
 corre `ia` y sale el menú.
 
-1. **gradiente descendente**: tecleas x y y con comas (`1,2,3,4`), θ0,
-   θ1, α e iteraciones. En cada iteración salen la hipótesis
-   (`h(x) = 5 + 8x`), la tabla `x | y | yh | e`, la tabla auxiliar
-   `x | e*x | e^2`, Σe, Σ(e·x), Σe², J, los gradientes y la sustitución
-   como en papel (`th1 = 8 - 0.02(-99.25) = 9.985`). Al final sale el
-   resumen: J de cada iteración, si bajó o subió, y θ finales.
-2. **tabla y costo J**: las mismas tablas y J con los θ que quieras
-   (Enter = los finales de la opción 1).
-3. **predecir**: ŷ para una x nueva y si aprueba (ŷ ≥ 70).
+1. **Resolver**: te pregunta `Valores de x`, `Valores de y` (con comas),
+   `theta0 inicial`, `theta1 inicial`, `Tasa de aprendizaje alfa` y
+   `Cuantas iteraciones`. En cada iteración saca el procedimiento corto
+   como en papel: la hipótesis (`h(x) = 5 + 8x`), cada
+   `x=1: yh = 5 + 8(1) = 13` y `e = 13 - 35 = -22`, cada e·x y e², las
+   dos tablas (`x | y | yh | e` y `x | e*x | e^2`), las sumas término por
+   término (`sum e = -22 - 29 - 39 - 50 = -140`),
+   `J = 5346/(2*4) = 5346/8 = 668.25`, los gradientes
+   (`dJ/dtheta1 = (1/4)(-397) = -99.25`) y la actualización simultánea
+   (`theta1 = 8 - 0.02(-99.25) = 9.985`). Al final, el resumen con J1, J2…,
+   las comparaciones (`J2 < J1: bajo, mejoro`) y la conclusión.
+2. **Solo tabla y costo J**: el mismo procedimiento y J con los θ que
+   quieras (Enter = los finales de la opción 1).
+3. **Predecir**: `yh = theta0 + theta1(x) = 6.287 + 11.637(5) = 6.287 + 58.185 = 64.472`
+   y si aprueba (ŷ ≥ 70).
 4. **conceptos**: la idea clave para las preguntas de interpretación
    (qué resume J, residuo, hipótesis, gradiente descendente, efecto de α,
    supervisado vs no supervisado, regresión vs clasificación).
@@ -52,8 +58,10 @@ redondea nada y no hay ruido binario, así que los números cuadran con los
 de papel. En pantalla salen hasta 12 cifras; si hay más, se cortan y el
 número termina en `...`. Con más de 5 iteraciones usa decimales normales
 y solo muestra cómo va J, para ver el efecto de α (lento o diverge).
-Enter en cualquier dato reusa el último que tecleaste; acepta `0.02`,
-`1/50` y `-3`.
+Enter en cualquier dato reusa lo que sale entre `[ ]` (lo último que
+tecleaste); acepta `0.02`, `1/50` y `-3`. Si algo no se entiende o x y y
+no tienen los mismos valores, vuelve a preguntar ese dato en vez de
+regresarte al menú.
 
 Desde el shell también funciona directo:
 `gradiente([1,2,3,4], [35,50,68,87], 5, 8, 0.02, 2)`, `predice(6.287, 11.637, 5)`.
