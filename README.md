@@ -2,8 +2,9 @@
 
 Biblioteca de Python para la TI-Nspire CX II CAS: análisis numérico para
 Cálculo AP (`calcpy.py`), herramientas de física (`fisica.py`), un menú
-interactivo (`ap.py`) para no tener que aprenderse nada, y un formulario
-de repaso (`formulas.py`) con puras fórmulas y tips de AP Calc.
+interactivo (`ap.py`) para no tener que aprenderse nada, un formulario
+de repaso (`formulas.py`) con puras fórmulas y tips de AP Calc, y
+`ia.py` para checar gradiente descendente del curso de IA de PrepaTEC.
 
 ## El único comando que necesitas
 
@@ -21,6 +22,33 @@ BC (técnicas, paramétricas/polares, series) y tips del examen (cómo
 justificar en los FRQ, redondeo a 3 decimales, sobre/subestimación de
 Riemann, velocidad vs rapidez…). Se abre desde `ap()` (opción 12) o
 corriendo `formulas` directo; navegas por tema y avanza por pantallas.
+
+## IA PrepaTEC: gradiente descendente (`ia.py`)
+
+Regresión lineal de una variable con gradiente descendente batch, con las
+convenciones exactas del curso: `e = ŷ − y`, `J = Σe²/2m`, actualización
+simultánea y aprobado si `y ≥ 70`. Es un programa aparte (no importa nada):
+corre `ia` y sale el menú.
+
+1. **gradiente descendente**: tecleas x y y con comas (`1,2,3,4`), θ0,
+   θ1, α e iteraciones. En cada iteración salen la tabla `x | y | yh | e`,
+   Σe, Σ(e·x), Σe², J, los gradientes y la sustitución como en papel
+   (`th1 = 8 - 0.02(-41.25) = 8.825`). Al final sale el resumen: J de cada
+   iteración, si bajó o subió, y θ finales.
+2. **tabla y costo J**: la tabla y J con los θ que quieras (Enter = los
+   finales de la opción 1).
+3. **predecir**: ŷ para una x nueva y si aprueba (ŷ ≥ 70).
+
+Las cuentas son **exactas** (fracciones con enteros largos): no se
+redondea nada y no hay ruido binario, así que los números cuadran con los
+de papel. En pantalla salen hasta 12 cifras; si hay más, se cortan y el
+número termina en `...`. Con más de 5 iteraciones usa decimales normales
+y solo muestra cómo va J, para ver el efecto de α (lento o diverge).
+Enter en cualquier dato reusa el último que tecleaste; acepta `0.02`,
+`1/50` y `-3`.
+
+Desde el shell también funciona directo:
+`gradiente([1,2,3,4], [20,30,45,60], 5, 8, 0.02, 2)`, `predice(5.50325, 9.5125, 7)`.
 
 ## Qué hay
 
@@ -66,7 +94,9 @@ mandar directo:
 5. Mándalo a la calculadora **a la carpeta `PyLib`** (Save to Handheld, o
    arrastrándolo en el panel de contenido). Lo que está en `PyLib` se puede
    importar desde cualquier documento.
-6. Alternativa sin instalar nada: [nspireconnect.ti.com](https://nspireconnect.ti.com)
+6. `ia` no depende de nada: puede ir solo en su propio `ia.tns` (un
+   programa Python llamado `ia`), dentro o fuera de `PyLib`.
+7. Alternativa sin instalar nada: [nspireconnect.ti.com](https://nspireconnect.ti.com)
    (Chrome, por USB) transfiere el `.tns` ya creado.
 
 En la calculadora, en cualquier programa de Python:
