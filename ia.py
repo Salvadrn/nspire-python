@@ -1528,4 +1528,5 @@ def ia():
 
 
 _curso()
+# --- autorun ---
 ia()

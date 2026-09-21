@@ -6,7 +6,54 @@ interactivo (`ap.py`) para no tener que aprenderse nada, un formulario
 de repaso (`formulas.py`) con puras fórmulas y tips de AP Calc, y
 `ia.py` para checar gradiente descendente del curso de IA de PrepaTEC.
 
-## El único comando que necesitas
+## UN solo archivo para todo: `estudio.tns`
+
+**`estudio.tns` trae las tres materias juntas** — Cálculo AP, IA y SAT
+Math — en un solo programa. Arrástralo a la calculadora (con
+[nspireconnect.ti.com](https://nspireconnect.ti.com) en Chrome o el
+Student Software), ábrelo y córrelo (ctrl+R):
+
+```
+== ESTUDIO ==
+1 Calculo AP: herramientas        (el menu ap)
+2 Calculo AP: formulas y tips     (formulario)
+3 IA: regresion lineal            (ia)
+4 SAT Math (para estudiar)        (sat)
+```
+
+- Se genera con `python3 build.py`, que junta `calcpy`, `fisica`,
+  `formulas`, `ap`, `ia` y `sat` en `estudio.py` (detecta choques de
+  nombres entre módulos, f-strings y caracteres no ASCII) y lo convierte
+  a `.tns` con [Luna](https://github.com/ndless-nspire/Luna). **No edites
+  `estudio.py` a mano**: edita el módulo y vuelve a correr `build.py`.
+- Si el `.tns` generado diera lata en la calc, plan B de siempre: pega
+  `estudio.py` completo en una página Python del Student Software y
+  guarda el `.tns` desde ahí.
+- `sh tests/correr.sh` regenera todo y corre 37 pruebas en Python de
+  escritorio **y en MicroPython 1.11** (la versión de la Nspire) con el
+  heap limitado a 1 MB — la calc tiene ~2 MB. Incluye el examen de IA de
+  punta a punta. Las herramientas (MicroPython 1.11 y Luna) se compilan
+  en `.tools/`, que no se sube al repo.
+
+## SAT Math (`sat.py`) — para estudiar, NO para el examen
+
+**Las calculadoras CAS están prohibidas en el SAT** (College Board, desde
+2025; la TI-Nspire CX II CAS aparece por nombre en la lista). El día del
+examen se usa el Desmos integrado de Bluebook. Por eso `sat` es
+herramienta de estudio y sus tips enseñan el camino Desmos:
+
+- **Fórmulas y tips por dominio oficial** (College Board): Algebra ~35%,
+  Advanced Math ~35%, Problem-Solving and Data Analysis ~15%, Geometry
+  and Trigonometry ~15%, más una hoja de formato del examen, reglas del
+  SPR y estrategia. Términos clave también en inglés, como vienen.
+- **Solvers con fracciones exactas** (el SPR acepta `7/3`): recta por 2
+  puntos, sistema 2x2 (una/ninguna/infinitas), cuadrática (raíces,
+  radical simplificado, vértice, suma y producto, formas vertex y
+  factored), porcentajes (cambios sucesivos, original), estadística de
+  una lista, círculo (centro y radio desde la forma general, arco y
+  sector), exponencial y triángulo rectángulo (30-60-90, 45-45-90).
+
+## El menú de Cálculo AP
 
 Corre el programa `ap` (o teclea `ap()` en el shell) y sale un menú en
 español: eliges "punto más alto", "sube/cae vertical", "sumas de riemann",
@@ -134,10 +181,11 @@ calculadora. Ahí: abre el documento y corre el programa (ctrl+R).
 | `comp`, `vmag`, `vang`, `vsuma`, `vpunto` | vectores 2D (fuerzas, componentes) |
 | `regresion(xs, ys)` | mínimos cuadrados para datos de laboratorio |
 
-## Cómo pasarlo a la calculadora
+## Cómo pasar los módulos sueltos (si no quieres el archivo único)
 
-Python vive **dentro de documentos .tns**, así que un `.py` suelto no se puede
-mandar directo:
+Lo más fácil es `estudio.tns` (arriba). Si prefieres los módulos por
+separado: Python vive **dentro de documentos .tns**, así que un `.py`
+suelto no se puede mandar directo:
 
 1. Abre **TI-Nspire CX Student Software** (o la versión de prueba).
 2. Documento nuevo → **Insert → Add Python → New…** → nómbralo `calcpy`.

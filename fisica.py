@@ -2,8 +2,10 @@
 # Adrian. Uso: from fisica import *
 # Necesita calcpy en el mismo documento o en PyLib.
 
+# --- bundle: skip ---
 from math import *
 from calcpy import d, integra, raices, _seguro, _limpia
+# --- bundle: end skip ---
 
 g = 9.81       # m/s^2
 G = 6.674e-11  # N m^2/kg^2

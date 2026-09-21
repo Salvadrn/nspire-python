@@ -469,22 +469,30 @@ def formulario():
         except ValueError:
             continue
         if 1 <= n <= len(TEMAS):
-            _muestra(TEMAS[n - 1])
+            _fo_muestra(TEMAS[n - 1])
 
 
-def _muestra(tema):
+_FO_ANCHO = 36   # caracteres por renglon del shell de la Nspire
+_FO_ALTO = 8     # renglones por pantalla antes de pausar
+
+
+def _fo_muestra(tema):
+    """Pagina contando los renglones que se doblan en la pantalla."""
     titulo, lineas = tema
     print("")
     print("== " + titulo + " ==")
-    c = 0
+    c = 1
     for ln in lineas:
-        print(ln)
-        c += 1
-        if c % 10 == 0:
-            if input("[enter=mas, q=menu] ").strip() == "q":
+        alto = (len(ln) - 1) // _FO_ANCHO + 1 if ln else 1
+        if c + alto > _FO_ALTO:
+            if input("-- enter=mas, q=menu --").strip() == "q":
                 return
-    input("[fin, enter]")
+            c = 0
+        print(ln)
+        c += alto
+    input("-- fin, enter --")
 
 
+# --- autorun ---
 if __name__ == "__main__":
     formulario()
