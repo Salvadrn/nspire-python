@@ -146,7 +146,7 @@ def _es_raiz(f, m, s):
         yH = _seguro(f, m + sg * 1000 * h)
         if yh is None or yH is None or abs(yh) <= 1e-12 * s:
             continue
-        if abs(yh) > 0.1 * abs(yH):
+        if abs(yh) > 0.6 * abs(yH):
             return False
     return True
 
@@ -258,16 +258,22 @@ def _ceros(f, xs, ys, s, pisos, tol):
         for q in range(i, j + 1):
             if abs(ys[q]) < abs(ys[k]):
                 k = q
-        if largo >= 3 and ys[k] != 0 and not _toca_cero(f, xs[k]):
-            i = j + 1                     # tramo casi plano que no toca 0
+        if ys[k] != 0:
+            # casi cero (bajo el piso de ruido), p. ej. x^5 en 0 si el nodo
+            # mas cercano es 0.005: el centro de la zona plana; cuenta si
+            # los flancos cambian de signo o si ahi f toca 0 (y no junto a
+            # un hueco: exp(1/x) cerca de 0 es diminuta pero no 0)
+            iz = zs[i - 1] if i > 0 else None
+            de = zs[j + 1] if j < n else None
+            p = pisos[k] if isinstance(pisos, list) else pisos
+            c = _centro(f, xs[k], p, xs[min(j + 1, n)] - xs[max(i - 1, 0)])
+            flancos = iz is not None and de is not None
+            if flancos and iz * de < 0 or \
+                    _toca_cero(f, c, p if flancos else 0.0):
+                out.append(c)
+            i = j + 1
             continue
-        izq = zs[i - 1] if i > 0 else 1.0
-        der = zs[j + 1] if j < n else 1.0
-        if (izq is None or der is None) and ys[k] != 0 \
-                and not _toca_cero(f, xs[k]):
-            i = j + 1                     # casi 0 junto a un hueco
-            continue
-        out.append(xs[k])
+        out.append(xs[k])                 # 0 exacto
         i = j + 1
     saltos = []
     for i in range(n):
@@ -285,14 +291,14 @@ def _ceros(f, xs, ys, s, pisos, tol):
     return out, saltos
 
 
-def _centro(g, c, T):
+def _centro(g, c, T, tope=0.0):
     """Centro de la zona plana |g| <= T alrededor de c: el minimo de
     |f'| en x^3 o sin(x)^3 esta en medio de la zona donde f' ya es solo
     ruido (la ternaria cae en cualquier punto de esa zona)."""
     lados = []
     for sg in (-1, 1):
         w = 1e-9 * max(1.0, abs(c))
-        while w < 1e-2 * max(1.0, abs(c)):
+        while w < max(1e-2 * max(1.0, abs(c)), tope):
             v = _seguro(g, c + sg * w)
             if v is None or abs(v) > T:
                 break
@@ -321,19 +327,42 @@ def _orilla(g, fuera, dentro, piso):
     return dentro
 
 
-def _redondea(g, c, piso):
-    """Cambia c por su redondeo a 6 decimales si ahi g es igual de chica
-    (quita ruido: -1.26e-07 -> 0, 1.00000000006 -> 1)."""
-    r = round(c, 6)
-    if r == c:
-        return c
+def _redondea(g, c, piso, tope=0.0, g2=None):
+    """Cambia c por el redondeo mas corto (0, entero, ... 6 decimales, a
+    lo mucho 1e-4 relativo) donde g sea igual de chica que en c. Con
+    tope > 0 cuenta tambien el ruido MEDIDO de g cerca de c (f' de
+    x^5-5x^4+... en 1) y, si hay g2 (misma derivada con paso doble), su
+    error de truncado (f'' de x^5(x-3) en 0), sin pasar de tope. Asi un
+    cero plano queda en 0 y un cero de verdad (2pi, 2+raiz 2) no se mueve."""
+    r = round(c, 6) + 0.0
     if abs(r - c) <= 1e-8 * max(1.0, abs(c)):
-        return r
-    if abs(r - c) > 1e-5 * max(1.0, abs(c)):
+        c = r
+    gc = _seguro(g, c)
+    if gc is None:
         return c
-    gc, gr = _seguro(g, c), _seguro(g, r)
-    if gc is not None and gr is not None and abs(gr) <= abs(gc) + piso:
-        return r
+    w = 1e-4 * max(1.0, abs(c))
+    extra = 0.0
+    if tope > 0:
+        e = 1e-9 * max(1.0, abs(c))
+        v = [_seguro(g, c + k * e) for k in (-2, -1, 1, 2)]
+        if None not in v:
+            extra = 2 * max(abs(v[0] - 2 * v[1] + gc),
+                            abs(v[1] - 2 * gc + v[2]),
+                            abs(gc - 2 * v[2] + v[3]))
+    for dg in range(-1, 7):
+        r = 0.0 if dg < 0 else round(c, dg) + 0.0
+        if r == c or abs(r - c) > w:
+            continue
+        gr = _seguro(g, r)
+        if gr is None:
+            continue
+        cr = extra
+        if g2 is not None and tope > 0:
+            t2 = _seguro(g2, r)
+            if t2 is not None:
+                cr = cr + abs(gr - t2) / 15.0
+        if abs(gr) <= abs(gc) + piso + min(cr, tope):
+            return r
     return c
 
 
@@ -404,7 +433,11 @@ def raices(f, a, b, n=200, tol=1e-12, dobles=True, piso=None, crit=None):
             else:
                 out.append(xs[k])
     for x, L in _bordes(f, xs, ys):
-        if _es_num(L) and abs(L) <= 1e-6 * s and _en_dominio(f, x):
+        v = _seguro(f, x)
+        if v is not None and not _hueco(f, x):
+            if v == 0 or _toca_cero(f, x):
+                out.append(x)
+        elif _es_num(L) and abs(L) <= 1e-6 * s and _en_dominio(f, x):
             out.append(x)
     if dobles:
         for c in crit:
@@ -417,7 +450,14 @@ def ceros_tramo(f, a, b, n=200):
     """Tramos de [a,b] donde f vale 0 (no solo en un punto)."""
     xs, ys = _malla(f, a, b, n)
     zs = _ceros_z(ys, 0.0)
-    return [(xs[i], xs[j]) for i, j in _mesetas(zs)]
+    out = []
+    for i, j in _mesetas(zs):
+        p = xs[i] if i == 0 or zs[i - 1] is None else \
+            _orilla(f, xs[i - 1], xs[i], 0.0)
+        q = xs[j] if j == n or zs[j + 1] is None else \
+            _orilla(f, xs[j + 1], xs[j], 0.0)
+        out.append((_z(_bonito(p), 1e-12), _z(_bonito(q), 1e-12)))
+    return out
 
 
 def resuelve(f, g, a, b, n=200):
@@ -508,6 +548,39 @@ def polos(f, a, b, n=200):
     return out
 
 
+def _saltos(f, xs, ys):
+    """Discontinuidades de salto (x^2 si x<=1, 3-x^2 si no): lista de
+    (x, lim izq, lim der) con los dos limites finitos y distintos. Se
+    buscan en las celdas donde f brinca mucho mas que en las vecinas."""
+    n = len(xs) - 1
+    out = []
+    for i in range(1, n - 1):
+        if None in (ys[i - 1], ys[i], ys[i + 1], ys[i + 2]):
+            continue
+        dm = abs(ys[i + 1] - ys[i])
+        if dm == 0 or dm <= 10 * max(abs(ys[i] - ys[i - 1]),
+                                     abs(ys[i + 2] - ys[i + 1])):
+            continue
+        lo, hi, flo, fhi = xs[i], xs[i + 1], ys[i], ys[i + 1]
+        for _ in range(60):
+            m = 0.5 * (lo + hi)
+            fm = _seguro(f, m)
+            if fm is None:
+                break
+            if abs(fm - flo) > abs(fhi - fm):
+                hi, fhi = m, fm
+            else:
+                lo, flo = m, fm
+        c = 0.5 * (lo + hi)
+        if abs(c - round(c, 6)) <= 1e-8 * max(1.0, abs(c)):
+            c = round(c, 6) + 0.0
+        izq, der = limite(f, c, -1), limite(f, c, 1)
+        if _es_num(izq) and _es_num(der) and \
+                abs(izq - der) > 1e-6 * max(1.0, abs(izq), abs(der)):
+            out.append((c, izq, der))
+    return out
+
+
 # ---------- extremos ----------
 
 def _criticos(f, a, b, n, s, xs=None, ys=None):
@@ -525,6 +598,15 @@ def _criticos(f, a, b, n, s, xs=None, ys=None):
     s1 = 1e-8 * _escala(ds)
     pisos = [max(_ruido1(xs[i], ys[i]), s1) for i in range(len(xs))]
     ceros, saltos = _ceros(df, xs, ds, _escala(ds), pisos, 1e-12)
+    # en una esquina con pendientes distintas (abs(x)+x/2) la f' suavizada
+    # cruza 0 corrida unas h: se afina con la derivada fina
+    for q in range(len(ceros)):
+        c = ceros[q]
+        if _esquina(f, c):
+            w = 1e-4 * max(1.0, abs(c))
+            r = _corte(fino, c - w, c + w)
+            if r is not None:
+                ceros[q] = r[0]
     out = list(ceros)
     # esquinas y saltos: f' con h fijo los ve corridos hasta 2h
     for m in saltos:
@@ -552,7 +634,7 @@ def _criticos(f, a, b, n, s, xs=None, ys=None):
     res = []
     for c in out:
         piso = _ruido1(c, _seguro(f, c)) + 1e-14 * s
-        res.append(_redondea(fino, _redondea(df, c, piso), piso))
+        res.append(_redondea(fino, _redondea(df, c, piso, s1), piso))
     return _snap(res, a, b)
 
 
@@ -570,14 +652,19 @@ def _signo(v, piso):
     return 1 if v > piso else (-1 if v < -piso else 0)
 
 
-def _clasifica(f, x, delta, s1=0.0):
+def _clasifica(f, x, delta, s1=0.0, dmax=0.0):
     """Prueba de la primera derivada con f' a +-delta: 'max' si pasa de
     + a - (o de + a plano), 'min' si pasa de - a +, 'ni max ni min' si
-    no cambia de signo. s1: piso minimo de f' (escala)."""
-    sg = []
-    for t in (x - delta, x + delta):
-        sg.append(_signo(_seguro(lambda u: d(f, u), t),
-                         max(_ruido1(t, _seguro(f, t)), s1)))
+    no cambia de signo. s1: piso minimo de f' (escala). Si f' aun esta
+    bajo el ruido (x^6 en 0), delta crece hasta dmax."""
+    while True:
+        sg = []
+        for t in (x - delta, x + delta):
+            sg.append(_signo(_seguro(lambda u: d(f, u), t),
+                             max(_ruido1(t, _seguro(f, t)), s1)))
+        if sg[0] != 0 and sg[1] != 0 or 2 * delta > dmax:
+            break
+        delta = 2 * delta
     sa, sd = sg
     if sa > 0 and sd <= 0 or sa == 0 and sd < 0:
         return 'max'
@@ -591,7 +678,7 @@ def _esquina(f, q):
     se achica al acercarse. En un punto suave se achica 10 veces."""
     fino = lambda x: d(f, x, 1e-10 * max(1.0, abs(x)))
     saltos = []
-    for w in (1e-6, 1e-7):
+    for w in (1e-4, 1e-5):
         w = w * max(1.0, abs(q))
         i, k = _seguro(fino, q - w), _seguro(fino, q + w)
         if i is None or k is None:
@@ -614,7 +701,7 @@ def _delta(c, otros, paso):
     return max(min(dd), 1e-6 * max(1.0, abs(c)))
 
 
-def extremos(f, a, b, n=200, crit=None, pol=None):
+def extremos(f, a, b, n=200, crit=None, pol=None, sal=None):
     """Extremos LOCALES interiores: lista de (x, f(x), tipo) con tipo
     'max', 'min' o 'ni max ni min' (prueba de la primera derivada).
     No cuenta los extremos del intervalo, huecos ni asintotas."""
@@ -625,21 +712,40 @@ def extremos(f, a, b, n=200, crit=None, pol=None):
         crit = _criticos(f, a, b, n, s, xs, ys)
     if pol is None:
         pol = polos(f, a, b, n)
+    if sal is None:
+        sal = _saltos(f, xs, ys)
     ps = [p[0] for p in pol]
+    js = [q[0] for q in sal]
     t = 1e-9 * max(1.0, abs(b - a))
     s1 = 1e-8 * _escala([_seguro(lambda u: d(f, u), x) for x in xs])
     out = []
+    for c, izq, der in sal:           # en un salto: comparar valores
+        y = _seguro(f, c)
+        if y is None or abs(c - a) <= t or abs(c - b) <= t:
+            continue
+        h = 1e-6 * max(1.0, abs(c))
+        yi, yd = _seguro(f, c - h), _seguro(f, c + h)
+        if yi is None or yd is None:
+            continue
+        if y >= yi and y >= yd:
+            out.append((c, y, 'max'))
+        elif y <= yi and y <= yd:
+            out.append((c, y, 'min'))
     for c in crit:
         if abs(c - a) <= t or abs(c - b) <= t \
-                or not _lejos(c, ps, _ventana(c, a, b)):
+                or not _lejos(c, ps, _ventana(c, a, b)) \
+                or not _lejos(c, js, _ventana(c, a, b)):
             continue
         y = _seguro(f, c)
         if y is None or _hueco(f, c):
             continue
         if _toca_cero(f, c):
             y = 0.0
-        out.append((c, y, _clasifica(f, c, _delta(c, crit + ps, paso), s1)))
-    return out
+        otros = [abs(c - o) for o in crit + ps + js if o != c]
+        dmax = min([0.5 * v for v in otros] + [abs(b - a)])
+        out.append((c, y, _clasifica(f, c, _delta(c, crit + ps, paso), s1,
+                                     dmax)))
+    return sorted(out, key=lambda q: q[0])
 
 
 def _sin_repetir(cands):
@@ -651,7 +757,7 @@ def _sin_repetir(cands):
     return out
 
 
-def absolutos(f, a, b, n=200, crit=None, pol=None):
+def absolutos(f, a, b, n=200, crit=None, pol=None, sal=None):
     """Maximo y minimo ABSOLUTOS en [a,b]. Candidatos: extremos del
     intervalo, criticos, bordes del dominio y huecos. Devuelve
     (maxs, mins): None si f sube (baja) sin tope por una asintota, o
@@ -662,9 +768,19 @@ def absolutos(f, a, b, n=200, crit=None, pol=None):
         crit = _criticos(f, a, b, n, s, xs, ys)
     if pol is None:
         pol = polos(f, a, b, n)
+    if sal is None:
+        sal = _saltos(f, xs, ys)
     ps = [p[0] for p in pol]
     arriba = abajo = False
     cand = []
+    for x, izq, der in sal:           # los lados de un salto no se alcanzan
+        cand.append((x, izq, False))
+        cand.append((x, der, False))
+        y = _seguro(f, x)
+        if y is not None:
+            cand.append((x, y, True))
+    malla = [(xs[i], ys[i], True) for i in range(len(xs))
+             if ys[i] is not None and _lejos(xs[i], ps, _ventana(xs[i], a, b))]
     for x, izq, der in pol:
         for L in (izq, der):
             if L == INF:
@@ -673,8 +789,10 @@ def absolutos(f, a, b, n=200, crit=None, pol=None):
                 abajo = True
             elif _es_num(L):
                 cand.append((x, L, False))
+    js = [q[0] for q in sal]
     for x in [a, b] + crit:
-        if not _lejos(x, ps, _ventana(x, a, b)):
+        if not _lejos(x, ps, _ventana(x, a, b)) or \
+                x not in (a, b) and not _lejos(x, js, _ventana(x, a, b)):
             continue
         y = _seguro(f, x)
         if y is not None and not _hueco(f, x):
@@ -684,16 +802,27 @@ def absolutos(f, a, b, n=200, crit=None, pol=None):
                 if _es_num(L):
                     cand.append((x, L, False))
     for x, L in _bordes(f, xs, ys):
-        if _es_num(L):
+        y = _seguro(f, x)
+        if y is not None and not _hueco(f, x):
+            cand.append((x, 0.0 if _toca_cero(f, x) else y, True))
+        elif _es_num(L):
             cand.append((x, L, _en_dominio(f, x)))
 
     def mejores(signo):
-        if not cand:
+        # red de seguridad: un nodo de la malla solo entra si le gana a
+        # todos los candidatos (se le escapo algo, p. ej. un punto suelto)
+        lista = cand
+        if malla:
+            m = max(malla, key=lambda c: signo * c[1])
+            if not cand or signo * m[1] > max([signo * c[1] for c in cand]) \
+                    + 1e-9 * abs(m[1]):
+                lista = cand + [m]
+        if not lista:
             return []
-        vals = [signo * c[1] for c in cand]
+        vals = [signo * c[1] for c in lista]
         top = max(vals)
-        tol = 1e-9 * abs(top) + 1e-15 * (top - min(vals))
-        return _sin_repetir([c for c in cand
+        tol = 1e-9 * abs(top)
+        return _sin_repetir([c for c in lista
                              if abs(signo * c[1] - top) <= tol])
 
     return (None if arriba else mejores(1),
@@ -708,7 +837,7 @@ def maxmin(f, a, b, n=200):
     return uno(maxs), uno(mins)
 
 
-def inflexion(f, a, b, n=200, pol=None, crit=None):
+def inflexion(f, a, b, n=200, pol=None, crit=None, sal=None):
     """Puntos de inflexion interiores: f'' cambia de signo (por encima
     del ruido numerico), f existe ahi y no es una asintota. Si cae
     pegada a una esquina (abs(x^2-3)), la inflexion es la esquina."""
@@ -716,8 +845,11 @@ def inflexion(f, a, b, n=200, pol=None, crit=None):
     paso = (b - a) / n
     if pol is None:
         pol = polos(f, a, b, n)
-    ps = [p[0] for p in pol]
+    if sal is None:
+        sal = _saltos(f, xs, ys)
+    ps = [p[0] for p in pol] + [q[0] for q in sal]
     dd = lambda u: d2(f, u)
+    dd2 = lambda u: d2(f, u, 2e-4 * max(1.0, abs(u)))
     d2s = [_seguro(dd, x) for x in xs]
     s2 = 1e-6 * _escala(d2s)
     pisos = [max(_ruido2(xs[i], ys[i]), s2) for i in range(len(xs))]
@@ -734,19 +866,30 @@ def inflexion(f, a, b, n=200, pol=None, crit=None):
         if y is None or _hueco(f, c):
             continue
         dl = _delta(c, cands + ps, paso)
-        i = _seguro(dd, c - dl)
-        k = _seguro(dd, c + dl)
-        pi = max(_ruido2(c - dl, _seguro(f, c - dl)), s2)
-        pk = max(_ruido2(c + dl, _seguro(f, c + dl)), s2)
+        otros = [abs(c - o) for o in cands + ps if o != c]
+        dmax = min([0.5 * v for v in otros] + [abs(b - a)])
+        while True:
+            i = _seguro(dd, c - dl)
+            k = _seguro(dd, c + dl)
+            pi = max(_ruido2(c - dl, _seguro(f, c - dl)), s2)
+            pk = max(_ruido2(c + dl, _seguro(f, c + dl)), s2)
+            listo = i is not None and k is not None and \
+                abs(i) > pi and abs(k) > pk
+            if listo or 2 * dl > dmax:
+                break
+            dl = 2 * dl                   # f'' plana (x^7 en 0)
         if i is None or k is None or \
                 not (i > pi and k < -pk or i < -pi and k > pk):
             continue
+        esq = False
         for q in esquinas:            # la inflexion es la esquina misma
             if abs(q - c) < 1e-3 * max(1.0, abs(q)):
-                c = q
+                c, esq = q, True
                 y = _seguro(f, c)
                 break
-        out.append((_z(_redondea(dd, c, 0.0), t), y))
+        if not esq:                   # en la esquina f'' salta: no redondear
+            c = _redondea(dd, c, 0.0, s2, dd2)
+        out.append((_z(c, t), y))
     return _sin_repetir([(p[0], p[1], True) for p in out])
 
 
@@ -765,23 +908,44 @@ def _abs_txt(nombre, lst, sube, s):
             "  cuando x->{:.6g} (no se alcanza)".format(c[0])]
 
 
-def _tramos_txt(f, xs, ys):
-    """Avisos: donde f no existe y donde f vale 0 en todo un tramo."""
-    out = []
-    i = 0
-    n = len(xs)
-    while i < n:
-        if ys[i] is None:
-            j = i
-            while j + 1 < n and ys[j + 1] is None:
-                j += 1
-            if j > i:
-                out.append("f no existe en [{:.6g}, {:.6g}]".format(
-                    xs[i], xs[j]))
-            i = j + 1
+def _borde_entre(f, dentro, fuera):
+    """Borde del dominio entre un punto donde f existe y uno donde no."""
+    for _ in range(60):
+        m = 0.5 * (dentro + fuera)
+        if _seguro(f, m) is None:
+            fuera = m
         else:
+            dentro = m
+    return _z(_bonito(dentro), 1e-12)
+
+
+def _saltos_txt(sal):
+    return ["salto en x={:.6g}: izq {:.6g}, der {:.6g}".format(c, i, k)
+            for c, i, k in sal]
+
+
+def _tramos_txt(f, xs, ys):
+    """Avisos: donde f no existe y donde f vale 0 en todo un tramo, con
+    los bordes reales ('(' si ahi f si existe, '[' si no)."""
+    out = []
+    n = len(xs) - 1
+    i = 0
+    while i <= n:
+        if ys[i] is not None:
             i += 1
-    for p, q in ceros_tramo(f, xs[0], xs[-1], n - 1):
+            continue
+        j = i
+        while j < n and ys[j + 1] is None:
+            j += 1
+        if j > i:
+            p = xs[0] if i == 0 else _borde_entre(f, xs[i - 1], xs[i])
+            q = xs[n] if j == n else _borde_entre(f, xs[j + 1], xs[j])
+            ab = "[" if _seguro(f, p) is None else "("
+            ci = "]" if _seguro(f, q) is None else ")"
+            out.append("f no existe en {}{:.6g}, {:.6g}{}".format(
+                ab, p, q, ci))
+        i = j + 1
+    for p, q in ceros_tramo(f, xs[0], xs[-1], n):
         out.append("f = 0 en todo [{:.6g}, {:.6g}]".format(p, q))
     return out
 
@@ -793,18 +957,19 @@ def analiza(f, a, b, n=200):
     s = _escala(ys)
     crit = _criticos(f, a, b, n, s, xs, ys)
     pol = polos(f, a, b, n)
-    for linea in _tramos_txt(f, xs, ys):
+    sal = _saltos(f, xs, ys)
+    for linea in _tramos_txt(f, xs, ys) + _saltos_txt(sal):
         print(linea)
     r = raices(f, a, b, n, 1e-12, True, None, crit)
     print("raices:", _fmt(r) if r else "ninguna")
     if pol:
         print("asintota en x=" + _fmt([p[0] for p in pol]))
-    for x, y, t in extremos(f, a, b, n, crit, pol):
+    for x, y, t in extremos(f, a, b, n, crit, pol, sal):
         print("{}: x={:.6g}  y={:.6g}".format(t, x, y))
-    infl = inflexion(f, a, b, n, pol, crit)
+    infl = inflexion(f, a, b, n, pol, crit, sal)
     if infl:
         print("inflex:", _fmt([p[0] for p in infl]))
-    maxs, mins = absolutos(f, a, b, n, crit, pol)
+    maxs, mins = absolutos(f, a, b, n, crit, pol, sal)
     for linea in _abs_txt("abs max", maxs, "sube", s) + \
             _abs_txt("abs min", mins, "baja", s):
         print(linea)
@@ -816,15 +981,16 @@ def alto_bajo(f, a, b, n=200):
     s = _escala(ys)
     crit = _criticos(f, a, b, n, s, xs, ys)
     pol = polos(f, a, b, n)
-    for linea in _tramos_txt(f, xs, ys):
+    sal = _saltos(f, xs, ys)
+    for linea in _tramos_txt(f, xs, ys) + _saltos_txt(sal):
         print(linea)
     if pol:
         print("asintota en x=" + _fmt([p[0] for p in pol]))
-    maxs, mins = absolutos(f, a, b, n, crit, pol)
+    maxs, mins = absolutos(f, a, b, n, crit, pol, sal)
     for linea in _abs_txt("mas alto", maxs, "sube", s) + \
             _abs_txt("mas bajo", mins, "baja", s):
         print(linea)
-    for x, y, t in extremos(f, a, b, n, crit, pol):
+    for x, y, t in extremos(f, a, b, n, crit, pol, sal):
         if t == 'ni max ni min':
             print("  x={:.6g}: critico, ni max ni min".format(x))
         else:
@@ -980,13 +1146,17 @@ def tabla(f, a, b, n=10):
             x, "indef" if y is None else "{:.6g}".format(y)))
 
 
-def _valores(f, x0, signo):
-    """f(x0 + signo*10^-k) para k = 1..9: None donde no existe, _OVF
+_HS = [10.0 ** (-k) for k in range(1, 10)]
+_HS_FINO = [10.0 ** (-1 - j / 4.0) for j in range(13)]   # 0.1 ... 5.6e-5
+
+
+def _valores(f, x0, signo, hs=_HS):
+    """f(x0 + signo*h) para h = 0.1 ... 1e-9: None donde no existe, _OVF
     donde se desborda (exp(1/x) cerca de 0)."""
     out = []
-    for k in range(1, 10):
+    for h in hs:
         try:
-            y = f(x0 + signo * 10.0 ** (-k))
+            y = f(x0 + signo * h)
             if isinstance(y, complex) or y != y:
                 y = None
             elif abs(y) == INF:
@@ -1026,48 +1196,74 @@ def _lateral(f, x0, signo):
         return NODEF
     if len(v) < 3:
         return _redondo(v[-1])
-    # crece sin frenar con el mismo signo: 1/x, ln(x), log10(x)
-    # (crecer 5% o mas en CADA paso: el ruido de redondeo, en cambio,
-    # salta de golpe despues de una meseta)
-    u = v[-6:]
-    if len(u) >= 4 \
-            and all([abs(u[i + 1]) > 1.05 * abs(u[i])
-                     for i in range(len(u) - 1)]) \
-            and all([(w > 0) == (u[-1] > 0) for w in u]) \
-            and abs(u[-1]) >= 2 * abs(u[0]):
-        return INF if u[-1] > 0 else -INF
-    # se va a 0: rapido (x^2, x*sin(1/x)) o lento (sqrt(x), 1/ln(x))
-    if max([abs(w) for w in v[-3:]]) <= \
+    # crece sin frenar con el mismo signo (1/x, ln x): 5% o mas en CADA
+    # paso de un tramo de 5+ valores que llega al final o termina porque
+    # la cancelacion lo tira a 0 ((1-cos x)/x^4). Si solo se estanca
+    # (1/(x^2+1e-10)) es un pico finito.
+    for e in range(min(4, len(v))):
+        q = e + 1
+        while q < len(v) and abs(v[q]) > 1.05 * abs(v[q - 1]) \
+                and (v[q] > 0) == (v[e] > 0):
+            q += 1
+        # si despues se queda quieto (+-5%) es un pico que se estanca; si
+        # sigue ruido o cae a 0 por cancelacion, el crecimiento era real
+        quieto = len(v) - q >= 2 and all(
+            [abs(w - v[q - 1]) <= 0.05 * abs(v[q - 1]) for w in v[q:q + 2]])
+        if q - e >= 5 and abs(v[q - 1]) >= 2 * abs(v[e]) and not quieto:
+            return INF if v[q - 1] > 0 else -INF
+    # se va a 0: rapido (x^2, x*sin(1/x)) o lento (sqrt(x), 1/ln(x)); en
+    # los dos ya se nota bajando desde el principio (si no, los ceros del
+    # final son cancelacion y no un limite 0)
+    temprano = abs(v[3]) <= 0.1 * abs(v[0]) if len(v) > 3 else False
+    if temprano and max([abs(w) for w in v[-3:]]) <= \
             1e-5 * max([abs(w) for w in v[:3]]):
         return 0.0
     u = v[-5:]
     if all([abs(u[i + 1]) < abs(u[i]) for i in range(len(u) - 1)]) \
             and all([(w > 0) == (u[-1] > 0) for w in u]) \
-            and abs(u[-2] - u[-1]) > 0.05 * abs(u[-1]):
+            and abs(u[-2] - u[-1]) > 0.05 * abs(u[-1]) \
+            and abs(v[-1]) <= 0.5 * abs(v[0]):
         return 0.0
-    # meseta: se corta donde las diferencias empiezan a crecer (desde
-    # ahi manda el redondeo: (1-cos x)/x^2 da 0 con h muy chico). En la
-    # parte limpia, extrapolacion de Richardson (error ~ h):
-    # R = v_k - (v_(k-1) - v_k)/9, y se toma la R que mas coincide con
-    # su vecina (1/(x-3)-6/(x^2-9) en 3 da 0.16666666, no 0.166665)
+    L, err, fin = _extrapola(v)
+    if fin <= 3 or err > 1e-7 * max(1.0, abs(L)):
+        # muy pocos valores limpios (cancelacion de orden alto como
+        # (cos x - 1 + x^2/2)/x^4): muestreo mas fino entre 0.1 y 6e-5
+        vf = [w for w in _valores(f, x0, signo, _HS_FINO)
+              if w is not None and w != _OVF]
+        if len(vf) >= 4:
+            L2, err2, fin2 = _extrapola(vf)
+            if fin2 > fin or err2 < err:
+                L, err, fin, v = L2, err2, fin2, vf
+    if err > 1e-3 * max(1.0, abs(L)):
+        return None                       # no se asienta: oscila
+    if abs(L) <= 1e-9 * max([abs(w) for w in v[:fin]]):
+        return 0.0                        # (1-cos x)/x: ruido de 1e-13
+    return _redondo(L)
+
+
+def _extrapola(v):
+    """Meseta de v: se corta donde las diferencias empiezan a crecer
+    (desde ahi manda el redondeo), y en la parte limpia extrapolacion de
+    Richardson con la razon de convergencia medida q:
+    L = v_j - (v_(j-1) - v_j) q/(1-q). Se toma la L que mas coincide
+    con su vecina. Devuelve (L, error estimado, largo limpio)."""
     dif = [abs(v[i + 1] - v[i]) for i in range(len(v) - 1)]
     fin = len(v)
     for i in range(1, len(dif)):
         if dif[i] > dif[i - 1]:
             fin = i + 1
             break
-    R = [v[j] - (v[j - 1] - v[j]) / 9.0 for j in range(1, fin)]
+    R = []
+    for j in range(1, fin):
+        q = 0.1
+        if j >= 2 and dif[j - 2] > 0:
+            q = min(max(dif[j - 1] / dif[j - 2], 1e-4), 0.7)
+        R.append(v[j] - (v[j - 1] - v[j]) * q / (1 - q))
     if len(R) >= 2:
         dR = [abs(R[j] - R[j - 1]) for j in range(1, len(R))]
         k = dR.index(min(dR))
-        L, err = R[k + 1], dR[k]
-    else:
-        L, err = v[fin - 1], dif[max(0, fin - 2)]
-    if err > 1e-3 * max(1.0, abs(L)):
-        return None                       # no se asienta: oscila
-    if abs(L) <= 1e-9 * max([abs(w) for w in v]):
-        return 0.0                        # (1-cos x)/x: ruido de 1e-13
-    return _redondo(L)
+        return R[k + 1], dR[k], fin
+    return v[fin - 1], dif[max(0, fin - 2)], fin
 
 
 def limite(f, x0, lado=0):
