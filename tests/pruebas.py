@@ -264,6 +264,57 @@ for _op, _ent, _esp in _AP:
     caso("ap " + _op + " " + _ent[0], (lambda o: lambda: E._ap_corre(o))(_op),
          _ent, _esp)
 
+
+# ---------- AP: bateria de la 3a ronda ----------
+
+_AP3 = [
+    ("2", ["1/cos(x)", "-pi/2", "pi/2"], ["no hay mas alto: sube sin tope",
+                                         "mas bajo: y=1 en x=0"]),
+    ("1", ["tan(x)", "0", "pi/2"], ["abs min: y=0 en x=0"]),
+    ("2", ["1/(x-pi)", "pi", "4"], ["mas bajo: y=1.16495 en x=4"]),
+    ("2", ["1/(x-sqrt(2))", "0", "sqrt(2)"], ["mas alto: y=-0.707107 en x=0"]),
+    ("1", ["8/(x^2+4)", "-5", "5"], ["inflex: -1.1547, 1.1547"]),
+    ("1", ["1/(1+exp(-x))", "-6", "5"], ["inflex: 0"]),
+    ("1", ["abs(sin(x))", "-1", "7"], ["raices: 0, 3.14159, 6.28319"]),
+    ("1", ["abs(x^2-4)", "-3", "3"], ["raices: -2, 2", "min: x=-2  y=0",
+                                     "inflex: -2, 2"]),
+    ("1", ["abs(x^2-3)", "-2.5", "2.5"], ["raices: -1.73205, 1.73205"]),
+    ("1", ["sqrt(abs(x-1))", "-2", "3.5"], ["raices: 1", "abs min: y=0 en x=1"]),
+    ("1", ["abs(x-1)+abs(x+1)", "-3", "3"], ["abs min: y=2 en x=-1, 1",
+                                            "abs max: y=6 en x=-3, 3"]),
+    ("1", ["(x+abs(x))/2", "-2", "2"], ["f = 0 en todo [-2, 0]"]),
+    ("1", ["(x-1)^3/(x-1)", "0", "3"], ["raices: ninguna",
+                                       "cuando x->1 (no se alcanza)"]),
+    ("1", ["(x^2-2*x+1)/(x-1)", "0", "3"], ["raices: ninguna"]),
+    ("1", ["(x-1)/(x^2-1)", "1", "3"], ["no hay abs max: y->0.5"]),
+    ("1", ["x+1/x", "-100", "100"], ["max: x=-1  y=-2", "min: x=1  y=2"]),
+    ("2", ["x^2/(x-1)", "-100", "100"], ["max local en x=0", "min local en x=2"]),
+    ("6", ["1/(x-1)-2/(x^2-1)", "1"], ["limite = 0.5"]),
+    ("6", ["1/(x^2-x)-1/(x-1)", "1"], ["limite = -1"]),
+    ("6", ["1/(x-3)-6/(x^2-9)", "3"], ["limite = 0.166667"]),
+    ("6", ["(1-cos(x))/x", "0"], ["limite = 0"]),
+    ("1", ["x^2-x/2", "-100", "100"], ["raices: 0, 0.5"]),
+    ("1", ["x^3-x/4", "-100", "100"], ["raices: -0.5, 0, 0.5"]),
+    ("1", ["x^4-4*x^3+2", "-100", "100"], ["inflex: 0, 2", "min: x=3  y=-25"]),
+    ("1", ["x^3-3*x", "-1000", "1000"], ["raices: -1.73205, 0, 1.73205",
+                                        "max: x=-1  y=2", "inflex: 0"]),
+    ("1", ["exp(1/x)", "-2", "2"], ["raices: ninguna"]),
+    ("1", ["x^3", "-0.0005", "0.0005"], ["abs max: y=1.25e-10 en x=0.0005"]),
+    ("1", ["x^2*exp(-x^2)", "-6", "6"], ["abs min: y=0 en x=0"]),
+    ("6", ["1/x^2", "1000"], ["limite = 1e-06"]),
+    ("6", ["exp(-x)", "15"], ["limite = 3.05902e-07"]),
+    ("1", ["x^3", "-1.3", "2"], ["ni max ni min: x=0  y=0"]),
+    ("1", ["sin(x)^3", "-1", "7"], ["raices: 0, 3.14159, 6.28319",
+                                   "ni max ni min: x=6.28319"]),
+    ("1", ["(x-1)^3+2", "-1.3", "3"], ["ni max ni min: x=1  y=2", "inflex: 1"]),
+    ("1", ["x^5-5*x^4", "-2", "5"], ["raices: 0, 5", "max: x=0  y=0"]),
+    ("1", ["x-sin(x)", "-4", "5"], ["raices: 0", "ni max ni min: x=0  y=0"]),
+    ("2", ["x^(2/3)", "-8", "1"], ["f no existe en [-8", "ojo: x^(p/q) con x<0"]),
+]
+for _op, _ent, _esp in _AP3:
+    caso("ap3 " + _op + " " + _ent[0], (lambda o: lambda: E._ap_corre(o))(_op),
+         _ent, _esp)
+
 caso("ap max con asintota", lambda: E._ap_corre("2"), ["1/(x-1)", "0", "3"],
      ["asintota en x=1", "no hay mas alto"])
 caso("ap lim 1/x^2", lambda: E._ap_corre("6"), ["1/x^2", "0"],
