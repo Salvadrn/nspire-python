@@ -544,6 +544,47 @@ caso("fisica v0 dos opciones", E.mrua, ["0", "", "", "", "-14.0748", "-9.81", ""
 caso("fisica tiempo diminuto", E.conversiones, ["5", "3e-9", "3"],
      ["= 5e-11 min = 8.333333333e-13 h"])
 
+# ---------- 2a mitad de la 4a ronda (revision) ----------
+
+_AP5 = [
+    ("1", ["x^2-2.0001*x+10000", "-3", "3"], ["min: x=1.00005"]),
+    ("1", ["1000+sin(x)", "-1", "7"], ["min: x=4.71239", "inflex: 0, 3.14159, 6.28319\n"]),
+    ("1", ["1000+sin(x)", "0", "7"], ["inflex: 3.14159, 6.28319\n"]),
+    ("1", ["(x-0.123456)^4", "-2", "2"], ["raices: 0.123456\n", "min: x=0.123456"]),
+    ("1", ["sin(x)^4", "-1", "7"], ["raices: 0, 3.14159, 6.28319\n", "min: x=3.14159"]),
+    ("1", ["cos(x)^4", "0", "6.3"], ["raices: 1.5708, 4.71239\n"]),
+    ("1", ["(x-e)^4+1", "0", "4"], ["min: x=2.71828"]),
+    ("1", ["100+x^5*(x-3)", "-1", "3.3"], ["inflex: 0, 2\n"]),
+    ("1", ["1+x^5*(x-3)", "-1", "3.3"], ["inflex: 0, 2\n"]),
+    ("1", ["x^9-x", "-1.2", "1.2"], ["inflex: 0\n"]),
+    ("1", ["cbrt(x)^2", "-8", "8"], ["min: x=0  y=0"]),
+    ("1", ["cbrt(x)^2*(5-x)", "-8", "8"], ["inflex: -1\n"]),
+    ("1", ["-x if x>=0 else x-1", "-1", "1"], ["max: x=0  y=0\n"]),
+    ("6", ["1/(x^2+1e-6)", "0"], ["limite = 1e+06"]),
+]
+for _op, _ent, _esp in _AP5:
+    caso("ap5 " + _op + " " + _ent[0], (lambda o: lambda: E._ap_corre(o))(_op),
+         _ent, _esp)
+caso("ap5 cbrt(x)^2 sin inflexion", lambda: E._ap_corre("1"),
+     ["cbrt(x)^2", "-8", "8"], [])
+if "inflex" in "\n".join(_buf):
+    fallas.append("ap5 cbrt(x)^2: inflexion falsa en la cuspide")
+caso("ap5 abs(sin(x)) sin inflexion", lambda: E._ap_corre("1"),
+     ["abs(sin(x))", "-1", "7"], ["min: x=6.28319  y=0"])
+if "inflex" in "\n".join(_buf):
+    fallas.append("ap5 abs(sin(x)): inflexion falsa en la esquina")
+
+caso("fisica friccion x y t hacia -x", E.mrua, ["0.2", "", "", "", "", "", "1", "-4.019"],
+     ["a=+mu*g (va hacia -x)", "v0 = -5.0 m/s", "vf = -3.038 m/s"])
+caso("fisica friccion x y t ya parado", E.mrua, ["0.25", "", "", "", "", "", "3", "3.262"],
+     ["se paro antes de t", "v0 = 4.0 m/s", "vf = 0.0 m/s"])
+caso("fisica friccion en reposo", E.mrua, ["0.2", "", "", "0", "", "", "2", ""],
+     ["la friccion no", "vf = 0, x = 0, a = 0"])
+caso("fisica friccion reposo imposible", E.mrua, ["0.2", "", "", "0", "", "", "", "-5"],
+     ["datos imposibles"])
+caso("fisica friccion para en -x", E.mrua, ["0.2", "", "", "", "0", "", "", "-6.371"],
+     ["a=+mu*g (va hacia -x)", "v0 = -5.0 m/s", "t  = 2.548 s"])
+
 # ---------- resultado ----------
 
 if fallas:
