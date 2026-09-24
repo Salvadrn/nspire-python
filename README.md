@@ -1,80 +1,90 @@
 # nspire-python
 
-Biblioteca de Python para la TI-Nspire CX II CAS: análisis numérico para
-Cálculo AP (`calcpy.py`), herramientas de física (`fisica.py`), un menú
-interactivo (`ap.py`) para no tener que aprenderse nada, un formulario
-de repaso (`formulas.py`) con puras fórmulas y tips de AP Calc, y
-`ia.py` para checar gradiente descendente del curso de IA de PrepaTEC.
+Programas de Python para la TI-Nspire CX II CAS: **Cálculo AP**, **IA**
+(regresión lineal con gradiente descendente, curso de PrepaTEC) y
+**Física** (FISICA, el solucionador de mecánica de Adrián).
 
-## UN solo archivo para todo: `estudio.tns`
+## Los 4 archivos (`calculadora/`)
 
-**`estudio.tns` trae las tres materias juntas** — Cálculo AP, IA y SAT
-Math — en un solo programa. Arrástralo a la calculadora (con
-[nspireconnect.ti.com](https://nspireconnect.ti.com) en Chrome o el
-Student Software), ábrelo y córrelo (ctrl+R):
+Cada uno se instala **solo**, sin PyLib ni otros archivos. Arrastra el
+`.tns` a la calculadora (con [nspireconnect.ti.com](https://nspireconnect.ti.com)
+en Chrome o el Student Software), ábrelo y córrelo (ctrl+R). Si lo corres
+otra vez, el menú se vuelve a abrir.
+
+| Archivo | Qué trae |
+|---|---|
+| `ap.tns` | Cálculo AP: análisis de funciones, máx/mín, derivadas, integrales y áreas, Riemann, límites, Euler, partícula v(t) y el formulario de fórmulas y tips |
+| `ai.tns` | IA: resuelve el examen de regresión lineal paso a paso, con procedimiento y respuesta de cada inciso |
+| `fisica.tns` | Física: FISICA v7 (unidades, vectores, gráficas, MRU, MRUA, derrape, caída libre, lanzamiento vertical, proyectil, planos, poleas, energía, trabajo y potencia) |
+| `general.tns` | Los 3 juntos, con un menú principal para elegir materia |
 
 ```
-== ESTUDIO ==
-1 Calculo AP: herramientas        (el menu ap)
-2 Calculo AP: formulas y tips     (formulario)
-3 IA: regresion lineal            (ia)
-4 SAT Math (para estudiar)        (sat)
+== GENERAL: elige materia ==
+1 Calculo AP
+2 IA: regresion lineal
+3 Fisica
+0 salir
 ```
 
-- Se genera con `python3 build.py`, que junta `calcpy`, `fisica`,
-  `formulas`, `ap`, `ia` y `sat` en `estudio.py` (detecta choques de
-  nombres entre módulos, f-strings y caracteres no ASCII) y lo convierte
-  a `.tns` con [Luna](https://github.com/ndless-nspire/Luna). **No edites
-  `estudio.py` a mano**: edita el módulo y vuelve a correr `build.py`.
-- Si el `.tns` generado diera lata en la calc, plan B de siempre: pega
-  `estudio.py` completo en una página Python del Student Software y
-  guarda el `.tns` desde ahí.
-- `sh tests/correr.sh` regenera todo y corre 37 pruebas en Python de
+- Plan B si un `.tns` diera lata: pega el `.py` del mismo nombre en una
+  página Python del Student Software y guarda el `.tns` desde ahí.
+- **No edites `calculadora/` a mano.** Las piezas viven en `src/`
+  (`calcpy`, `formulas`, `ap`, `ai`, `fisica`, `sat`); `python3 build.py`
+  las junta, detecta choques de nombres entre piezas, f-strings y texto
+  no ASCII, y genera los `.tns` con [Luna](https://github.com/ndless-nspire/Luna).
+- `sh tests/correr.sh` regenera todo y corre las pruebas en Python de
   escritorio **y en MicroPython 1.11** (la versión de la Nspire) con el
-  heap limitado a 1 MB — la calc tiene ~2 MB. Incluye el examen de IA de
-  punta a punta. Las herramientas (MicroPython 1.11 y Luna) se compilan
-  en `.tools/`, que no se sube al repo.
+  heap limitado a 1 MB (la calc tiene ~2 MB): 43 casos sobre `general`
+  (incluye el examen de IA completo y el problema del malabarista de
+  física) más los 4 archivos corridos sueltos. MicroPython 1.11 y Luna se
+  compilan en `.tools/`, que no se sube al repo.
 
-## SAT Math (`sat.py`) — para estudiar, NO para el examen
+## Física: lanzamiento vertical completo (opción 8)
 
-**Las calculadoras CAS están prohibidas en el SAT** (College Board, desde
-2025; la TI-Nspire CX II CAS aparece por nombre en la lista). El día del
-examen se usa el Desmos integrado de Bluebook. Por eso `sat` es
-herramienta de estudio y sus tips enseñan el camino Desmos:
+Con `v0` da de una vez altura máxima, tiempo de subida, tiempo de vuelo y
+con qué rapidez regresa, y luego deja hacer más preguntas del mismo tiro:
 
-- **Fórmulas y tips por dominio oficial** (College Board): Algebra ~35%,
-  Advanced Math ~35%, Problem-Solving and Data Analysis ~15%, Geometry
-  and Trigonometry ~15%, más una hoja de formato del examen, reglas del
-  SPR y estrategia. Términos clave también en inglés, como vienen.
-- **Solvers con fracciones exactas** (el SPR acepta `7/3`): recta por 2
-  puntos, sistema 2x2 (una/ninguna/infinitas), cuadrática (raíces,
-  radical simplificado, vértice, suma y producto, formas vertex y
-  factored), porcentajes (cambios sucesivos, original), estadística de
-  una lista, círculo (centro y radio desde la forma general, arco y
-  sector), exponencial y triángulo rectángulo (30-60-90, 45-45-90).
+```
+1) donde esta en un tiempo t         (y y v, si sube o baja)
+2) v a d metros ANTES de hmax        (subiendo y bajando)
+3) v y t a una altura y              (- si es debajo de la salida)
+4) t al piso X m DEBAJO              (tiempo total y v al llegar)
+```
 
-## El menú de Cálculo AP
+Con el malabarista (v0 = 7 m/s): hmax 2.497 m, tsub 0.714 s, tvuelo
+1.427 s, y(1.2 s) = 1.337 m bajando, 2.801 m/s a 0.4 m de la cima,
+1.616 s al piso 1.5 m abajo. Si la clave redondea tsub antes de
+multiplicar (0.71 × 2 = 1.42 en vez de 1.43), el programa lo avisa.
 
-Corre el programa `ap` (o teclea `ap()` en el shell) y sale un menú en
-español: eliges "punto más alto", "sube/cae vertical", "sumas de riemann",
-etc., tecleas la función tal cual (`-x^2+4*x`, con `^` y `sen()` válidos)
-y te da el resultado. Las funciones de abajo son para cuando quieras
-usarlas directo en el shell.
+## El menú de Cálculo AP (`ap`)
 
-## Formulario de repaso (`formulas.py`)
+Eliges "punto más alto", "sumas de riemann", "partícula v(t)", etc.,
+tecleas la función tal cual (`-x^2+4*x`, con `^` y `sen()` válidos) y te
+da el resultado. La opción 9 abre el formulario.
+
+## Formulario de repaso (dentro de `ap`)
 
 Puras fórmulas y tips, cero cálculos: límites, derivadas y su tabla,
 aplicaciones, integrales y TFC, aplicaciones de integral + EDO, temas de
 BC (técnicas, paramétricas/polares, series) y tips del examen (cómo
 justificar en los FRQ, redondeo a 3 decimales, sobre/subestimación de
-Riemann, velocidad vs rapidez…). Se abre desde `ap()` (opción 12) o
-corriendo `formulas` directo; navegas por tema y avanza por pantallas.
+Riemann, velocidad vs rapidez…). Navegas por tema y avanza por pantallas.
 
-## IA PrepaTEC: gradiente descendente (`ia.py`)
+## SAT Math (`src/sat.py`, aparte)
+
+No va en los 4 archivos. Es un programa suelto que ya no necesita nada
+más: fórmulas y tips por dominio oficial del College Board y solvers con
+fracciones exactas (recta, sistema 2x2, cuadrática, porcentajes,
+estadística, círculo, exponencial, triángulo rectángulo). Ojo: la
+[política del College Board](https://satsuite.collegeboard.org/sat/what-to-bring-do/calculator-policy)
+no permite calculadoras CAS en el SAT (sí en los exámenes AP), así que es
+para estudiar.
+
+## IA PrepaTEC: gradiente descendente (`ai`)
 
 Para el curso de IA: regresión lineal de una variable con gradiente
-descendente, hecho para que **alguien sin experiencia** lo use. Es un programa
-aparte (no importa nada): córrelo y sigue las preguntas.
+descendente, hecho para que **alguien sin experiencia** lo use. Corre `ai`
+(o entra por la opción 2 de `general`) y sigue las preguntas.
 
 ```
 == IA: REGRESION LINEAL ==
@@ -145,11 +155,6 @@ preguntar ese dato. Cada pantalla trae máximo 9 renglones y
 Probado con MicroPython 1.11 (la versión de la Nspire) compilado en la Mac:
 misma salida que Python de escritorio.
 
-**Pasarlo a la calculadora:** el Student Software no manda `.py`, solo `.tns`.
-Crea un documento, Insertar → Python → Nuevo (cualquier nombre), pega todo
-`ia.py`, guarda el documento como `.tns` y arrastra ese `.tns` a la
-calculadora. Ahí: abre el documento y corre el programa (ctrl+R).
-
 ## Qué hay
 
 **calcpy** — cálculo:
@@ -170,45 +175,12 @@ calculadora. Ahí: abre el documento y corre el programa (ctrl+R).
 | `tabla(f,a,b,n)`, `graf(f,a,b)` | tabla de valores y gráfica en pantalla |
 | `guardar/leer` | intercambiar variables con las apps del documento |
 
-**fisica** — física:
+Movimiento de partícula (también en `calcpy`):
 
 | Función | Qué hace |
 |---|---|
-| `particula(v,t1,t2)` | movimiento de partícula: desplazamiento, distancia total, vueltas |
+| `particula(v,t1,t2)` | desplazamiento, distancia total, dónde da vuelta |
 | `desplazamiento`, `distancia`, `rapidez` | ∫v, ∫\|v\|, ¿la rapidez aumenta o disminuye? |
-| `mrua(v0,v,a,t,x)` | dale 3 de las 5 variables y despeja las demás |
-| `tiro(v0, ang, y0)` | tiro parabólico: h máx, tiempo de vuelo, alcance, impacto |
-| `comp`, `vmag`, `vang`, `vsuma`, `vpunto` | vectores 2D (fuerzas, componentes) |
-| `regresion(xs, ys)` | mínimos cuadrados para datos de laboratorio |
-
-## Cómo pasar los módulos sueltos (si no quieres el archivo único)
-
-Lo más fácil es `estudio.tns` (arriba). Si prefieres los módulos por
-separado: Python vive **dentro de documentos .tns**, así que un `.py`
-suelto no se puede mandar directo:
-
-1. Abre **TI-Nspire CX Student Software** (o la versión de prueba).
-2. Documento nuevo → **Insert → Add Python → New…** → nómbralo `calcpy`.
-3. Pega el contenido de `calcpy.py`. Repite con páginas para `fisica`,
-   `ap` y `formulas`.
-4. Guarda el documento como `biblioteca.tns`.
-5. Mándalo a la calculadora **a la carpeta `PyLib`** (Save to Handheld, o
-   arrastrándolo en el panel de contenido). Lo que está en `PyLib` se puede
-   importar desde cualquier documento.
-6. `ia` no depende de nada: puede ir solo en su propio `ia.tns` (un
-   programa Python llamado `ia`), dentro o fuera de `PyLib`.
-7. Alternativa sin instalar nada: [nspireconnect.ti.com](https://nspireconnect.ti.com)
-   (Chrome, por USB) transfiere el `.tns` ya creado.
-
-En la calculadora, en cualquier programa de Python:
-
-```python
-from calcpy import *
-from fisica import *
-```
-
-Si el import no encuentra el módulo, revisa que el documento esté en la
-carpeta `PyLib` y que el OS sea 5.2 o más nuevo (Menu → Settings → Status).
 
 ## Ejemplos estilo AP
 
@@ -229,11 +201,6 @@ area_entre(lambda x: x**2, lambda x: x + 1, -2, 3)
 # Euler con 4 pasos (BC)
 euler(lambda x, y: x + y, 0, 1, 1, 4)
 
-# caida libre: se suelta desde reposo, cae 20 m; ¿t y v?
-mrua(v0=0, a=-9.81, x=-20)
-
-# proyectil a 25 m/s y 40 grados desde 1.5 m de altura
-tiro(25, 40, 1.5)
 ```
 
 ## Importante: Python ≠ CAS
@@ -241,7 +208,7 @@ tiro(25, 40, 1.5)
 El Python de la Nspire **no habla con el motor simbólico**. Todo esto es
 numérico (respuestas decimales). Para álgebra exacta, `solve()`, derivadas
 simbólicas o series de Taylor, usa la app Calculadora del CAS — para eso la
-compraste. Este módulo brilla donde el CAS es lento de teclear: reportes
+compraste. Estos programas brillan donde el CAS es lento de teclear: reportes
 completos, sumas de Riemann con tabla, movimiento de partícula, física.
 
 Los tests corren en cualquier Python de escritorio porque los módulos de TI
