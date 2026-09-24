@@ -174,11 +174,12 @@ caso("ap particula", lambda: E._ap_corre("8"),
      ["desplazamiento: -3", "distancia:      7.66667",
       "pos final:      -1", "la rapidez disminuye"])
 caso("ap raiz doble", lambda: E._ap_corre("1"), ["x^2", "-1", "2"],
-     ["raices: 0", "min: x=0  y=0", "abs min: 0 en x=0"])
+     ["raices: 0", "min: x=0  y=0", "abs min: y=0 en x=0"])
 caso("ap raiz doble corrida", lambda: E._ap_corre("1"), ["(x-1)^2", "0", "3"],
-     ["raices: 1", "abs min: 0 en x=1"])
+     ["raices: 1", "abs min: y=0 en x=1"])
 caso("ap asintota", lambda: E._ap_corre("1"), ["1/(x-1)", "0", "3"],
-     ["raices: ninguna", "asintota en x=1", "no hay max/min absolutos"])
+     ["raices: ninguna", "asintota en x=1", "no hay abs max: sube sin tope",
+      "no hay abs min: baja sin tope"])
 caso("ap tan", lambda: E._ap_corre("1"), ["tan(x)", "0", "3"],
      ["raices: 0", "asintota en x=1.5708"])
 caso("ap sin raiz falsa", lambda: E._ap_corre("1"), ["x^2+1", "-2", "2"],
@@ -186,15 +187,85 @@ caso("ap sin raiz falsa", lambda: E._ap_corre("1"), ["x^2+1", "-2", "2"],
 caso("ap salto no es raiz", lambda: E._ap_corre("1"), ["abs(x)/x", "-1", "2"],
      ["raices: ninguna"])
 caso("ap 1/x^2 sin cambio de signo", lambda: E._ap_corre("2"),
-     ["1/x^2", "-1", "2"], ["asintota en x=0:"])
+     ["1/x^2", "-1", "2"], ["asintota en x=0", "no hay mas alto: sube sin tope",
+                            "mas bajo: y=0.25 en x=2"])
 caso("ap hueco no es asintota", lambda: E._ap_corre("1"),
      ["sin(x)/x", "-1", "1"], ["raices: ninguna", "abs max"])
 caso("ap pico alto no es asintota", lambda: E._ap_corre("2"),
      ["1/(x^2+0.01)", "-1", "1"], ["mas alto: y=100 en x=0"])
 caso("ap raiz empinada", lambda: E._ap_corre("1"),
      ["x^3-0.001", "-1", "1"], ["raices: 0.1"])
+
+# ---------- AP: bateria de los revisores (2a ronda) ----------
+
+_AP = [
+    ("1", ["tan(x)", "0", "pi"], ["raices: 0, 3.14159", "asintota en x=1.5708"]),
+    ("1", ["tan(x)", "0", "pi/2"], ["raices: 0", "asintota en x=1.5708",
+                                   "no hay abs max: sube sin tope"]),
+    ("1", ["1/(x^2-1)", "-2", "2"], ["asintota en x=-1, 1", "max: x=0  y=-1"]),
+    ("1", ["x/(x^2-1)", "-2", "2"], ["raices: 0", "asintota en x=-1, 1", "inflex: 0"]),
+    ("1", ["ln(x)", "0", "3"], ["raices: 1", "asintota en x=0",
+                               "abs max: y=1.09861 en x=3",
+                               "no hay abs min: baja sin tope"]),
+    ("1", ["ln(abs(x))", "-2", "2"], ["raices: -1, 1", "asintota en x=0",
+                                     "abs max: y=0.693147 en x=-2, 2"]),
+    ("1", ["1/x", "0", "1"], ["asintota en x=0", "abs min: y=1 en x=1"]),
+    ("1", ["exp(1/x)", "-1", "1"], ["raices: ninguna", "asintota en x=0",
+                                   "inflex: -0.5", "no hay abs min: y->0"]),
+    ("1", ["sqrt(4-x^2)", "-3", "3"], ["raices: -2, 2", "abs min: y=0 en x=-2, 2",
+                                      "abs max: y=2 en x=0"]),
+    ("1", ["sqrt(x)", "-1", "2"], ["raices: 0", "abs min: y=0 en x=0"]),
+    ("1", ["sqrt(1-x)", "0", "2"], ["raices: 1", "abs min: y=0 en x=1"]),
+    ("1", ["sin(x)", "-pi", "pi"], ["raices: -3.14159, 0, 3.14159", "inflex: 0"]),
+    ("1", ["cos(x)", "-pi/2", "pi/2"], ["raices: -1.5708, 1.5708"]),
+    ("1", ["(x-1)^5", "0", "2"], ["raices: 1", "ni max ni min: x=1  y=0"]),
+    ("1", ["x^5-5*x^4+10*x^3-10*x^2+5*x-1", "0", "2"],
+     ["raices: 1", "ni max ni min: x=1  y=0"]),
+    ("1", ["2*x+1", "-2", "2"], ["raices: -0.5", "abs max: y=5 en x=2"]),
+    ("1", ["abs(x)", "-1", "2"], ["raices: 0", "min: x=0  y=0"]),
+    ("1", ["x^4", "-1", "1"], ["min: x=0  y=0", "abs max: y=1 en x=-1, 1"]),
+    ("1", ["sin(x)*exp(-x)", "0", "25"],
+     ["raices: 0, 3.14159, 6.28319, 9.42478, 12.5664, 15.708, 18.8496, 21.9911",
+      "min: x=22.7765", "inflex: 1.5708, 4.71239, 7.85398, 10.9956"]),
+    ("1", ["3", "0", "1"], ["raices: ninguna", "abs max: y=3 en x=0, 1"]),
+    ("1", ["abs(x)/x", "-1", "1"], ["abs max: y=1 en x=1", "abs min: y=-1 en x=-1"]),
+    ("1", ["1/(x-1)^2", "0", "3"], ["no hay abs max: sube sin tope",
+                                   "abs min: y=0.25 en x=3"]),
+    ("1", ["x^2+1e-10", "-1", "1"], ["raices: ninguna"]),
+    ("1", ["1/(x^2+1e-10)", "-1", "1"], ["abs max: y=1e+10 en x=0"]),
+    ("1", ["(x<1)*(x-2)+(x>=1)*(3-x)", "0", "3"], ["raices: 3", "max: x=1  y=2",
+                                                  "abs max: y=2 en x=1"]),
+    ("1", ["x^3-3*x", "-2", "2"], ["abs max: y=2 en x=-1, 2",
+                                  "abs min: y=-2 en x=-2, 1"]),
+    ("1", ["cos(x)", "0", "2*pi"], ["abs max: y=1 en x=0, 6.28319",
+                                   "inflex: 1.5708, 4.71239"]),
+    ("1", ["sin(x)/x", "-10", "10"], ["no hay abs max: y->1",
+                                     "cuando x->0 (no se alcanza)"]),
+    ("1", ["x^3", "-3", "3"], ["ni max ni min: x=0  y=0", "inflex: 0"]),
+    ("1", ["x^(1/3)", "-1", "1"], ["raices: 0"]),
+    ("6", ["(1-cos(x))/x^2", "0"], ["limite = 0.5"]),
+    ("6", ["(sin(x)-x)/x^3", "0"], ["limite = -0.166667"]),
+    ("6", ["(tan(x)-x)/x^3", "0"], ["limite = 0.333333"]),
+    ("6", ["(exp(x)-1-x)/x^2", "0"], ["limite = 0.5"]),
+    ("6", ["exp(1/x)", "0"], ["izq: 0", "der: +infinito"]),
+    ("6", ["exp(1/x^2)", "0"], ["limite = +infinito"]),
+    ("6", ["sqrt(x)", "0"], ["izq: no definida", "der: 0"]),
+    ("6", ["log10(x)", "0"], ["der: -infinito"]),
+    ("6", ["1/ln(x)", "0"], ["der: 0"]),
+    ("6", ["x*ln(x)", "0"], ["der: 0"]),
+    ("6", ["x*sin(1/x)", "0"], ["limite = 0"]),
+    ("6", ["sin(1/x)", "0"], ["izq: no existe (oscila)"]),
+    ("6", ["(1+x)^(1/x)", "0"], ["limite = 2.71828"]),
+    ("6", ["(sqrt(x+4)-2)/x", "0"], ["limite = 0.25"]),
+    ("6", ["(x^3-8)/(x-2)", "2"], ["limite = 12"]),
+    ("6", ["tan(x)", "pi/2"], ["izq: +infinito", "der: -infinito"]),
+]
+for _op, _ent, _esp in _AP:
+    caso("ap " + _op + " " + _ent[0], (lambda o: lambda: E._ap_corre(o))(_op),
+         _ent, _esp)
+
 caso("ap max con asintota", lambda: E._ap_corre("2"), ["1/(x-1)", "0", "3"],
-     ["asintota en x=1:"])
+     ["asintota en x=1", "no hay mas alto"])
 caso("ap lim 1/x^2", lambda: E._ap_corre("6"), ["1/x^2", "0"],
      ["limite = +infinito"])
 caso("ap lim 1/x", lambda: E._ap_corre("6"), ["1/x", "0"],
@@ -272,6 +343,14 @@ caso("ia examen", _examen_ia, [],
       "theta0 final = 6.28675", "theta1 final = 11.63725",
       "J disminuyo"])
 
+
+
+def _prueba_nval(t):
+    try:
+        return str(E.nval(t))
+    except ValueError:
+        return "mal"
+
 # ---------- FISICA: problema del malabarista (FF_CA1.pdf) ----------
 
 caso("fisica vertical", E.vertical,
@@ -311,6 +390,18 @@ caso("fisica piso suma", E.vertical, ["1", "4", "10", "0"],
      ["t total = 1.533 s", "= 0.204 s de vuelo + 1.329 s de mas"])
 caso("fisica piso h=0", E.vertical, ["7", "4", "0", "0"],
      ["la otra raiz es t=0"])
+caso("fisica t vuelo mostrado", E.vertical, ["10", "1", "2.039", "0"],
+     ["de vuelta al nivel de salida", "v = -10 m/s"])
+caso("fisica d = hmax", E.vertical, ["0.5", "2", "0.013", "0"],
+     ["subiendo: v = +0.5 m/s  (t = 0.0 s)"])
+caso("fisica paso opcion 2 cuadra", E.vertical, ["10", "2", "2", "0"],
+     ["t=tsub -+ v/g = 1.019368 -+ 6.2641839/9.81"])
+caso("fisica nval sin mantisa", lambda: _buf.append(
+         " ".join([_prueba_nval(t) for t in ("e2", "x10^2", ".", "-e5", "2e3")])),
+     [], ["mal mal mal mal 2000.0"])
+caso("fisica r2 medio arriba", lambda: _buf.append(
+         E.r2(0.5095) + " " + E.r2(0.0025) + " " + E.r2(-7.3385)),
+     [], ["0.51 0.003 -7.339"])
 caso("fisica derrape mu=0", E.fisica, ["6", "2", "20", "0", "", "0"],
      ["Error con esos datos", "Saliste de FISICA"])
 caso("fisica graficas 0 puntos", E.fisica, ["3", "2", "0", "", "0"],
