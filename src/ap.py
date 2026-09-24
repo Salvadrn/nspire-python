@@ -1,12 +1,11 @@
-# ap - menu interactivo para Calculo AP y fisica
+# ap - menu interactivo para Calculo AP
 # El unico comando que hay que aprenderse: ap()
-# Suelto necesita calcpy y fisica (mismo documento o PyLib); dentro de
-# estudio.py (el archivo unico) ya viene todo junto.
+# Esta es la pieza del menu: build.py le pega calcpy y formulas y
+# genera calculadora/ap.py (y general.py), que ya no necesitan nada.
 
 # --- bundle: skip ---
 from math import *
 from calcpy import *
-from fisica import *
 
 try:
     from formulas import formulario
@@ -63,13 +62,9 @@ def ap():
         print("5 sumas de riemann")
         print("6 limite")
         print("7 metodo de euler")
-        print("== FISICA ==")
         print("8 particula v(t)")
-        print("9 sube / cae vertical")
-        print("10 tiro parabolico")
-        print("11 despeja mrua")
         print("== REPASO ==")
-        print("12 formulario (formulas y tips)")
+        print("9 formulario (formulas y tips)")
         print("0 salir")
         try:
             op = input("? ").strip()
@@ -141,27 +136,10 @@ def _ap_corre(op):
         t0 = _ap_num("rapidez en t = ", (a + b) / 2)
         print("la rapidez", rapidez(v, t0))
     elif op == "9":
-        v0 = _ap_num("v0 hacia arriba (enter=se suelta) = ", 0)
-        h0 = _ap_num("altura inicial (enter=0) = ", 0)
-        tiro(v0, 90, h0)
-        print("(v impacto = que tan rapido cae al llegar)")
-    elif op == "10":
-        v0 = _ap_num("v0 (m/s) = ")
-        ang = _ap_num("angulo (grados) = ")
-        h0 = _ap_num("altura inicial (enter=0) = ", 0)
-        tiro(v0, ang, h0)
-    elif op == "11":
-        print("enter = no la sabes. x es desplazamiento")
-        vals = {}
-        for nombre in ("v0", "v", "a", "t", "x"):
-            s = _ap_txt(nombre + " = ")
-            vals[nombre] = float(eval(s, _ap_ns, {})) if s != "" else None
-        mrua(vals["v0"], vals["v"], vals["a"], vals["t"], vals["x"])
-    elif op == "12":
         if formulario:
             formulario()
         else:
-            print("falta formulas.py (ponlo en PyLib)")
+            print("falta formulas.py")
     else:
         print("no existe esa opcion")
 
