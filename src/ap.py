@@ -54,6 +54,8 @@ def _ap_intervalo():
 def _ap_lim(v):
     if v is None:
         return "no existe (oscila)"
+    if v == NODEF:
+        return "no definida (fuera del dominio)"
     if v == INF:
         return "+infinito (crece sin tope)"
     if v == -INF:
@@ -96,17 +98,7 @@ def _ap_corre(op):
     elif op == "2":
         f = _ap_f()
         a, b = _ap_intervalo()
-        p = polos(f, a, b)
-        if p:
-            print("asintota en x=" + _fmt(p) + ":")
-            print("sube/baja sin tope, no hay")
-            print("punto mas alto ni mas bajo")
-        else:
-            (xM, yM), (xm, ym) = maxmin(f, a, b)
-            print("mas alto: y={:.6g} en x={:.6g}".format(yM, xM))
-            print("mas bajo: y={:.6g} en x={:.6g}".format(ym, xm))
-        for x, y, t in extremos(f, a, b):
-            print("  {} local en x={:.6g}".format(t, x))
+        alto_bajo(f, a, b)
     elif op == "3":
         f = _ap_f()
         x0 = _ap_num("en x = ")
