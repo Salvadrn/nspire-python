@@ -2,10 +2,10 @@
 # Para TI-Nspire CX II (Python / MicroPython)
 # Notacion del formulario: g suma (abajo positivo en caida)
 
+# --- bundle: skip ---
 from math import sin, cos, tan, atan2, sqrt, radians, degrees
 import sys
 
-print(">>> cargando FISICA v7...")
 
 # limpia el cache de modulos al arrancar (blindado)
 try:
@@ -14,6 +14,7 @@ try:
             sys.modules.pop(_m)
 except Exception:
     pass
+# --- bundle: end skip ---
 
 G = 9.81
 
@@ -1065,7 +1066,8 @@ ops = [("Unidades", conversiones),
        ("Energia", energia),
        ("Trabajo/Potencia", trabajo)]
 
-try:
+def fisica():
+    print(">>> FISICA v7")
     while True:
         sep()
         print("FISICA - menu principal")
@@ -1081,7 +1083,7 @@ try:
         print("0)SALIR")
         op = input("> ")
         if op == "0" or op == "q":
-            print("Programa terminado. Exito en el examen!")
+            print("Saliste de FISICA. Exito en el examen!")
             break
         try:
             k = int(op) - 1
@@ -1091,5 +1093,10 @@ try:
                 input("(enter para volver al menu)")
         except ValueError:
             print("Opcion no valida")
+
+
+# --- autorun ---
+try:
+    fisica()
 finally:
     sys.modules.pop(__name__, None)
