@@ -20,13 +20,15 @@ G = 9.81
 
 def nval(s):
     # acepta 3e-5, 3x10^-5, 4*10^8, 10^-3
+    # (la tecla ^ de la Nspire escribe ** dentro de Python)
     s = s.replace(" ", "")
-    for tk in ("x10^", "X10^", "*10^"):
+    for tk in ("x10**", "X10**", "*10**", "x10^", "X10^", "*10^"):
         s = s.replace(tk, "e")
-    if s.startswith("10^"):
-        s = "1e" + s[3:]
-    elif s.startswith("-10^"):
-        s = "-1e" + s[4:]
+    for pre in ("10**", "10^"):
+        if s.startswith(pre):
+            s = "1e" + s[len(pre):]
+        elif s.startswith("-" + pre):
+            s = "-1e" + s[len(pre) + 1:]
     return float(s)
 
 def num(msg):
@@ -53,10 +55,15 @@ def tip(t):
     print("* TIP:", t)
 
 def r2(x):
-    # %.12g: sin colas tipo 78.43000000000001 de MicroPython
-    s = "%.12g" % round(x, 3)
-    if "." not in s and "e" not in s and "n" not in s:
-        s = s + ".0"
+    # 3 decimales sin colas tipo 78.43000000000001 de MicroPython
+    x = round(x, 3)
+    if x == 0:
+        x = 0.0
+    if x != x or abs(x) >= 1e15:
+        return str(x)
+    s = ("%.3f" % x).rstrip("0")
+    if s[-1] == ".":
+        s = s + "0"
     return s
 
 def proc_print(proc):
@@ -391,26 +398,37 @@ def caida():
         print("subio", round(v0 * v0 / (2 * G), 3), "m antes de caer")
 
 # ---------- 5. LANZAMIENTO VERTICAL ----------
+def r6(x):
+    # datos y pasos intermedios completos, sin recortar a 3 decimales
+    if abs(x) < 1e-12:
+        x = 0.0
+    return "%.6g" % x
+
 def vert_nivel(v0, y, proc):
     # v y tiempos al pasar por la altura y (arriba +, y=0 en la salida)
+    hm = v0 * v0 / (2 * G)
+    ts = v0 / G
+    if abs(y - hm) < 0.0005:
+        proc.append("y = hmax = v0^2/2g = " + r2(hm))
+        proc_print(proc)
+        sep()
+        print("es la cima: v = 0 en t =", r2(ts), "s")
+        return
     v2 = v0 * v0 - 2 * G * y
-    proc.append("v^2=v0^2-2gy = " + r2(v0) + "^2-19.62(" + r2(y) + ") = " + r2(v2))
+    proc.append("v^2=v0^2-2gy = " + r6(v0) + "^2-19.62(" + r6(y) + ") = " + r6(v2))
     if v2 < 0:
         proc_print(proc)
         sep()
-        print("NO llega a esa altura (hmax =", r2(v0 * v0 / (2 * G)), "m)")
+        print("NO llega a esa altura (hmax =", r2(hm), "m)")
         return
     v = sqrt(v2)
-    proc.append("v=raiz(" + r2(v2) + ") = " + r2(v))
-    proc.append("t=(v0 -+ v)/g = (" + r2(v0) + " -+ " + r2(v) + ")/9.81")
+    proc.append("v=raiz(" + r6(v2) + ") = " + r2(v))
+    proc.append("t=(v0 -+ v)/g = (" + r6(v0) + " -+ " + r6(v) + ")/9.81")
     proc_print(proc)
     sep()
     t1 = (v0 - v) / G
     t2 = (v0 + v) / G
-    if v < 0.0005:
-        print("es la cima: v = 0 en t =", r2(t1), "s")
-        return
-    if t1 > 0.0005:
+    if y >= 0:
         print("subiendo: v = +" + r2(v), "m/s  (t =", r2(t1), "s)")
     print("bajando:  v = -" + r2(v), "m/s  (t =", r2(t2), "s)")
     print("rapidez =", r2(v), "m/s (sin signo)")
@@ -425,81 +443,98 @@ def vertical():
     ts = v0 / G
     tv = 2 * v0 / G
     print("PROCEDIMIENTO:")
-    print("  hmax=v0^2/2g = " + r2(v0) + "^2/19.62 = " + r2(hm))
-    print("  tsub=v0/g = " + r2(v0) + "/9.81 = " + r2(ts))
-    print("  tvuelo=2v0/g = 2(" + r2(v0) + ")/9.81 = " + r2(tv))
+    print("  hmax=v0^2/2g = " + r6(v0) + "^2/19.62 = " + r2(hm))
+    print("  tsub=v0/g = " + r6(v0) + "/9.81 = " + r2(ts))
+    print("  tvuelo=2v0/g = 2(" + r6(v0) + ")/9.81 = " + r2(tv))
     sep()
     print("h max =", r2(hm), "m (sobre el punto de salida)")
     print("t subida =", r2(ts), "s (hasta la cima)")
     print("t vuelo =", r2(tv), "s (vuelve al mismo nivel)")
     ta = 2 * round(ts, 2)
     if round(tv, 2) != round(ta, 2):
-        print("  ojo: si redondeas tsub a", round(ts, 2), "antes:", round(ta, 2), "s")
-    print("regresa con", r2(v0), "m/s hacia abajo (misma rapidez)")
+        print("  ojo: si redondeas tsub a", "%.2f" % ts, "antes:", "%.2f" % ta, "s")
+    print("regresa con", r6(v0), "m/s hacia abajo (misma rapidez)")
     while True:
         sep()
-        print("MAS del mismo tiro (v0=" + r2(v0) + "):")
+        print("MAS del mismo tiro (v0=" + r6(v0) + "):")
         print("1) donde esta en un tiempo t")
         print("2) v a d metros ANTES de hmax")
         print("3) v y t a una altura y")
         print("4) t al piso X m DEBAJO")
         print("0) listo")
-        op = input("> ")
+        op = input("> ").strip()
+        if op == "0":
+            return
+        if op not in ("1", "2", "3", "4"):
+            print("opcion no valida (0 = listo)")
+            continue
         sep()
         if op == "1":
             t = num("t (s): ")
+            while t < 0:
+                print("t debe ser >= 0 (cuenta desde que lo lanza)")
+                t = num("t (s): ")
             y = v0 * t - 0.5 * G * t * t
             v = v0 - G * t
             print("PROCEDIMIENTO:")
-            print("  y=v0t-.5gt^2 = " + r2(v0) + "(" + r2(t) + ")-4.905(" + r2(t) + ")^2 = " + r2(y))
-            print("  v=v0-gt = " + r2(v0) + "-9.81(" + r2(t) + ") = " + r2(v))
+            print("  y=v0t-.5gt^2 = " + r6(v0) + "(" + r6(t) + ")-4.905(" + r6(t) + ")^2 = " + r2(y))
+            print("  v=v0-gt = " + r6(v0) + "-9.81(" + r6(t) + ") = " + r2(v))
             sep()
             print("y =", r2(y), "m (sobre el punto de salida)")
-            if y < 0:
+            if y < -0.0005:
                 print("  negativo: ya esta DEBAJO de donde salio")
-            print("v =", r2(v), "m/s")
-            if v > 0.0005:
-                print("  + : va SUBIENDO")
-            elif v < -0.0005:
-                print("  - : va BAJANDO")
+            if abs(t - ts) < 0.0005:
+                print("v = 0 m/s: esta en la CIMA (y = hmax)")
             else:
-                print("  esta en la cima")
-            if t > tv:
+                print("v =", r2(v), "m/s")
+                if v > 0:
+                    print("  + : va SUBIENDO")
+                else:
+                    print("  - : va BAJANDO")
+            if t > tv + 0.0005:
                 print("  ojo: t > t vuelo; solo si cae mas abajo")
         elif op == "2":
             tip("'antes de llegar' a hmax = va SUBIENDO (+)")
             d = abs(num("d metros antes de hmax (m): "))
+            if d < 0.0005:
+                print("d = 0: es la cima: v = 0 en t =", r2(ts), "s")
+                continue
             v = sqrt(2 * G * d)
             t1 = ts - v / G
             t2 = ts + v / G
             print("PROCEDIMIENTO:")
             print("  desde la cima cae d: v=raiz(2gd)")
-            print("  v=raiz(19.62(" + r2(d) + ")) = " + r2(v))
+            print("  v=raiz(19.62(" + r6(d) + ")) = " + r2(v))
             print("  t=tsub -+ v/g = " + r2(ts) + " -+ " + r2(v) + "/9.81")
             sep()
             print("altura y = hmax-d =", r2(hm - d), "m")
-            if t1 > 0.0005:
+            if d > hm + 0.0005:
+                print("  ojo: d > hmax: queda DEBAJO de la")
+                print("  salida; ahi nunca pasa subiendo")
+            else:
                 print("subiendo: v = +" + r2(v), "m/s  (t =", r2(t1), "s)")
             print("bajando:  v = -" + r2(v), "m/s  (t =", r2(t2), "s)")
         elif op == "3":
             y = num("y sobre la salida (m, - si abajo): ")
             vert_nivel(v0, y, [])
-        elif op == "4":
+        else:
             h = abs(num("cuantos m DEBAJO de la salida: "))
             v = sqrt(v0 * v0 + 2 * G * h)
             t = (v0 + v) / G
             print("PROCEDIMIENTO:")
             print("  llega a y=-h: -h = v0t-4.905t^2")
-            print("  4.905t^2-" + r2(v0) + "t-" + r2(h) + " = 0")
+            print("  4.905t^2-" + r6(v0) + "t-" + r6(h) + " = 0")
             print("  t=(v0+raiz(v0^2+2gh))/g")
-            print("   =(" + r2(v0) + "+raiz(" + r2(v0) + "^2+19.62(" + r2(h) + ")))/9.81")
+            print("   =(" + r6(v0) + "+raiz(" + r6(v0) + "^2+19.62(" + r6(h) + ")))/9.81")
             sep()
             print("t total =", r2(t), "s (desde que lo lanza)")
-            print("  =", r2(tv), "s de vuelo +", r2(t - tv), "s de mas")
+            extra = float(r2(t)) - float(r2(tv))
+            print("  =", r2(tv), "s de vuelo +", r2(extra), "s de mas")
             print("v al llegar = -" + r2(v), "m/s (hacia abajo)")
-            tip("la otra raiz de t sale negativa: se descarta")
-        else:
-            return
+            if h > 0:
+                tip("la otra raiz de t sale negativa: se descarta")
+            else:
+                tip("h=0: la otra raiz es t=0 (el lanzamiento)")
 
 # ---------- 6. PROYECTILES ----------
 def proyectil():
@@ -1081,18 +1116,24 @@ def fisica():
                 der = ""
             print(izq + " " * (16 - len(izq)) + der)
         print("0)SALIR")
-        op = input("> ")
+        op = input("> ").strip()
         if op == "0" or op == "q":
             print("Saliste de FISICA. Exito en el examen!")
             break
         try:
             k = int(op) - 1
-            if 0 <= k < len(ops):
-                sep()
-                ops[k][1]()
-                input("(enter para volver al menu)")
         except ValueError:
+            k = -1
+        if not 0 <= k < len(ops):
             print("Opcion no valida")
+            continue
+        sep()
+        try:
+            ops[k][1]()
+        except Exception as err:
+            print("Error con esos datos:", err)
+            print("(revisa ceros, negativos o datos que faltan)")
+        input("(enter para volver al menu)")
 
 
 # --- autorun ---
