@@ -1,4 +1,4 @@
-# ia - regresion lineal con gradiente descendente (IA PrepaTEC)
+# ai - regresion lineal con gradiente descendente (IA PrepaTEC)
 # Adrian. Corre el programa y sigue las preguntas: pide los datos en el
 # orden del examen y da cada respuesta con su procedimiento para copiar.
 #
