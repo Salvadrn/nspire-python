@@ -1,15 +1,20 @@
 #!/usr/bin/env python3
-"""build.py - genera estudio.py: UN solo archivo con Calculo AP + IA + SAT.
+"""build.py - genera los 4 archivos para la calculadora en calculadora/.
 
 Uso:  python3 build.py
 
-Junta calcpy, fisica, formulas, ap, ia y sat en un programa autocontenido
-(se pega UNA vez en la calculadora) y, si Luna esta compilado en
-.tools/Luna, genera tambien estudio.tns listo para arrastrar a la Nspire.
+    calculadora/ap.py       Calculo AP (calcpy + formulas + menu ap)
+    calculadora/ai.py       IA: regresion lineal (ai)
+    calculadora/fisica.py   Fisica (FISICA)
+    calculadora/general.py  los 3 juntos con un menu principal
 
-Cada modulo marca lo que NO entra al archivo unico:
+Cada uno es autocontenido: se instala solo, sin PyLib ni otros archivos.
+Si Luna esta compilado en .tools/Luna, genera tambien el .tns de cada uno.
+Las piezas viven en src/; NO edites calculadora/ a mano.
+
+Cada pieza marca lo que no entra cuando se junta con otras:
     # --- bundle: skip ---  ...  # --- bundle: end skip ---   (imports)
-    # --- autorun ---        (de aqui al final: el arranque del modulo)
+    # --- autorun ---        (de aqui al final: el arranque de la pieza)
 """
 import ast
 import builtins
@@ -19,35 +24,44 @@ import subprocess
 import sys
 
 AQUI = os.path.dirname(os.path.abspath(__file__))
-ORDEN = ["calcpy", "fisica", "formulas", "ap", "ia", "sat"]
+SRC = os.path.join(AQUI, "src")
+SALIDA = os.path.join(AQUI, "calculadora")
 SKIP_INI = "# --- bundle: skip ---"
 SKIP_FIN = "# --- bundle: end skip ---"
 AUTORUN = "# --- autorun ---"
 LUNA = os.path.join(AQUI, ".tools", "Luna", "luna")
 
+# nombre -> (piezas, funcion que arranca, descripcion)
+OBJETIVOS = [
+    ("ap", ["calcpy", "formulas", "ap"], "ap", "Calculo AP"),
+    ("ai", ["ai"], "ia", "IA: regresion lineal"),
+    ("fisica", ["fisica"], "fisica", "Fisica"),
+    ("general", ["calcpy", "formulas", "ap", "ai", "fisica"], "general",
+     "Calculo AP + IA + Fisica"),
+]
+
 CABEZA = '''\
-# estudio - UN solo archivo: Calculo AP + IA + SAT Math
+# {nombre} - {desc}
 # Para la TI-Nspire CX II CAS de Adrian (MicroPython 1.11).
-# GENERADO por build.py desde calcpy, fisica, formulas, ap, ia y sat:
-# no lo edites a mano; edita el modulo y corre  python3 build.py
-# Corre el programa y sale el menu. Para abrirlo otra vez: estudio()
+# GENERADO por build.py desde src/{piezas}:
+# no lo edites a mano; edita src/ y corre  python3 build.py
 
 from math import *
+import sys
 '''
 
-MENU = '''
+MENU_GENERAL = '''
 
 # ===================== menu principal =====================
 
-def estudio():
+def general():
     try:
         while True:
             print("")
-            print("== ESTUDIO ==")
-            print("1 Calculo AP: herramientas")
-            print("2 Calculo AP: formulas y tips")
-            print("3 IA: regresion lineal")
-            print("4 SAT Math (para estudiar)")
+            print("== GENERAL: elige materia ==")
+            print("1 Calculo AP")
+            print("2 IA: regresion lineal")
+            print("3 Fisica")
             print("0 salir")
             op = input("? ").strip()
             if op == "0":
@@ -56,26 +70,30 @@ def estudio():
                 if op == "1":
                     ap()
                 elif op == "2":
-                    formulario()
-                elif op == "3":
                     ia()
-                elif op == "4":
-                    sat()
-                else:
-                    print("escribe un numero del 0 al 4")
+                elif op == "3":
+                    fisica()
+                elif op != "":
+                    print("escribe 1, 2, 3 o 0")
             except Exception as err:
                 print("Algo fallo: " + str(err))
     except KeyboardInterrupt:
         pass
-    print("Para abrir otra vez: estudio()")
+    print("Para abrir otra vez: general()")
+'''
 
+ARRANQUE = '''
 
-estudio()
+# correr el programa otra vez vuelve a abrir el menu
+try:
+    {fn}()
+finally:
+    sys.modules.pop(__name__, None)
 '''
 
 
 def procesa(nombre):
-    ruta = os.path.join(AQUI, nombre + ".py")
+    ruta = os.path.join(SRC, nombre + ".py")
     out = []
     saltando = False
     for ln in open(ruta, encoding="utf-8").read().split("\n"):
@@ -92,12 +110,12 @@ def procesa(nombre):
             continue
         out.append(ln)
     if saltando:
-        sys.exit("{}.py: falta '{}'".format(nombre, SKIP_FIN))
+        sys.exit("src/{}.py: falta '{}'".format(nombre, SKIP_FIN))
     return "\n".join(out).strip("\n") + "\n"
 
 
 def nombres_top(src):
-    """Nombres que el modulo define a nivel global."""
+    """Nombres que la pieza define a nivel global (sin contar imports)."""
     ns = set()
 
     def visita(nodos):
@@ -110,9 +128,6 @@ def nombres_top(src):
                     for x in ast.walk(t):
                         if isinstance(x, ast.Name):
                             ns.add(x.id)
-            elif isinstance(n, (ast.Import, ast.ImportFrom)):
-                for a in n.names:
-                    ns.add((a.asname or a.name).split(".")[0])
             elif isinstance(n, ast.Try):
                 visita(n.body)
                 for h in n.handlers:
@@ -130,67 +145,79 @@ def nombres_top(src):
 def revisa_micropython(nombre, src):
     """Lo que truena en MicroPython 1.11 y CPython no avisa."""
     errores = []
-    if not src.isascii():
-        malos = sorted(set(c for c in src if ord(c) > 127))
-        errores.append("{}: caracteres no ASCII {}".format(nombre, malos))
     for n in ast.walk(ast.parse(src)):
         if isinstance(n, ast.JoinedStr):
             errores.append("{}: f-string en linea {}".format(nombre, n.lineno))
         if isinstance(n, ast.NamedExpr):
             errores.append("{}: := en linea {}".format(nombre, n.lineno))
+    for i, ln in enumerate(src.split("\n")):
+        if not ln.isascii() and not ln.lstrip().startswith("#"):
+            errores.append("{}: no ASCII fuera de comentario, linea {}"
+                           .format(nombre, i + 1))
     return errores
 
 
-def main():
-    partes = [CABEZA]
+def junta(nombre, piezas, fn, desc):
+    partes = [CABEZA.format(nombre=nombre, desc=desc,
+                            piezas=", ".join(p + ".py" for p in piezas))]
     duenos = {}
     errores = []
     prohibidos = (set(dir(math)) | set(dir(builtins))) - {"__doc__", "__name__"}
-    for nombre in ORDEN:
-        src = procesa(nombre)
-        errores += revisa_micropython(nombre, src)
+    for p in piezas:
+        src = procesa(p)
+        errores += revisa_micropython(p, src)
         for n in sorted(nombres_top(src)):
             if n in duenos:
                 errores.append("choque: '{}' en {} y en {}".format(
-                    n, duenos[n], nombre))
+                    n, duenos[n], p))
             elif n in prohibidos:
                 errores.append("{}: '{}' tapa un nombre de math/builtins"
-                               .format(nombre, n))
-            duenos[n] = nombre
+                               .format(p, n))
+            duenos[n] = p
         partes.append("\n\n# ===================== {} =====================\n\n"
-                      .format(nombre))
+                      .format(p))
         partes.append(src)
-    for n in ("estudio",):
-        if n in duenos:
-            errores.append("choque: '{}' ya existe en {}".format(n, duenos[n]))
+    if nombre == "general":
+        if "general" in duenos:
+            errores.append("choque: 'general' ya existe en " + duenos["general"])
+        partes.append(MENU_GENERAL)
+    partes.append(ARRANQUE.format(fn=fn))
     if errores:
-        sys.exit("NO se genero estudio.py:\n  " + "\n  ".join(errores))
-
-    partes.append(MENU)
+        sys.exit("NO se genero {}.py:\n  ".format(nombre) + "\n  ".join(errores))
     todo = "".join(partes)
-    compile(todo, "estudio.py", "exec")
-    salida = os.path.join(AQUI, "estudio.py")
-    with open(salida, "w", encoding="utf-8") as f:
-        f.write(todo)
-    print("estudio.py: {} lineas, {:.0f} KB, {} nombres globales sin choques"
-          .format(todo.count("\n"), len(todo) / 1024, len(duenos)))
+    compile(todo, nombre + ".py", "exec")
+    return todo
 
-    tns = os.path.join(AQUI, "estudio.tns")
-    if os.path.exists(LUNA):
-        r = subprocess.run([LUNA, salida, tns])
-        if r.returncode != 0 or not os.path.exists(tns):
-            if os.path.exists(tns):
-                os.remove(tns)      # luna deja un .tns truncado si falla
-            sys.exit("luna fallo: no se genero estudio.tns")
-        with open(tns, "rb") as f:
-            magia = f.read(10)
-        if magia != b"*TIMLP0500":
-            sys.exit("estudio.tns no trae la cabecera de la Nspire")
-        print("estudio.tns: {:.0f} KB (arrastralo a la calculadora)"
-              .format(os.path.getsize(tns) / 1024))
-    else:
-        print("sin Luna en .tools/: solo estudio.py (pegalo en una pagina"
-              " Python del Student Software)")
+
+def a_tns(py):
+    tns = py[:-3] + ".tns"
+    r = subprocess.run([LUNA, py, tns], stdout=subprocess.DEVNULL)
+    if r.returncode != 0 or not os.path.exists(tns):
+        if os.path.exists(tns):
+            os.remove(tns)      # luna deja un .tns truncado si falla
+        sys.exit("luna fallo con " + os.path.basename(py))
+    with open(tns, "rb") as f:
+        if f.read(10) != b"*TIMLP0500":
+            sys.exit(os.path.basename(tns) + " no trae la cabecera de la Nspire")
+    return os.path.getsize(tns)
+
+
+def main():
+    os.makedirs(SALIDA, exist_ok=True)
+    hay_luna = os.path.exists(LUNA)
+    for nombre, piezas, fn, desc in OBJETIVOS:
+        todo = junta(nombre, piezas, fn, desc)
+        py = os.path.join(SALIDA, nombre + ".py")
+        with open(py, "w", encoding="utf-8") as f:
+            f.write(todo)
+        linea = "calculadora/{}.py: {} lineas, {:.0f} KB".format(
+            nombre, todo.count("\n"), len(todo) / 1024)
+        if hay_luna:
+            linea += " | .tns {:.0f} KB".format(a_tns(py) / 1024)
+        print(linea)
+    if not hay_luna:
+        print("sin Luna en .tools/: solo .py (pegalos en una pagina Python"
+              " del Student Software)")
 
 
 if __name__ == "__main__":
