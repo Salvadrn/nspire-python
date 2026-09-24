@@ -75,6 +75,8 @@ def general():
                     fisica()
                 elif op != "":
                     print("escribe 1, 2, 3 o 0")
+            except KeyboardInterrupt:
+                print("(interrumpido: de vuelta al menu general)")
             except Exception as err:
                 print("Algo fallo: " + str(err))
     except KeyboardInterrupt:
