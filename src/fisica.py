@@ -29,6 +29,10 @@ def nval(s):
             s = "1e" + s[len(pre):]
         elif s.startswith("-" + pre):
             s = "-1e" + s[len(pre) + 1:]
+    # sin mantisa ('e2', 'x10^2', '.'): MicroPython lo lee como 0.0
+    m = s.lstrip("+-").split("e")[0].split("E")[0]
+    if m.replace(".", "") == "":
+        raise ValueError("falta el numero")
     return float(s)
 
 def num(msg):
@@ -55,11 +59,13 @@ def tip(t):
     print("* TIP:", t)
 
 def r2(x):
-    # 3 decimales sin colas tipo 78.43000000000001 de MicroPython
-    x = round(x, 3)
+    # 3 decimales sin colas tipo 78.43000000000001 de MicroPython; el
+    # empujoncito redondea .xxx5 hacia arriba, como la calculadora
+    if x == x and abs(x) < 1e12:
+        x = round(x + (5e-10 if x > 0 else -5e-10), 3)
     if x == 0:
         x = 0.0
-    if x != x or abs(x) >= 1e15:
+    if x != x or abs(x) >= 1e12:
         return str(x)
     s = ("%.3f" % x).rstrip("0")
     if s[-1] == ".":
@@ -402,7 +408,7 @@ def r6(x):
     # datos y pasos intermedios completos, sin recortar a 3 decimales
     if abs(x) < 1e-12:
         x = 0.0
-    return "%.6g" % x
+    return "%.8g" % x
 
 def vert_nivel(v0, y, proc):
     # v y tiempos al pasar por la altura y (arriba +, y=0 en la salida)
@@ -480,6 +486,10 @@ def vertical():
             print("  y=v0t-.5gt^2 = " + r6(v0) + "(" + r6(t) + ")-4.905(" + r6(t) + ")^2 = " + r2(y))
             print("  v=v0-gt = " + r6(v0) + "-9.81(" + r6(t) + ") = " + r2(v))
             sep()
+            if abs(t - tv) < 0.0005:
+                print("y = 0 m: de vuelta al nivel de salida")
+                print("v =", "-" + r6(v0), "m/s (misma rapidez, bajando)")
+                continue
             print("y =", r2(y), "m (sobre el punto de salida)")
             if y < -0.0005:
                 print("  negativo: ya esta DEBAJO de donde salio")
@@ -499,13 +509,15 @@ def vertical():
             if d < 0.0005:
                 print("d = 0: es la cima: v = 0 en t =", r2(ts), "s")
                 continue
+            if abs(d - hm) < 0.0005:
+                d = hm      # d = hmax: es el punto de salida (y = 0)
             v = sqrt(2 * G * d)
             t1 = ts - v / G
             t2 = ts + v / G
             print("PROCEDIMIENTO:")
             print("  desde la cima cae d: v=raiz(2gd)")
             print("  v=raiz(19.62(" + r6(d) + ")) = " + r2(v))
-            print("  t=tsub -+ v/g = " + r2(ts) + " -+ " + r2(v) + "/9.81")
+            print("  t=tsub -+ v/g = " + r6(ts) + " -+ " + r6(v) + "/9.81")
             sep()
             print("altura y = hmax-d =", r2(hm - d), "m")
             if d > hm + 0.0005:
