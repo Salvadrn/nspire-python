@@ -1,5 +1,5 @@
 # calcpy - analisis numerico para TI-Nspire CX II CAS
-# Adrian. Uso: from calcpy import *
+# Adrian. Pieza de ap y general (build.py la junta con el menu).
 #
 # Todo es NUMERICO (Python en la Nspire no habla con el CAS).
 # Para simbolico usa la app Calculadora. Ver README.
@@ -49,6 +49,9 @@ def dn(f, x, n=1):
 
 # ---------- raices ----------
 
+INF = float("inf")
+
+
 def _seguro(f, x):
     try:
         y = f(x)
@@ -61,23 +64,44 @@ def _seguro(f, x):
         return None
 
 
-def biseccion(f, a, b, tol=1e-12, kmax=200):
-    """Raiz en [a,b] asumiendo cambio de signo. None si no lo hay."""
+def _z(v, eps):
+    """0.0 si v es ruido numerico alrededor de cero."""
+    return 0.0 if abs(v) < eps else v
+
+
+def _corte(f, a, b, tol=1e-12, kmax=200):
+    """Biseccion sobre un cambio de signo. Devuelve (m, |f(m)|, |f| mas
+    grande en los bordes) o None si no hay cambio o f no existe."""
     fa, fb = _seguro(f, a), _seguro(f, b)
     if fa is None or fb is None or fa * fb > 0:
         return None
+    borde = max(abs(fa), abs(fb))
+    m = 0.5 * (a + b)
+    fm = _seguro(f, m)
     for _ in range(kmax):
-        m = 0.5 * (a + b)
-        fm = _seguro(f, m)
         if fm is None:
             return None
         if fm == 0 or (b - a) < tol * max(1.0, abs(m)):
-            return m
+            break
         if fa * fm < 0:
             b, fb = m, fm
         else:
             a, fa = m, fm
-    return 0.5 * (a + b)
+        m = 0.5 * (a + b)
+        fm = _seguro(f, m)
+    if fm is None:
+        return None
+    return (m, abs(fm), borde)
+
+
+def biseccion(f, a, b, tol=1e-12, kmax=200):
+    """Raiz en [a,b] asumiendo cambio de signo. None si no lo hay, si
+    es un polo (f crece al cerrar el intervalo) o si es un salto (f no
+    baja hacia 0, como abs(x)/x)."""
+    r = _corte(f, a, b, tol, kmax)
+    if r is None or r[1] > 0.5 * r[2]:
+        return None
+    return r[0]
 
 
 def newton(f, x0, tol=1e-12, kmax=60):
@@ -97,8 +121,10 @@ def newton(f, x0, tol=1e-12, kmax=60):
     return x
 
 
-def raices(f, a, b, n=200, tol=1e-12):
-    """Todas las raices de f en [a,b] barriendo n subintervalos."""
+def raices(f, a, b, n=200, tol=1e-12, dobles=True):
+    """Todas las raices de f en [a,b] barriendo n subintervalos.
+    dobles: tambien las que solo tocan el eje sin cruzarlo (x^2 en 0),
+    buscandolas entre los puntos criticos."""
     out = []
     paso = (b - a) / n
     x0 = a
@@ -116,7 +142,66 @@ def raices(f, a, b, n=200, tol=1e-12):
         x0, y0 = x1, y1
     if _seguro(f, b) == 0:
         out.append(b)
-    return _limpia(out)
+    if dobles:
+        for x in raices(lambda t: d(f, t), a, b, n, tol, False):
+            y = _seguro(f, x)
+            if y is not None and abs(y) < 1e-9:
+                out.append(x)
+    return _limpia([_z(x, 1e-9) for x in out])
+
+
+def _cerca(f, m):
+    """|f| justo a los lados de un punto donde f no existe: enorme en
+    un polo (1/x en 0), normal en un hueco (sin(x)/x en 0)."""
+    h = 1e-9 * max(1.0, abs(m))
+    vs = [_seguro(f, m - h), _seguro(f, m + h)]
+    vs = [abs(v) for v in vs if v is not None]
+    return max(vs) if vs else 0.0
+
+
+def _pico(f, a, b):
+    """Busqueda ternaria hacia donde crece |f| en [a,b]: (x, |f(x)|)."""
+    for _ in range(80):
+        m1 = a + (b - a) / 3
+        m2 = b - (b - a) / 3
+        y1 = _seguro(f, m1)
+        y2 = _seguro(f, m2)
+        if y1 is None:
+            return m1, _cerca(f, m1)
+        if y2 is None:
+            return m2, _cerca(f, m2)
+        if abs(y1) < abs(y2):
+            a = m1
+        else:
+            b = m2
+    x = 0.5 * (a + b)
+    y = _seguro(f, x)
+    return x, (_cerca(f, x) if y is None else abs(y))
+
+
+def polos(f, a, b, n=200):
+    """Asintotas verticales en [a,b]: donde |f| crece sin tope, con o
+    sin cambio de signo (tan en pi/2, 1/x^2 en 0, 1/x en 0)."""
+    out = []
+    paso = (b - a) / n
+    xs = [a + i * paso for i in range(n + 1)]
+    ys = [_seguro(f, x) for x in xs]
+    for i in range(n):
+        if ys[i] is not None and ys[i + 1] is not None \
+                and ys[i] * ys[i + 1] < 0:
+            r = _corte(f, xs[i], xs[i + 1])
+            if r is not None and r[1] > r[2]:
+                out.append(r[0])
+    for i in range(1, n):
+        y, y0, y1 = ys[i], ys[i - 1], ys[i + 1]
+        if y0 is None or y1 is None:
+            continue
+        if y is None or (abs(y) >= abs(y0) and abs(y) >= abs(y1)):
+            x, m = _pico(f, xs[i - 1], xs[i + 1])
+            base = max(abs(y0), abs(y1), 1.0)
+            if m > 1e9 and m > 1e3 * base:
+                out.append(x)
+    return _limpia([_z(x, 1e-9) for x in out])
 
 
 def resuelve(f, g, a, b, n=200):
@@ -138,7 +223,7 @@ def _limpia(xs, tol=1e-7):
 
 def criticos(f, a, b, n=200):
     """Puntos criticos: raices de f' en [a,b]."""
-    return raices(lambda x: d(f, x), a, b, n)
+    return raices(lambda x: d(f, x), a, b, n, 1e-12, False)
 
 
 def extremos(f, a, b, n=200):
@@ -149,6 +234,7 @@ def extremos(f, a, b, n=200):
         y = _seguro(f, x)
         if y is None:
             continue
+        y = _z(y, 1e-12)
         s = d2(f, x)
         if s < -1e-7:
             t = 'max'
@@ -169,6 +255,7 @@ def maxmin(f, a, b, n=200):
         y = _seguro(f, x)
         if y is None:
             continue
+        y = _z(y, 1e-12)
         if mejor is None or y > mejor[1]:
             mejor = (x, y)
         if peor is None or y < peor[1]:
@@ -179,7 +266,7 @@ def maxmin(f, a, b, n=200):
 def inflexion(f, a, b, n=200):
     """Puntos de inflexion: raices de f'' con cambio de concavidad."""
     out = []
-    for x in raices(lambda t: d2(f, t), a, b, n):
+    for x in raices(lambda t: d2(f, t), a, b, n, 1e-12, False):
         h = 1e-3 * max(1.0, abs(x))
         if d2(f, x - h) * d2(f, x + h) < 0:
             out.append((x, f(x)))
@@ -196,6 +283,11 @@ def analiza(f, a, b, n=200):
     infl = inflexion(f, a, b, n)
     if infl:
         print("inflex:", _fmt([p[0] for p in infl]))
+    p = polos(f, a, b, n)
+    if p:
+        print("asintota en x=" + _fmt(p))
+        print("no hay max/min absolutos")
+        return
     (xM, yM), (xm, ym) = maxmin(f, a, b, n)
     print("abs max: {:.6g} en x={:.6g}".format(yM, xM))
     print("abs min: {:.6g} en x={:.6g}".format(ym, xm))
@@ -351,21 +443,37 @@ def tabla(f, a, b, n=10):
 
 
 def limite(f, x0, lado=0):
-    """Limite numerico. lado: -1 izq, 1 der, 0 bilateral (None si difieren)."""
+    """Limite numerico. lado: -1 izq, 1 der, 0 bilateral.
+    Devuelve el numero, INF o -INF si crece sin tope, o None si no
+    existe (oscila, o los laterales no coinciden)."""
     def _ap(signo):
-        v = None
+        vals = []
         for k in range(3, 10):
-            h = signo * 10.0**(-k)
-            y = _seguro(f, x0 + h)
+            y = _seguro(f, x0 + signo * 10.0**(-k))
             if y is not None:
-                v = y
-        return v
+                vals.append(y)
+        if not vals:
+            return None
+        v = vals[-1]
+        if len(vals) < 3:
+            return v
+        w, u = vals[-2], vals[-3]
+        if abs(v - w) <= 1e-4 * max(1.0, abs(v)):
+            return v
+        if abs(v) > 10 and abs(v) > abs(w) > abs(u) \
+                and (v > 0) == (w > 0) == (u > 0):
+            return INF if v > 0 else -INF
+        return None
     if lado < 0:
         return _ap(-1)
     if lado > 0:
         return _ap(1)
     izq, der = _ap(-1), _ap(1)
     if izq is None or der is None:
+        return None
+    if izq == der:
+        return izq
+    if abs(izq) == INF or abs(der) == INF:
         return None
     if abs(izq - der) < 1e-4 * max(1.0, abs(izq)):
         return 0.5 * (izq + der)
