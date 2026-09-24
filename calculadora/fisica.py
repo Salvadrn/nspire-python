@@ -259,6 +259,21 @@ def mrua():
     if F is None and mu > 0 and a is None:
         fric = True                   # la friccion va CONTRA la velocidad
         vref = v0 if v0 is not None and v0 != 0 else vf
+        if (vref is None or vref == 0) and x is not None:
+            vref = x                  # sin v: el signo de x da el sentido
+        if v0 == 0:
+            # en reposo y sin F la friccion no lo mueve: se queda quieto
+            if vf is not None and vf != 0 or x is not None and x != 0:
+                sep()
+                print("OJO: en reposo y sin F la")
+                print("friccion no lo mueve: vf y x = 0")
+                print("datos imposibles, revisa")
+                return
+            sep()
+            print("v0 = 0 y sin F: la friccion no")
+            print("lo mueve. Queda quieto:")
+            print("vf = 0, x = 0, a = 0 (cualquier t)")
+            return
         if vref is not None and vref < 0:
             a = mu * G
             proc.append("a=+mu*g (va hacia -x) = (" + r2(mu) + ")(9.81) = " + r2(a))
@@ -266,6 +281,15 @@ def mrua():
             a = -mu * G
             proc.append("a=-mu*g = -(" + r2(mu) + ")(9.81) = " + r2(a))
     t_dato = t
+    if fric and v0 is None and vf is None and t is not None and \
+            x is not None and abs(x) < 0.5 * mu * G * t * t * (1 - 1e-9):
+        # con x y t: si |x| < mu*g*t^2/2 ya se habia parado antes de t
+        v0 = sqrt(2 * mu * G * abs(x))
+        if x < 0:
+            v0 = -v0
+        vf = 0.0
+        proc.append("|x| < mu*g*t^2/2: se paro antes de t")
+        proc.append("v0=raiz(2*mu*g*|x|) = " + r2(v0) + "; vf = 0")
     if fric and v0 is not None and v0 != 0 and t is not None:
         tpar = abs(v0) / (mu * G)
         if t > tpar * (1 + 1e-9):     # la friccion no lo regresa
