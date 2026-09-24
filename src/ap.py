@@ -51,6 +51,16 @@ def _ap_intervalo():
     return a, b
 
 
+def _ap_lim(v):
+    if v is None:
+        return "no existe (oscila)"
+    if v == INF:
+        return "+infinito (crece sin tope)"
+    if v == -INF:
+        return "-infinito (baja sin tope)"
+    return "{:.6g}".format(v)
+
+
 def ap():
     while True:
         print("")
@@ -66,6 +76,7 @@ def ap():
         print("== REPASO ==")
         print("9 formulario (formulas y tips)")
         print("0 salir")
+        op = ""
         try:
             op = input("? ").strip()
             if op == "0" or op == "":
@@ -73,7 +84,8 @@ def ap():
             _ap_corre(op)
         except Exception as err:
             print("error:", err)
-        input("[enter]")
+        if op != "9":
+            input("[enter]")
 
 
 def _ap_corre(op):
@@ -84,9 +96,15 @@ def _ap_corre(op):
     elif op == "2":
         f = _ap_f()
         a, b = _ap_intervalo()
-        (xM, yM), (xm, ym) = maxmin(f, a, b)
-        print("mas alto: y={:.6g} en x={:.6g}".format(yM, xM))
-        print("mas bajo: y={:.6g} en x={:.6g}".format(ym, xm))
+        p = polos(f, a, b)
+        if p:
+            print("asintota en x=" + _fmt(p) + ":")
+            print("sube/baja sin tope, no hay")
+            print("punto mas alto ni mas bajo")
+        else:
+            (xM, yM), (xm, ym) = maxmin(f, a, b)
+            print("mas alto: y={:.6g} en x={:.6g}".format(yM, xM))
+            print("mas bajo: y={:.6g} en x={:.6g}".format(ym, xm))
         for x, y, t in extremos(f, a, b):
             print("  {} local en x={:.6g}".format(t, x))
     elif op == "3":
@@ -115,11 +133,11 @@ def _ap_corre(op):
         x0 = _ap_num("x tiende a = ")
         L = limite(f, x0)
         if L is None:
-            print("izq: ", limite(f, x0, -1))
-            print("der: ", limite(f, x0, 1))
+            print("izq: " + _ap_lim(limite(f, x0, -1)))
+            print("der: " + _ap_lim(limite(f, x0, 1)))
             print("(no existe bilateral)")
         else:
-            print("limite = {:.6g}".format(L))
+            print("limite = " + _ap_lim(L))
     elif op == "7":
         print("y' = F(x,y). Teclea F:")
         s = _ap_txt("F(x,y) = ")
@@ -132,7 +150,8 @@ def _ap_corre(op):
     elif op == "8":
         v = _ap_f("v(t) = ")
         a, b = _ap_intervalo()
-        particula(v, a, b)
+        x0 = _ap_num("x(a) pos. inicial (enter=0) = ", 0)
+        particula(v, a, b, x0)
         t0 = _ap_num("rapidez en t = ", (a + b) / 2)
         print("la rapidez", rapidez(v, t0))
     elif op == "9":
