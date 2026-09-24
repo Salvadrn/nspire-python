@@ -1,10 +1,10 @@
-# estudio - UN solo archivo: Calculo AP + IA + SAT Math
+# general - Calculo AP + IA + Fisica
 # Para la TI-Nspire CX II CAS de Adrian (MicroPython 1.11).
-# GENERADO por build.py desde calcpy, fisica, formulas, ap, ia y sat:
-# no lo edites a mano; edita el modulo y corre  python3 build.py
-# Corre el programa y sale el menu. Para abrirlo otra vez: estudio()
+# GENERADO por build.py desde src/calcpy.py, formulas.py, ap.py, ai.py, fisica.py:
+# no lo edites a mano; edita src/ y corre  python3 build.py
 
 from math import *
+import sys
 
 
 # ===================== calcpy =====================
@@ -303,6 +303,51 @@ def rk4(F, x0, y0, xf, n=200):
     return pts
 
 
+# ---------- movimiento de particula (clasico de Calculo AP) ----------
+
+def desplazamiento(v, t1, t2):
+    """Integral de v(t): cambio de posicion (con signo)."""
+    return integra(v, t1, t2)
+
+
+def distancia(v, t1, t2):
+    """Integral de |v(t)|: distancia total recorrida.
+    Parte el intervalo donde v cambia de signo."""
+    cortes = _limpia([t1] + raices(v, t1, t2) + [t2])
+    total = 0.0
+    for i in range(len(cortes) - 1):
+        total += abs(integra(v, cortes[i], cortes[i+1]))
+    return total
+
+
+def particula(v, t1, t2, x0=0):
+    """Reporte completo de movimiento de particula dado v(t)."""
+    dx = desplazamiento(v, t1, t2)
+    print("desplazamiento: {:.6g}".format(dx))
+    print("distancia:      {:.6g}".format(distancia(v, t1, t2)))
+    print("pos final:      {:.6g}".format(x0 + dx))
+    paradas = raices(v, t1, t2)
+    if paradas:
+        print("v=0 en t:", ", ".join("{:.6g}".format(t) for t in paradas))
+    for t in paradas:
+        a = d(v, t)
+        if a > 0:
+            print("  t={:.4g}: da vuelta (min de x)".format(t))
+        elif a < 0:
+            print("  t={:.4g}: da vuelta (max de x)".format(t))
+
+
+def rapidez(v, t):
+    """'aumenta' si v y a tienen el mismo signo, 'disminuye' si no.
+    (Pregunta favorita del AP.)"""
+    vt, at = v(t), d(v, t)
+    if vt * at > 0:
+        return "aumenta"
+    if vt * at < 0:
+        return "disminuye"
+    return "indeterminado"
+
+
 # ---------- utilidades ----------
 
 def tabla(f, a, b, n=10):
@@ -395,182 +440,6 @@ def leer_lista(nombre):
 def guardar_lista(nombre, datos):
     if _SYS:
         store_list(nombre, [float(v) for v in datos])
-
-
-# ===================== fisica =====================
-
-# fisica - herramientas de fisica para TI-Nspire CX II CAS
-# Adrian. Uso: from fisica import *
-# Necesita calcpy en el mismo documento o en PyLib.
-
-
-g = 9.81       # m/s^2
-G = 6.674e-11  # N m^2/kg^2
-
-
-# ---------- movimiento de particula (clasico de Calculo AP) ----------
-
-def desplazamiento(v, t1, t2):
-    """Integral de v(t): cambio de posicion (con signo)."""
-    return integra(v, t1, t2)
-
-
-def distancia(v, t1, t2):
-    """Integral de |v(t)|: distancia total recorrida.
-    Parte el intervalo donde v cambia de signo."""
-    cortes = _limpia([t1] + raices(v, t1, t2) + [t2])
-    total = 0.0
-    for i in range(len(cortes) - 1):
-        total += abs(integra(v, cortes[i], cortes[i+1]))
-    return total
-
-
-def particula(v, t1, t2, x0=0):
-    """Reporte completo de movimiento de particula dado v(t)."""
-    dx = desplazamiento(v, t1, t2)
-    print("desplazamiento: {:.6g}".format(dx))
-    print("distancia:      {:.6g}".format(distancia(v, t1, t2)))
-    print("pos final:      {:.6g}".format(x0 + dx))
-    paradas = raices(v, t1, t2)
-    if paradas:
-        print("v=0 en t:", ", ".join("{:.6g}".format(t) for t in paradas))
-    for t in paradas:
-        a = d(v, t)
-        if a > 0:
-            print("  t={:.4g}: da vuelta (min de x)".format(t))
-        elif a < 0:
-            print("  t={:.4g}: da vuelta (max de x)".format(t))
-
-
-def rapidez(v, t):
-    """'aumenta' si v y a tienen el mismo signo, 'disminuye' si no.
-    (Pregunta favorita del AP.)"""
-    vt, at = v(t), d(v, t)
-    if vt * at > 0:
-        return "aumenta"
-    if vt * at < 0:
-        return "disminuye"
-    return "indeterminado"
-
-
-# ---------- cinematica 1D (MRUA / suvat) ----------
-
-def mrua(v0=None, v=None, a=None, t=None, x=None):
-    """Dale 3 de las 5 (v0, v, a, t, x) y resuelve las demas.
-    x es desplazamiento. Devuelve dict. Ojo: con v0/a/x o v/a/x
-    hay dos soluciones de signo; toma la raiz positiva."""
-    k = {'v0': v0, 'v': v, 'a': a, 't': t, 'x': x}
-    for _ in range(5):
-        v0, v, a, t, x = k['v0'], k['v'], k['a'], k['t'], k['x']
-        if v0 is not None and a is not None and t is not None:
-            if v is None:
-                k['v'] = v0 + a*t
-            if x is None:
-                k['x'] = v0*t + 0.5*a*t*t
-        if v is not None and a is not None and t is not None and v0 is None:
-            k['v0'] = v - a*t
-        if v0 is not None and v is not None and t is not None:
-            if x is None:
-                k['x'] = 0.5*(v0 + v)*t
-            if a is None and t != 0:
-                k['a'] = (v - v0)/t
-        if v0 is not None and v is not None and a is not None and a != 0:
-            if t is None:
-                k['t'] = (v - v0)/a
-        if v0 is not None and v is not None and x is not None:
-            if t is None and (v0 + v) != 0:
-                k['t'] = 2*x/(v0 + v)
-        if v0 is not None and t is not None and x is not None and t != 0:
-            if a is None:
-                k['a'] = 2*(x - v0*t)/(t*t)
-            if v is None:
-                k['v'] = 2*x/t - v0
-        if v is not None and t is not None and x is not None and v0 is None and t != 0:
-            k['v0'] = 2*x/t - v
-        if v0 is not None and a is not None and x is not None and v is None:
-            disc = v0*v0 + 2*a*x
-            if disc >= 0:
-                k['v'] = sqrt(disc)
-        if v is not None and a is not None and x is not None and v0 is None:
-            disc = v*v - 2*a*x
-            if disc >= 0:
-                k['v0'] = sqrt(disc)
-        if a is not None and t is not None and x is not None and v0 is None and t != 0:
-            k['v0'] = x/t - 0.5*a*t
-    for nombre in ('v0', 'v', 'a', 't', 'x'):
-        val = k[nombre]
-        print("{} = {}".format(nombre,
-              "?" if val is None else "{:.6g}".format(val)))
-    return k
-
-
-# ---------- tiro parabolico ----------
-
-def tiro(v0, ang, y0=0):
-    """Proyectil: v0 en m/s, ang en grados, y0 altura inicial.
-    Imprime altura maxima, tiempo de vuelo, alcance, v de impacto."""
-    th = radians(ang)
-    vx, vy = v0*cos(th), v0*sin(th)
-    t_sub = vy/g
-    h_max = y0 + vy*vy/(2*g)
-    t_vuelo = (vy + sqrt(vy*vy + 2*g*y0))/g
-    alcance = vx*t_vuelo
-    vy_f = vy - g*t_vuelo
-    v_imp = sqrt(vx*vx + vy_f*vy_f)
-    print("h max:     {:.4g} m (t={:.4g} s)".format(h_max, t_sub))
-    print("t vuelo:   {:.4g} s".format(t_vuelo))
-    print("alcance:   {:.4g} m".format(alcance))
-    print("v impacto: {:.4g} m/s a {:.4g} deg".format(
-        v_imp, degrees(atan2(vy_f, vx))))
-    return {'hmax': h_max, 't': t_vuelo, 'x': alcance, 'v': v_imp}
-
-
-# ---------- vectores 2D ----------
-
-def comp(mag, ang):
-    """Componentes (x, y) de un vector con angulo en grados."""
-    th = radians(ang)
-    return (mag*cos(th), mag*sin(th))
-
-
-def vmag(v):
-    return sqrt(v[0]**2 + v[1]**2)
-
-
-def vang(v):
-    """Angulo en grados, -180 a 180."""
-    return degrees(atan2(v[1], v[0]))
-
-
-def vsuma(*vs):
-    """Suma de vectores (tuplas). Util para fuerzas concurrentes."""
-    return (sum(v[0] for v in vs), sum(v[1] for v in vs))
-
-
-def vpunto(u, v):
-    return u[0]*v[0] + u[1]*v[1]
-
-
-# ---------- laboratorio: regresion lineal ----------
-
-def regresion(xs, ys):
-    """Minimos cuadrados: imprime y devuelve (m, b, r).
-    Para linealizar datos de lab y sacar pendiente con significado."""
-    n = len(xs)
-    sx, sy = sum(xs), sum(ys)
-    sxx = sum(x*x for x in xs)
-    sxy = sum(x*y for x, y in zip(xs, ys))
-    syy = sum(y*y for y in ys)
-    den = n*sxx - sx*sx
-    if den == 0:
-        return None
-    m = (n*sxy - sx*sy)/den
-    b = (sy - m*sx)/n
-    den_r = sqrt(den*(n*syy - sy*sy))
-    r = (n*sxy - sx*sy)/den_r if den_r > 0 else 0.0
-    print("y = {:.6g} x + {:.6g}".format(m, b))
-    print("r = {:.6g}   r^2 = {:.6g}".format(r, r*r))
-    return (m, b, r)
 
 
 # ===================== formulas =====================
@@ -1072,10 +941,10 @@ def _fo_muestra(tema):
 
 # ===================== ap =====================
 
-# ap - menu interactivo para Calculo AP y fisica
+# ap - menu interactivo para Calculo AP
 # El unico comando que hay que aprenderse: ap()
-# Suelto necesita calcpy y fisica (mismo documento o PyLib); dentro de
-# estudio.py (el archivo unico) ya viene todo junto.
+# Esta es la pieza del menu: build.py le pega calcpy y formulas y
+# genera calculadora/ap.py (y general.py), que ya no necesitan nada.
 
 
 _ap_ns = {"sin": sin, "cos": cos, "tan": tan, "asin": asin, "acos": acos,
@@ -1127,13 +996,9 @@ def ap():
         print("5 sumas de riemann")
         print("6 limite")
         print("7 metodo de euler")
-        print("== FISICA ==")
         print("8 particula v(t)")
-        print("9 sube / cae vertical")
-        print("10 tiro parabolico")
-        print("11 despeja mrua")
         print("== REPASO ==")
-        print("12 formulario (formulas y tips)")
+        print("9 formulario (formulas y tips)")
         print("0 salir")
         try:
             op = input("? ").strip()
@@ -1205,34 +1070,17 @@ def _ap_corre(op):
         t0 = _ap_num("rapidez en t = ", (a + b) / 2)
         print("la rapidez", rapidez(v, t0))
     elif op == "9":
-        v0 = _ap_num("v0 hacia arriba (enter=se suelta) = ", 0)
-        h0 = _ap_num("altura inicial (enter=0) = ", 0)
-        tiro(v0, 90, h0)
-        print("(v impacto = que tan rapido cae al llegar)")
-    elif op == "10":
-        v0 = _ap_num("v0 (m/s) = ")
-        ang = _ap_num("angulo (grados) = ")
-        h0 = _ap_num("altura inicial (enter=0) = ", 0)
-        tiro(v0, ang, h0)
-    elif op == "11":
-        print("enter = no la sabes. x es desplazamiento")
-        vals = {}
-        for nombre in ("v0", "v", "a", "t", "x"):
-            s = _ap_txt(nombre + " = ")
-            vals[nombre] = float(eval(s, _ap_ns, {})) if s != "" else None
-        mrua(vals["v0"], vals["v"], vals["a"], vals["t"], vals["x"])
-    elif op == "12":
         if formulario:
             formulario()
         else:
-            print("falta formulas.py (ponlo en PyLib)")
+            print("falta formulas.py")
     else:
         print("no existe esa opcion")
 
 
-# ===================== ia =====================
+# ===================== ai =====================
 
-# ia - regresion lineal con gradiente descendente (IA PrepaTEC)
+# ai - regresion lineal con gradiente descendente (IA PrepaTEC)
 # Adrian. Corre el programa y sigue las preguntas: pide los datos en el
 # orden del examen y da cada respuesta con su procedimiento para copiar.
 #
@@ -2764,1105 +2612,1102 @@ def ia():
 _curso()
 
 
-# ===================== sat =====================
+# ===================== fisica =====================
 
-# sat - SAT Math para ESTUDIAR en la TI-Nspire CX II CAS
-# Adrian. OJO: las calculadoras CAS estan PROHIBIDAS en el SAT (College
-# Board, desde 2025). Esto es para estudiar y checar tus practicas; el
-# dia del examen se usa el Desmos integrado de Bluebook.
-#
-# Formulas y tips por dominio oficial + solvers con fracciones exactas
-# (el SPR acepta fracciones: 7/3 vale, 2.33 no siempre).
-# ASCII, sin f-strings, sin eval: MicroPython 1.11.
+# FISICA.PY — Solucionador de mecanica + conversiones
+# Para TI-Nspire CX II (Python / MicroPython)
+# Notacion del formulario: g suma (abajo positivo en caida)
 
 
-_S_ANCHO = 36   # caracteres por renglon del shell
-_S_ALTO = 8     # renglones por pantalla antes de pausar
+G = 9.81
 
-# <<SAT_TEMAS>>
-SAT_TEMAS = [
-    ('SAT: Algebra (~35%)', [
-        '13-15 de las 44 preguntas de Math',
-        '',
-        "-- pendiente 'slope' --",
-        'm = (y2-y1)/(x2-x1)',
-        'm>0 sube, m<0 baja, m=0 horizontal',
-        'x = k: vertical, m indefinida',
-        '',
-        '-- formas de la recta --',
-        "y = mx + b  'slope-intercept'",
-        "y - y1 = m(x - x1)  'point-slope'",
-        "Ax + By = C 'standard': m = -A/B",
-        "'x-int' = C/A ; 'y-int' = C/B",
-        'B = 0: recta vertical x = C/A',
-        'TIP: tabla o 2 puntos: saca m,',
-        'luego b = y1 - m*x1',
-        '',
-        '-- paralelas y perpendiculares --',
-        "'parallel': m1 = m2, b distinta",
-        "'perpendicular': m1*m2 = -1",
-        'o sea m2 = -1/m1 (ej. 2 y -1/2)',
-        'y = k es perpendicular a x = h',
-        '',
-        '-- funcion lineal en contexto --',
-        'f(x) = mx + b ; f(0) = b',
-        "m = 'rate of change' = cambio en y",
-        'por cada +1 en x',
-        "b = valor inicial 'initial value'",
-        "f(x) = 0 -> x = -b/m 'x-int'",
-        'TIP: unidades de m = (de y)/(de x)',
-        '',
-        "-- traducir 'word problems' --",
-        "'per', 'each' -> m*x ; fijo -> +b",
-        'mezcla: x + y = N ; p1*x + p2*y = T',
-        'TIP: define x,y antes de plantear',
-        '',
-        '-- 1 variable: cuantas soluciones --',
-        'ax + b = cx + d',
-        'a != c: 1 solucion',
-        "a = c, b != d: 0 'no solution'",
-        'a = c, b = d: infinitas',
-        'se cancela x: 0=0 inf ; 0=5 ninguna',
-        'TIP: Desmos: y=lado izq, y=lado der;',
-        'la x del cruce es la solucion',
-        '',
-        "-- sistemas 2x2 'systems' --",
-        'sustitucion: despeja y, sustituye',
-        'eliminacion: multiplica, suma/resta',
-        'a1*x + b1*y = c1 ; a2*x + b2*y = c2',
-        'a1/a2 != b1/b2: 1 solucion',
-        'a1/a2 = b1/b2 != c1/c2: ninguna',
-        'a1/a2 = b1/b2 = c1/c2: infinitas',
-        '(se cruzan/paralelas/misma recta)',
-        'ojo: si a2, b2 o c2 = 0, usa m y b',
-        'TIP: piden x+y? prueba sumar o',
-        'restar las ecuaciones tal cual',
-        'TIP: Desmos: teclea las 2 rectas,',
-        'clic en el cruce da (x,y)',
-        'Desmos acepta Ax + By = C tal cual',
-        'TIP: k desconocida: iguala razones',
-        'o usa slider de k en Desmos',
-        '',
-        "-- desigualdades 'inequalities' --",
-        '* o / por negativo: voltea < por >',
-        'ej: -2x < 6  ->  x > -3',
-        "'at most', 'no more than': <=",
-        "'at least', 'no less than': >=",
-        "'maximum': <= ; 'minimum': >=",
-        "'more than': > ; 'fewer than': <",
-        'y > mx+b: arriba ; y < mx+b: abajo',
-        '< > linea punteada ; <= >= solida',
-        'TIP: Desmos sombrea cada region;',
-        'solucion = donde se traslapan',
-        'TIP: duda? prueba (0,0) si no esta',
-        'sobre la recta; cumple = ese lado',
-    ]),
-    ('SAT: Advanced Math (~35%)', [
-        '-- cuadraticas: 3 formas --',
-        "'standard' ax^2+bx+c: c = y-int",
-        "'vertex' a(x-h)^2+k: vertice (h,k)",
-        "'factored' a(x-r1)(x-r2): raices",
-        'vertice: x=-b/(2a)=(r1+r2)/2',
-        'y del vertice: k=f(-b/(2a))',
-        'TIP: a>0 min, a<0 max; valor=k, no h',
-        'TIP: (x+3)^2 -> h=-3, ojo al signo.',
-        '',
-        '-- formula general, discriminante --',
-        'x=(-b+-sqrt(b^2-4ac))/(2a)',
-        'D=b^2-4ac: D>0 2 sol reales,',
-        'D=0 1 sol real, D<0 0 sol reales',
-        'suma raices=-b/a; producto=c/a',
-        'completar: x^2+bx=(x+b/2)^2-(b/2)^2',
-        'si a != 1, factoriza a primero.',
-        "TIP: 'no real solutions' -> D<0;",
-        "'exactly one' -> D=0 y despeja k.",
-        '',
-        "-- 'equivalent expressions' --",
-        'a^2-b^2=(a+b)(a-b)',
-        'a^2+-2ab+b^2=(a+-b)^2',
-        'TIP: (a+b)^2 != a^2+b^2, falta 2ab',
-        'TIP: Desmos: grafica la original y',
-        'cada opcion; la que se encima gana.',
-        '',
-        '-- exponentes y radicales --',
-        'x^a*x^b=x^(a+b); (x^a)^b=x^(ab)',
-        'x^a/x^b=x^(a-b); x^(-a)=1/x^a; x^0=1',
-        '(x^0 y x^(-a) piden x != 0)',
-        '(xy)^a=x^a*y^a; (x/y)^a=x^a/y^a',
-        'x^(a/b)=raiz b-esima de x^a',
-        'x^(1/2)=sqrt(x); x^(1/3)=cbrt(x)',
-        'TIP: sqrt(x^2)=|x|, no x.',
-        '',
-        '-- racional, radical, |x| --',
-        'a/b+c/d=(ad+bc)/(bd); denom != 0',
-        '(a/b)/(c/d)=ad/(bc)',
-        'TIP: cancela FACTORES, no terminos:',
-        '(x+2)/(x+3) NO se simplifica.',
-        '|A|=k -> A=k o A=-k; k<0 sin sol.',
-        '|A|<k -> -k<A<k; |A|>k -> A<-k o A>k',
-        "TIP: 'extraneous': si elevaste al",
-        'cuadrado, sustituye en la original.',
-        'En racionales descarta la x que',
-        'hace 0 el denominador.',
-        '',
-        '-- exponenciales --',
-        'y=a(1+r)^t crece; a(1-r)^t decae',
-        'a=valor en t=0; r decimal (5%=0.05)',
-        'y=a*b^t: b>1 crece, 0<b<1 decae;',
-        'cambio % por periodo = (b-1)*100',
-        "'compound': A=P(1+r/n)^(nt),",
-        "n = veces por 'year', t en 'years'",
-        'tasa anual, t en meses -> ^(t/12)',
-        "tasa mensual, t en 'years' -> ^(12t)",
-        "se duplica cada 3 'years': a*2^(t/3)",
-        'TIP: lineal suma igual cada periodo;',
-        'exponencial multiplica igual (%).',
-        '',
-        '-- polinomios y funciones --',
-        "f(c)=0 <-> (x-c) 'factor', c 'zero'",
-        "'zero' = 'x-intercept' (c,0)",
-        "f(0) = 'y-intercept'",
-        'residuo de f(x)/(x-c) es f(c)',
-        'raiz doble (x-c)^2: toca el eje x',
-        'y rebota, no cruza.',
-        'f(g(x)): calcula g(x), metelo en f',
-        'TIP: f(g(x)) != g(f(x)) en general.',
-        'f(x-h)+k: h a la derecha, k arriba',
-        '-f(x) refleja en eje x; f(-x) eje y',
-        'a*f(x): escala vertical por a',
-        'TIP: f(x+3) va a la IZQUIERDA 3.',
-        '',
-        '-- recta-parabola y Desmos --',
-        'iguala: ax^2+bx+c=mx+d, todo a 0:',
-        'ax^2+(b-m)x+(c-d)=0',
-        'D=(b-m)^2-4a(c-d), el de ESTA ec.',
-        'D>0 2 cruces, D=0 tangente, D<0 0',
-        'TIP: Desmos: clic en la curva y en',
-        'puntos grises = raices, vertice,',
-        'intersecciones.',
-        'TIP: ec. en 1 variable: grafica',
-        'y=izq, y=der; x del cruce = sol.',
-        'TIP: constante k? escribela, crea',
-        "'slider' y muevelo hasta cumplir.",
-    ]),
-    ('SAT: Datos y problemas (~15%)', [
-        '-- Razones, tasas, unidades --',
-        'a/b = c/d  ->  a*d = b*c',
-        'd = r*t   r = d/t   t = d/r',
-        'rapidez media = d total / t total',
-        '(NO es el promedio de las rapideces)',
-        'densidad = masa/volumen',
-        '1 ft = 12 in -> 1 ft^2 = 144 in^2',
-        'TIP: escribe unidades y cancela;',
-        'area: factor^2, volumen: factor^3',
-        '',
-        '-- Porcentajes --',
-        'p% de N = (p/100)*N',
-        'que % es A de B = (A/B)*100',
-        'cambio% = (nuevo-viejo)/viejo*100',
-        'subir/bajar p%: N*(1 +- p/100)',
-        'original = final/(1 +- p/100)',
-        'TIP: cambios sucesivos se',
-        'multiplican, NO se suman:',
-        '+20% y -20% = 1.2*0.8 = 0.96 (-4%)',
-        "TIP: '150% of N' = 1.5*N pero",
-        "'150% greater than N' = 2.5*N",
-        '',
-        '-- Centro y dispersion --',
-        "'mean' = suma/n -> suma = media*n",
-        "'median': ordena; posicion (n+1)/2",
-        'n par: promedia los 2 del centro',
-        'tabla de frec.: n = suma de frec.',
-        "'range' = max - min",
-        "'mode' = valor que mas se repite",
-        'media comb.=(n1*m1+n2*m2)/(n1+n2)',
-        "'std dev' = dispersion vs la media",
-        'TIP: datos pegados a la media =',
-        'desv. menor; compara sin calcular',
-        'TIP: outlier mueve media, rango y',
-        'desv.; casi no mueve la mediana',
-        'cola a la derecha: media > mediana',
-        'TIP: sumar c a todos: centro +c,',
-        'rango y desv. no cambian',
-        'TIP: Desmos: L=[3,5,9] y luego',
-        'mean(L), median(L), stdev(L)',
-        '(stdev = muestral, stdevp = pobl.)',
-        '',
-        '-- Scatterplots y modelos --',
-        "'line of best fit': y = m*x + b",
-        'm = cambio predicho en y por +1 x',
-        'b = y predicha cuando x = 0',
-        'residual = real - predicho',
-        'residual > 0: punto sobre la linea',
-        'lineal: suma constante, y=m*x+b',
-        "'exponential': factor cte, y=a*b^x",
-        'sube r% por periodo: b = 1 + r/100',
-        'baja r%: b = 1 - r/100; a = inicial',
-        'TIP: Desmos: tabla x1,y1 y luego',
-        'y1 ~ m*x1 + b  (te da m y b)',
-        'exponencial: y1 ~ a*b^x1',
-        '',
-        '-- Probabilidad --',
-        'P(A)=favor./total; P(no A)=1-P(A)',
-        'P(A o B) = P(A) + P(B) - P(A y B)',
-        'P(A|B) = n(A y B) / n(B)',
-        "TIP: tabla: 'given'/'of those' =",
-        'denominador es ESA fila o columna',
-        '',
-        '-- Inferencia y estudios --',
-        'total estimado = (prop. muestra)*N',
-        'intervalo = estimacion +- margen',
-        'muestra mas grande -> margen menor',
-        "TIP: 'margin of error' = rango",
-        'plausible, NO garantia del real;',
-        'habla del parametro poblacional,',
-        'no de cada individuo',
-        'muestra aleatoria: generaliza solo',
-        'a la poblacion muestreada',
-        'no aleatoria (voluntarios) = sesgo;',
-        'muestra mas grande NO lo arregla',
-        'asignacion aleatoria: causa-efecto',
-        "observacional: solo 'association'",
-    ]),
-    ('SAT: Geometria y trig (~15%)', [
-        "-- 'reference sheet' (regalado) --",
-        'A circ=pi*r^2     C=2*pi*r',
-        'A rect=l*w    A tri=(1/2)*b*h',
-        'Pitagoras: a^2+b^2=c^2',
-        '30-60-90: x, x*sqrt(3), 2x',
-        '(x frente a 30; 2x = hipotenusa)',
-        '45-45-90: x, x, x*sqrt(2)',
-        'V prisma=l*w*h   V cil=pi*r^2*h',
-        'V esfera=(4/3)*pi*r^3',
-        'V cono=(1/3)*pi*r^2*h',
-        'V piramide=(1/3)*l*w*h',
-        'Circulo: 360 grados = 2*pi rad',
-        'Suma ang de un triangulo = 180',
-        "TIP: abre 'Reference' en Bluebook,",
-        'no memorices los volumenes.',
-        'NO vienen: arco, sector, ecuacion',
-        'del circulo, distancia, SOHCAHTOA.',
-        '',
-        '-- angulos y poligonos --',
-        "'vertical angles': son iguales",
-        'Par lineal (linea recta): suman 180',
-        "Paralelas + 'transversal':",
-        'alternos internos: iguales',
-        'correspondientes: iguales',
-        "'same-side interior': suman 180",
-        'Ang exterior = suma de los 2',
-        'interiores no adyacentes',
-        'Isosceles: 2 lados iguales =>',
-        'angulos de la base iguales',
-        'Suma int. poligono = (n-2)*180',
-        'Suma de ang exteriores = 360',
-        'TIP: regular: cada ang=(n-2)*180/n',
-        '',
-        "-- semejanza 'similar' --",
-        'Angulos correspondientes iguales',
-        "Lados proporcionales: a/a'=b/b'=k",
-        'AA: 2 angulos iguales => semejantes',
-        'Perimetros: razon k',
-        'Areas: razon k^2   Volumenes: k^3',
-        'TIP: lado x2 => area x4, vol x8.',
-        'ABC ~ DEF: A<->D, B<->E, C<->F',
-        '',
-        "-- trig rectangulo 'SOHCAHTOA' --",
-        'Ternas: 3-4-5, 5-12-13, 8-15-17,',
-        '7-24-25 y multiplos (6-8-10)',
-        'sin=op/hip cos=ady/hip tan=op/ady',
-        "sin(x)=cos(90-x) 'complementary'",
-        'sin(a)=cos(b) => a+b=90 (agudos)',
-        'sin(30)=1/2, cos(60)=1/2, tan(45)=1',
-        'rad=grados*pi/180',
-        'grados=rad*180/pi',
-        'TIP: triangulos semejantes =>',
-        'mismo sin, cos y tan del angulo.',
-        'TIP: Desmos: llave inglesa, elige',
-        'Degrees o Radians antes de sin().',
-        'Por default inicia en Radians.',
-        '',
-        '-- circulos --',
-        '(x-h)^2+(y-k)^2=r^2  centro (h,k)',
-        'OJO signos: (x+3)^2 => h=-3',
-        'Derecha es r^2: r^2=49 => r=7',
-        'Forma general: completa cuadrado',
-        'x^2+bx = (x+b/2)^2-(b/2)^2',
-        'x^2+y^2+Dx+Ey+F=0 =>',
-        'centro (-D/2,-E/2)',
-        'r^2=(D/2)^2+(E/2)^2-F',
-        'Si hay 2x^2+2y^2: divide entre 2',
-        'Arco=(ang/360)*2*pi*r',
-        'Sector=(ang/360)*pi*r^2',
-        '(ang = angulo central en grados)',
-        'Con t en rad: arco=r*t,',
-        'sector=(1/2)*r^2*t',
-        "'inscribed angle' = central/2",
-        '(mismo arco). En semicirculo = 90',
-        "'tangent' es perpendicular al radio",
-        'en el punto de tangencia.',
-        'TIP: Desmos: grafica la ecuacion',
-        'tal cual (forma general sirve).',
-        'Centro = medio entre extremos;',
-        'r = mitad del ancho.',
-        '',
-        '-- distancia y punto medio --',
-        'd=sqrt((x2-x1)^2+(y2-y1)^2)',
-        'M=((x1+x2)/2, (y1+y2)/2)',
-        'TIP: extremos del diametro =>',
-        'centro=M, r=d/2',
-    ]),
-    ('SAT: examen y estrategia', [
-        '-- formato del examen --',
-        '44 preguntas: 2 modulos de 22',
-        '35 min por modulo: ~95 s/pregunta',
-        'Adaptativo: tu resultado en el',
-        'modulo 1 decide dificultad del 2',
-        '~75% opcion multiple (4 opciones)',
-        '~25% SPR: respuesta tecleada',
-        'Puntaje Math: 200-800',
-        'TIP: no hay penalizacion: NUNCA',
-        'dejes una en blanco, adivina',
-        '',
-        '-- temas (% del examen) --',
-        "'Algebra' ~35%",
-        "'Advanced Math' ~35%",
-        "'Problem-Solving and Data",
-        "Analysis' ~15%",
-        "'Geometry and Trigonometry' ~15%",
-        '35% = 13-15 preg.; 15% = 5-7 preg.',
-        '',
-        "-- SPR 'student-produced' --",
-        'Vale negativa, fraccion o decimal',
-        'Max 5 caracteres (6 si negativa,',
-        'el signo cuenta)',
-        'Sin %, $, comas ni unidades',
-        'Fraccion impropia SI: 7/2',
-        'Numero mixto NO: 3 1/2 -> 7/2 o 3.5',
-        '(3 1/2 tecleado se lee como 31/2)',
-        'Decimal largo: llena TODOS los',
-        'espacios (trunca o redondea)',
-        '2/3: SI .6666 .6667 0.666 0.667',
-        '2/3: NO 0.66 0.67 (muy cortos)',
-        'TIP: varias respuestas correctas?',
-        'basta con teclear una',
-        '',
-        '-- calculadora --',
-        'CAS (TI-Nspire CX II CAS): PROHIBIDA',
-        'desde 2025. Solo se permiten',
-        'graficadoras y cientificas NO CAS',
-        'Usa Desmos integrado en Bluebook,',
-        'esta en toda la seccion: practicalo',
-        '',
-        '-- Desmos --',
-        'TIP: grafica y=lado izq, y=lado der',
-        'y lee la interseccion: x = solucion',
-        'TIP: sistema: teclea las 2 ecs.;',
-        'el cruce (x,y) es la solucion',
-        'TIP: clic en la curva marca ceros,',
-        'vertice (max/min) e intersecciones',
-        'TIP: regresion: tabla + y1~mx1+b',
-        'cuadratica: y1~ax1^2+bx1+c',
-        'exponencial: y1~a*b^x1',
-        'TIP: slider para hallar constante',
-        'TIP: teclea directo el circulo o',
-        'desigualdad: x^2+y^2=25, y<=2x+1',
-        'TIP: lista L=[3,5,8]; luego',
-        'mean(L), median(L)',
-        '',
-        '-- estrategias --',
-        "'Plugging in': numeros sencillos",
-        'en vez de variables: 2, 3, 5',
-        '(evita 0 y 1; usa 100 si es %)',
-        "'Backsolving': prueba opciones,",
-        'empieza por la de en medio (B o C)',
-        'TIP: relee que piden: x o 2x+1?',
-        "el valor positivo? 'at most'?",
-        "TIP: >2 min? 'mark for review' y",
-        'sigue; regresa al final',
-        'TIP: las primeras de cada modulo',
-        'son mas faciles: aseguralas',
-        '',
-        "-- hoja 'reference' NO trae --",
-        'Formas de la recta, vertice,',
-        'discriminante, formula general,',
-        'exponentes, cambio %,',
-        'ecuacion del circulo, SOHCAHTOA,',
-        'media/mediana',
-        'TIP: SI trae areas, volumenes,',
-        'Pitagoras, 30-60-90 y 45-45-90,',
-        'circulo = 360 grados = 2pi rad',
-    ]),
-]
-# <<FIN SAT_TEMAS>>
+def nval(s):
+    # acepta 3e-5, 3x10^-5, 4*10^8, 10^-3
+    s = s.replace(" ", "")
+    for tk in ("x10^", "X10^", "*10^"):
+        s = s.replace(tk, "e")
+    if s.startswith("10^"):
+        s = "1e" + s[3:]
+    elif s.startswith("-10^"):
+        s = "-1e" + s[4:]
+    return float(s)
 
+def num(msg):
+    while True:
+        try:
+            return nval(input(msg))
+        except ValueError:
+            print("numero no valido (vale: 3e-5 o 3x10^-5)")
 
-# ---------- fracciones exactas: (p, q) con q > 0 ----------
+def dato(msg):
+    while True:
+        s = input(msg)
+        if s == "":
+            return None
+        try:
+            return nval(s)
+        except ValueError:
+            print("numero no valido (vale: 3e-5 o 3x10^-5)")
 
-def _s_mcd(a, b):
-    while b:
-        a, b = b, a % b
-    return a
+def sep():
+    print("-" * 26)
 
+def tip(t):
+    print("* TIP:", t)
 
-def _s_fr(p, q=1):
-    if q == 0:
-        raise ZeroDivisionError("division entre 0")
-    if q < 0:
-        p, q = -p, -q
-    g = _s_mcd(abs(p), q)
-    return (p // g, q // g)
+def r2(x):
+    # %.12g: sin colas tipo 78.43000000000001 de MicroPython
+    s = "%.12g" % round(x, 3)
+    if "." not in s and "e" not in s and "n" not in s:
+        s = s + ".0"
+    return s
 
+def proc_print(proc):
+    if proc:
+        print("PROCEDIMIENTO:")
+        for p in proc:
+            print(" ", p)
 
-def _s_add(a, b):
-    return _s_fr(a[0] * b[1] + b[0] * a[1], a[1] * b[1])
+CARD = {"E": 0.0, "ENE": 22.5, "NE": 45.0, "NNE": 67.5,
+        "N": 90.0, "NNO": 112.5, "NO": 135.0, "ONO": 157.5,
+        "O": 180.0, "OSO": 202.5, "SO": 225.0, "SSO": 247.5,
+        "S": 270.0, "SSE": 292.5, "SE": 315.0, "ESE": 337.5,
+        "W": 180.0, "NW": 135.0, "SW": 225.0}
 
+def ang_rumbo(s):
+    # devuelve angulo estandar (desde +x, antihorario) o None
+    s = s.replace(" ", "").upper()
+    if s in CARD:
+        return CARD[s]
+    # formato N30E : desde N, 30 grados hacia E
+    if len(s) >= 3 and s[0] in "NS" and s[-1] in "EO" + "W":
+        try:
+            g = float(s[1:-1])
+        except ValueError:
+            return None
+        base = s[0]
+        hacia = "O" if s[-1] == "W" else s[-1]
+        if base == "N" and hacia == "E":
+            return 90.0 - g
+        if base == "N" and hacia == "O":
+            return 90.0 + g
+        if base == "S" and hacia == "E":
+            return 270.0 + g
+        if base == "S" and hacia == "O":
+            return 270.0 - g
+    return None
 
-def _s_sub(a, b):
-    return _s_fr(a[0] * b[1] - b[0] * a[1], a[1] * b[1])
+def pedir_angulo(msg):
+    print("  desde donde mides el angulo:")
+    print("  1)+x(E) arriba  2)+x(E) abajo")
+    print("  3)+y(N) hacia E 4)+y(N) hacia O")
+    print("  5)-x(O) abajo   6)-y(S) hacia E")
+    print("  7)rumbo N30E/NE 8)ya es estandar")
+    ref = input("  > ")
+    while True:
+        if ref == "7":
+            s = input("  rumbo (N30E, NE, S...): ")
+            r = ang_rumbo(s)
+            if r is None:
+                print("  rumbo no valido")
+                continue
+            print("  ", s, "=", round(r, 2), "grados estandar")
+            return r
+        try:
+            a = nval(input(msg))
+        except ValueError:
+            print("  numero no valido")
+            continue
+        if ref == "2":
+            r = -a
+        elif ref == "3":
+            r = 90.0 - a
+        elif ref == "4":
+            r = 90.0 + a
+        elif ref == "5":
+            r = 180.0 + a
+        elif ref == "6":
+            r = 270.0 - a
+        else:
+            r = a
+        r = r % 360
+        if ref != "1" and ref != "8":
+            print("  =", round(r, 2), "grados estandar")
+        return r
 
+# ---------- 1. VECTORES CONCURRENTES ----------
+def vectores():
+    tip("cos va con el eje DESDE el que mides el angulo")
+    tip("angulo desde +x (E=0 N=90 O=180 S=270) o rumbo N30E")
+    n = int(num("Cuantos vectores? "))
+    rx = 0.0
+    ry = 0.0
+    tab = []
+    for i in range(n):
+        print("Vector", i + 1)
+        m = num("  magnitud (N o m): ")
+        a = pedir_angulo("  angulo en grados: ")
+        x = m * cos(radians(a))
+        y = m * sin(radians(a))
+        tab.append((i + 1, m, a, x, y))
+        rx = rx + x
+        ry = ry + y
+    sep()
+    print("TABLA DE COMPONENTES")
+    print("  #   mag    ang     x       y")
+    for (i, m, a, x, y) in tab:
+        print(" ", i, " ", round(m, 2), " ", round(a, 1), " ",
+              round(x, 2), " ", round(y, 2))
+    print("  SUMA          ", round(rx, 2), " ", round(ry, 2))
+    sep()
+    print("Rx =", round(rx, 3), " Ry =", round(ry, 3), "(sumas de componentes)")
+    r = sqrt(rx * rx + ry * ry)
+    ang = degrees(atan2(ry, rx))
+    if ang < 0:
+        ang = ang + 360
+    print("R (resultante) =", round(r, 3), "(N o m, segun el dato)")
+    print("angulo de R =", round(ang, 2), "grados (cuadrante ok)")
+    print("Equilibrante (la anula):", round(r, 3), "a", round((ang + 180) % 360, 2), "grados")
 
-def _s_mul(a, b):
-    return _s_fr(a[0] * b[0], a[1] * b[1])
-
-
-def _s_div(a, b):
-    return _s_fr(a[0] * b[1], a[1] * b[0])
-
-
-def _s_float(a):
-    return a[0] / a[1]
-
-
-def _s_g(x):
-    return "{:.6g}".format(x)
-
-
-def _s_sh(a):
-    """Forma corta: 7/3 o 5."""
-    if a[1] == 1:
-        return str(a[0])
-    return "{}/{}".format(a[0], a[1])
-
-
-def _s_txt(a):
-    """Fraccion y decimal: 7/3 = 2.33333 (o solo 5)."""
-    if a[1] == 1:
-        return str(a[0])
-    return "{} = {}".format(_s_sh(a), _s_g(_s_float(a)))
-
-
-# ---------- leer numeros: 3, -2.5, 7/3, 40% ----------
-
-def _s_lee_dec(t):
-    neg = False
-    if t[:1] == "-":
-        neg = True
-        t = t[1:]
-    elif t[:1] == "+":
-        t = t[1:]
-    if t.count(".") > 1:
-        raise ValueError("numero no valido")
-    if "." in t:
-        i = t.index(".")
-        a = t[:i]
-        b = t[i + 1:]
+# ---------- MRU (velocidad constante) ----------
+def mru():
+    tip("a=0: solo x = v*t. No uses las formulas de MRUA aqui")
+    print("1) v, x o t (deja VACIO lo que buscas)")
+    print("2) encuentro de dos moviles")
+    op = input("> ")
+    if op == "1":
+        v = dato("v (m/s): ")
+        x = dato("x (m): ")
+        t = dato("t (s): ")
+        if v is None and x is not None and t is not None and t != 0:
+            v = x / t
+            print("PROCEDIMIENTO:  v=x/t = " + r2(x) + "/" + r2(t))
+        elif x is None and v is not None and t is not None:
+            x = v * t
+            print("PROCEDIMIENTO:  x=v*t = " + r2(v) + "(" + r2(t) + ")")
+        elif t is None and v is not None and x is not None and v != 0:
+            t = x / v
+            print("PROCEDIMIENTO:  t=x/v = " + r2(x) + "/" + r2(v))
+        else:
+            print("Dame 2 de los 3 (y sin ceros que dividan)")
+            return
+        sep()
+        print("v =", round(v, 3), "m/s (velocidad constante)")
+        print("x =", round(x, 3), "m (distancia)")
+        print("t =", round(t, 3), "s (tiempo)")
     else:
-        a = t
-        b = ""
-    if a + b == "" or not (a + b).isdigit():
-        raise ValueError("numero no valido")
-    p = int(a + b)
-    if neg:
-        p = -p
-    return _s_fr(p, 10 ** len(b))
+        tip("frente a frente: se suman las rapideces")
+        tip("persecucion: se restan")
+        x1 = num("posicion inicial de A (m): ")
+        v1 = num("velocidad de A (m/s, con signo): ")
+        x2 = num("posicion inicial de B (m): ")
+        v2 = num("velocidad de B (m/s, con signo): ")
+        if v1 == v2:
+            print("Misma velocidad: nunca se encuentran (o van juntos)")
+            return
+        t = (x2 - x1) / (v1 - v2)
+        print("PROCEDIMIENTO:")
+        print("  x1+v1*t = x2+v2*t  ->  t=(x2-x1)/(v1-v2)")
+        print("  t = (" + r2(x2) + "-" + r2(x1) + ")/(" + r2(v1) + "-" + r2(v2) + ")")
+        if t < 0:
+            print("t negativo: ya se cruzaron antes, revisa signos")
+            return
+        xe = x1 + v1 * t
+        sep()
+        print("t =", round(t, 3), "s (tiempo de encuentro)")
+        print("x =", round(xe, 3), "m (posicion del encuentro)")
+        print("A recorrio", round(abs(v1 * t), 3), "m ; B recorrio", round(abs(v2 * t), 3), "m")
 
+# ---------- 2. MRUA ----------
+def mrua():
+    tip("escribe lo que TENGAS; deja VACIO (solo enter) lo demas")
+    tip("0 si el dato vale cero (reposo); necesito 3 datos")
+    tip("si te dan FUERZA en N y masa, sale la a sola (Newton)")
+    mu = num("mu (sin unidad; 0 si no hay): ")
+    F = dato("F aplicada en N (enter si no hay): ")
+    mm = dato("masa en kg (enter si no hay): ")
+    v0 = dato("v0 (m/s): ")
+    vf = dato("vf (m/s): ")
+    a = dato("a (m/s2, con signo): ")
+    t = dato("t (s): ")
+    x = dato("x (m): ")
+    proc = []
+    if F is not None and mm is not None and mm > 0 and a is None:
+        f = mu * mm * G
+        a = (F - f) / mm
+        proc.append("f=mu*m*g = " + r2(mu) + "(" + r2(mm) + ")(9.81) = " + r2(f) + " N")
+        proc.append("a=(F-f)/m = (" + r2(F) + "-" + r2(f) + ")/" + r2(mm) + " = " + r2(a))
+        if a < 0:
+            proc.append("F no vence la friccion: revisa si arranca")
+    elif mu > 0 and a is None:
+        a = -mu * G
+        proc.append("a=-mu*g = -(" + r2(mu) + ")(9.81) = " + r2(a))
+    try:
+        for _ in range(3):
+            if v0 is not None and a is not None and t is not None:
+                if vf is None:
+                    vf = v0 + a * t
+                    proc.append("vf=v0+a*t = " + r2(v0) + "+(" + r2(a) + ")(" + r2(t) + ") = " + r2(vf))
+                if x is None:
+                    x = v0 * t + 0.5 * a * t * t
+                    proc.append("x=v0t+.5at^2 = " + r2(v0) + "(" + r2(t) + ")+.5(" + r2(a) + ")(" + r2(t) + ")^2 = " + r2(x))
+            if v0 is not None and vf is not None and t is not None:
+                if a is None:
+                    a = (vf - v0) / t
+                    proc.append("a=(vf-v0)/t = (" + r2(vf) + "-" + r2(v0) + ")/" + r2(t) + " = " + r2(a))
+                if x is None:
+                    x = (v0 + vf) / 2 * t
+                    proc.append("x=(v0+vf)/2*t = (" + r2(v0) + "+" + r2(vf) + ")/2*" + r2(t) + " = " + r2(x))
+            if v0 is not None and vf is not None and a is not None and a != 0:
+                if t is None:
+                    t = (vf - v0) / a
+                    proc.append("t=(vf-v0)/a = (" + r2(vf) + "-" + r2(v0) + ")/" + r2(a) + " = " + r2(t))
+                if x is None:
+                    x = (vf * vf - v0 * v0) / (2 * a)
+                    proc.append("x=(vf^2-v0^2)/2a = " + r2(x))
+            if v0 is not None and vf is not None and x is not None and (v0 + vf) != 0:
+                if t is None:
+                    t = 2 * x / (v0 + vf)
+                    proc.append("t=2x/(v0+vf) = 2(" + r2(x) + ")/(" + r2(v0) + "+" + r2(vf) + ") = " + r2(t))
+            if v0 is not None and a is not None and x is not None and vf is None:
+                v2 = v0 * v0 + 2 * a * x
+                if v2 < 0:
+                    print("Imposible: vf^2 negativo, revisa datos")
+                    return
+                vf = sqrt(v2)
+                proc.append("vf=raiz(v0^2+2ax) = raiz(" + r2(v0) + "^2+2(" + r2(a) + ")(" + r2(x) + ")) = " + r2(vf))
+            if v0 is not None and t is not None and x is not None and t != 0:
+                if a is None:
+                    a = 2 * (x - v0 * t) / (t * t)
+                    proc.append("a=2(x-v0t)/t^2 = " + r2(a))
+            if vf is not None and a is not None and t is not None and v0 is None:
+                v0 = vf - a * t
+                proc.append("v0=vf-a*t = " + r2(vf) + "-(" + r2(a) + ")(" + r2(t) + ") = " + r2(v0))
+            if vf is not None and t is not None and x is not None and v0 is None and t != 0:
+                v0 = 2 * x / t - vf
+                proc.append("v0=2x/t-vf = " + r2(v0))
+            if a is not None and t is not None and x is not None and v0 is None and t != 0:
+                v0 = (x - 0.5 * a * t * t) / t
+                proc.append("v0=(x-.5at^2)/t = " + r2(v0))
+            if vf is not None and a is not None and x is not None and v0 is None:
+                v2 = vf * vf - 2 * a * x
+                if v2 < 0:
+                    print("Imposible: v0^2 negativo, revisa datos")
+                    return
+                v0 = sqrt(v2)
+                proc.append("v0=raiz(vf^2-2ax) = " + r2(v0))
+    except ZeroDivisionError:
+        print("Division entre cero: si a=0 es MRU, usa x=v*t")
+        return
+    faltan = [n for n, z in [("v0",v0),("vf",vf),("a",a),("t",t),("x",x)] if z is None]
+    if faltan:
+        print("Me faltan datos, no pude despejar:", faltan)
+        print("Da al menos 3 de las 5 magnitudes")
+        return
+    sep()
+    proc_print(proc)
+    sep()
+    print("v0 =", round(v0, 3), "m/s (vel inicial)")
+    print("vf =", round(vf, 3), "m/s (vel final)")
+    print("a  =", round(a, 3), "m/s2 (aceleracion)")
+    print("t  =", round(t, 3), "s (tiempo)")
+    print("x  =", round(x, 3), "m (distancia)")
 
-def _s_lee(t):
-    t = t.strip().replace(" ", "")
-    if t[-1:] == "%":
-        t = t[:-1]
-    if "/" in t:
-        i = t.index("/")
-        return _s_div(_s_lee_dec(t[:i]), _s_lee_dec(t[i + 1:]))
-    return _s_lee_dec(t)
+# ---------- 3. MRUA + FRICCION (derrape) ----------
+def derrape():
+    tip("la masa se cancela: a = mu*g siempre")
+    print("1) v0 desde huella (mu, d)")
+    print("2) distancia de alto (v0, mu)")
+    op = input("> ")
+    if op == "1":
+        mu = num("mu (sin unidad): "); d = num("d huella (m): ")
+        v0 = sqrt(2 * mu * G * d)
+        print("PROCEDIMIENTO:")
+        print("  a=mu*g = (" + r2(mu) + ")(9.81) = " + r2(mu * G))
+        print("  v0=raiz(2*mu*g*d) = raiz(2(" + r2(mu) + ")(9.81)(" + r2(d) + "))")
+        print("a =", round(mu * G, 3), "m/s2 (frenado por friccion)")
+        print("v0 (vel al iniciar el derrape) =", round(v0, 3), "m/s =", round(v0 * 3.6, 1), "km/h")
+    else:
+        v0 = num("v0 (m/s): "); mu = num("mu (sin unidad): ")
+        print("PROCEDIMIENTO:")
+        print("  d=v0^2/(2*mu*g) = " + r2(v0) + "^2/(2(" + r2(mu) + ")(9.81))")
+        print("  t=v0/(mu*g)")
+        print("d =", round(v0 * v0 / (2 * mu * G), 3), "m (distancia para parar)")
+        print("t =", round(v0 / (mu * G), 3), "s (tiempo para parar)")
 
-
-def _s_pide(texto, default=None):
-    while True:
-        s = input(texto).strip()
-        if s == "" and default is not None:
-            return default
-        try:
-            return _s_lee(s)
-        except Exception:
-            print("no entendi. ej: 3, -2.5, 7/3")
-
-
-def _s_pide_lista(texto):
-    while True:
-        s = input(texto).strip().replace(",", " ")
-        try:
-            vals = [_s_lee(p) for p in s.split()]
-            if vals:
-                return vals
-        except Exception:
-            pass
-        print("ej: 3 5 8.5 7/2")
-
-
-# ---------- raices exactas y radicales simplificados ----------
-
-def _s_isqrt(n):
-    if n < 2:
-        return n
-    x = n
-    y = (x + 1) // 2
-    while y < x:
-        x = y
-        y = (x + n // x) // 2
-    return x
-
-
-def _s_radical(n):
-    """n entero > 0 -> (k, r) con n = k*k*r."""
-    k = 1
-    i = 2
-    while i * i <= n and i < 3000:
-        while n % (i * i) == 0:
-            n //= i * i
-            k *= i
-        i += 1
-    return (k, n)
-
-
-def _s_raiz_txt(a):
-    """sqrt de una fraccion >= 0: exacta si se puede, si no radical
-    simplificado y decimal."""
-    p, q = a
-    rp = _s_isqrt(p)
-    rq = _s_isqrt(q)
-    if rp * rp == p and rq * rq == q:
-        return _s_txt(_s_fr(rp, rq))
-    k, r = _s_radical(p * q)       # sqrt(p/q) = sqrt(p*q)/q
-    g = _s_mcd(k, q)
-    k //= g
-    den = q // g
-    s = "sqrt({})".format(r)
-    if k != 1:
-        s = "{}*{}".format(k, s)
-    if den != 1:
-        s = "{}/{}".format(s, den)
-    return "{} = {}".format(s, _s_g(sqrt(p / q)))
-
-
-# ---------- salida paginada ----------
-
-def _s_out(lineas):
-    c = 0
-    for ln in lineas:
-        alto = (len(ln) - 1) // _S_ANCHO + 1 if ln else 1
-        if c + alto > _S_ALTO:
-            input("-- enter para seguir --")
-            c = 0
-        print(ln)
-        c += alto
-
-
-def _s_muestra(tema):
-    titulo, lineas = tema
-    print("")
-    print("== " + titulo + " ==")
-    c = 1
-    for ln in lineas:
-        alto = (len(ln) - 1) // _S_ANCHO + 1 if ln else 1
-        if c + alto > _S_ALTO:
-            if input("-- enter=mas, q=menu --").strip() == "q":
+# ---------- 4. CAIDA LIBRE (abajo positivo) ----------
+def caida():
+    tip("abajo es +; se suelta: v0y=0; sube: v0y NEGATIVA")
+    tip("escribe lo que tengas; VACIO lo demas (2 datos minimo)")
+    v0 = dato("v0y (m/s): ")
+    vf = dato("vf (m/s): ")
+    t = dato("t (s): ")
+    h = dato("h (m): ")
+    proc = []
+    for _ in range(3):
+        if v0 is not None and t is not None:
+            if vf is None:
+                vf = v0 + G * t
+                proc.append("vf=v0+g*t = " + r2(v0) + "+9.81(" + r2(t) + ") = " + r2(vf))
+            if h is None:
+                h = v0 * t + 0.5 * G * t * t
+                proc.append("h=v0t+.5gt^2 = " + r2(v0) + "(" + r2(t) + ")+4.905(" + r2(t) + ")^2 = " + r2(h))
+        if v0 is not None and h is not None and vf is None:
+            v2 = v0 * v0 + 2 * G * h
+            if v2 < 0:
+                print("Imposible: revisa datos")
                 return
-            c = 0
-        print(ln)
-        c += alto
-    input("-- fin, enter --")
+            vf = sqrt(v2)
+            proc.append("vf=raiz(v0^2+2gh) = raiz(" + r2(v0) + "^2+19.62(" + r2(h) + ")) = " + r2(vf))
+        if v0 is not None and vf is not None:
+            if t is None:
+                t = (vf - v0) / G
+                proc.append("t=(vf-v0)/g = (" + r2(vf) + "-(" + r2(v0) + "))/9.81 = " + r2(t))
+            if h is None:
+                h = (vf * vf - v0 * v0) / (2 * G)
+                proc.append("h=(vf^2-v0^2)/2g = " + r2(h))
+        if vf is not None and t is not None and v0 is None:
+            v0 = vf - G * t
+            proc.append("v0=vf-g*t = " + r2(vf) + "-9.81(" + r2(t) + ") = " + r2(v0))
+        if vf is not None and h is not None and v0 is None:
+            v2 = vf * vf - 2 * G * h
+            if v2 < 0:
+                print("Imposible: vf^2 < 2gh, revisa datos")
+                return
+            v0 = sqrt(v2)
+            proc.append("v0=raiz(vf^2-2gh) = " + r2(v0) + " (se tomo +)")
+        if t is not None and h is not None and v0 is None and t != 0:
+            v0 = (h - 0.5 * G * t * t) / t
+            proc.append("v0=(h-4.905t^2)/t = " + r2(v0))
+    faltan = [n for n, z in [("v0y",v0),("vf",vf),("t",t),("h",h)] if z is None]
+    if faltan:
+        print("Me faltan datos:", faltan, "- da al menos 2")
+        return
+    sep()
+    proc_print(proc)
+    sep()
+    print("v0y =", round(v0, 3), "m/s (vel inicial)")
+    print("vf  =", round(vf, 3), "m/s (vel al llegar)")
+    print("t   =", round(t, 3), "s (tiempo en el aire)")
+    print("h   =", round(h, 3), "m (altura/desplazamiento)")
+    if v0 < 0:
+        print("subio", round(v0 * v0 / (2 * G), 3), "m antes de caer")
 
+# ---------- 5. LANZAMIENTO VERTICAL ----------
+def vert_nivel(v0, y, proc):
+    # v y tiempos al pasar por la altura y (arriba +, y=0 en la salida)
+    v2 = v0 * v0 - 2 * G * y
+    proc.append("v^2=v0^2-2gy = " + r2(v0) + "^2-19.62(" + r2(y) + ") = " + r2(v2))
+    if v2 < 0:
+        proc_print(proc)
+        sep()
+        print("NO llega a esa altura (hmax =", r2(v0 * v0 / (2 * G)), "m)")
+        return
+    v = sqrt(v2)
+    proc.append("v=raiz(" + r2(v2) + ") = " + r2(v))
+    proc.append("t=(v0 -+ v)/g = (" + r2(v0) + " -+ " + r2(v) + ")/9.81")
+    proc_print(proc)
+    sep()
+    t1 = (v0 - v) / G
+    t2 = (v0 + v) / G
+    if v < 0.0005:
+        print("es la cima: v = 0 en t =", r2(t1), "s")
+        return
+    if t1 > 0.0005:
+        print("subiendo: v = +" + r2(v), "m/s  (t =", r2(t1), "s)")
+    print("bajando:  v = -" + r2(v), "m/s  (t =", r2(t2), "s)")
+    print("rapidez =", r2(v), "m/s (sin signo)")
 
-def _s_hojas():
+def vertical():
+    tip("arriba es +; y=0 donde sale; en la cima v=0 pero a=g")
+    v0 = num("v0 hacia arriba (m/s): ")
+    if v0 <= 0:
+        print("v0 debe ser > 0 (si solo se suelta: Caida libre)")
+        return
+    hm = v0 * v0 / (2 * G)
+    ts = v0 / G
+    tv = 2 * v0 / G
+    print("PROCEDIMIENTO:")
+    print("  hmax=v0^2/2g = " + r2(v0) + "^2/19.62 = " + r2(hm))
+    print("  tsub=v0/g = " + r2(v0) + "/9.81 = " + r2(ts))
+    print("  tvuelo=2v0/g = 2(" + r2(v0) + ")/9.81 = " + r2(tv))
+    sep()
+    print("h max =", r2(hm), "m (sobre el punto de salida)")
+    print("t subida =", r2(ts), "s (hasta la cima)")
+    print("t vuelo =", r2(tv), "s (vuelve al mismo nivel)")
+    ta = 2 * round(ts, 2)
+    if round(tv, 2) != round(ta, 2):
+        print("  ojo: si redondeas tsub a", round(ts, 2), "antes:", round(ta, 2), "s")
+    print("regresa con", r2(v0), "m/s hacia abajo (misma rapidez)")
     while True:
-        print("")
-        print("== SAT: FORMULAS Y TIPS ==")
-        i = 1
-        for t in SAT_TEMAS:
-            print("{} {}".format(i, t[0]))
-            i += 1
-        print("0 regresar")
-        s = input("? ").strip()
-        if s == "0" or s == "":
-            return
-        if s.isdigit() and 1 <= int(s) <= len(SAT_TEMAS):
-            _s_muestra(SAT_TEMAS[int(s) - 1])
-
-
-# ---------- solvers ----------
-
-def _s_signo(a):
-    """' + 5' o ' - 5' para armar ecuaciones."""
-    if a[0] < 0:
-        return " - " + _s_sh((-a[0], a[1]))
-    return " + " + _s_sh(a)
-
-
-def _s_coef(a, var):
-    """Coeficiente pegado a una variable: x, -x, 3x, (2/3)x."""
-    if a == (1, 1):
-        return var
-    if a == (-1, 1):
-        return "-" + var
-    if a[1] == 1:
-        return str(a[0]) + var
-    return "(" + _s_sh(a) + ")" + var
-
-
-def _s_menos_var(var, h):
-    """(x - h) con el signo ya resuelto."""
-    if h[0] == 0:
-        return var
-    if h[0] < 0:
-        return "({} + {})".format(var, _s_sh((-h[0], h[1])))
-    return "({} - {})".format(var, _s_sh(h))
-
-
-def _s_recta():
-    print("Recta por (x1,y1) y (x2,y2)")
-    x1 = _s_pide("x1 = ")
-    y1 = _s_pide("y1 = ")
-    x2 = _s_pide("x2 = ")
-    y2 = _s_pide("y2 = ")
-    dx = _s_sub(x2, x1)
-    dy = _s_sub(y2, y1)
-    out = []
-    if dx[0] == 0 and dy[0] == 0:
-        print("son el mismo punto")
-        return
-    if dx[0] == 0:
-        out.append("recta vertical: x = " + _s_sh(x1))
-        out.append("pendiente indefinida")
-    else:
-        m = _s_div(dy, dx)
-        b = _s_sub(y1, _s_mul(m, x1))
-        out.append("m = (y2-y1)/(x2-x1)")
-        out.append("m = " + _s_txt(m))
-        out.append("b = y1 - m*x1 = " + _s_txt(b))
-        if m[0] == 0:
-            out.append("y = " + _s_sh(b) + "  (horizontal)")
-        else:
-            ec = "y = " + _s_coef(m, "x")
-            if b[0] != 0:
-                ec += _s_signo(b)
-            out.append(ec)
-            cx = _s_div((-b[0], b[1]), m)
-            out.append("corte eje x: x = " + _s_txt(cx))
-            out.append("perpendicular: m = "
-                       + _s_txt(_s_div((-1, 1), m)))
-        out.append("paralela: misma m")
-    d2 = _s_add(_s_mul(dx, dx), _s_mul(dy, dy))
-    out.append("distancia = " + _s_raiz_txt(d2))
-    mx = _s_div(_s_add(x1, x2), (2, 1))
-    my = _s_div(_s_add(y1, y2), (2, 1))
-    out.append("punto medio = ({}, {})".format(_s_sh(mx), _s_sh(my)))
-    _s_out(out)
-
-
-def _s_sistema():
-    print("a1*x + b1*y = c1")
-    print("a2*x + b2*y = c2")
-    a1 = _s_pide("a1 = ")
-    b1 = _s_pide("b1 = ")
-    c1 = _s_pide("c1 = ")
-    a2 = _s_pide("a2 = ")
-    b2 = _s_pide("b2 = ")
-    c2 = _s_pide("c2 = ")
-    det = _s_sub(_s_mul(a1, b2), _s_mul(a2, b1))
-    dx = _s_sub(_s_mul(c1, b2), _s_mul(c2, b1))
-    dy = _s_sub(_s_mul(a1, c2), _s_mul(a2, c1))
-    out = ["det = a1*b2 - a2*b1 = " + _s_sh(det)]
-    if det[0] != 0:
-        x = _s_div(dx, det)
-        y = _s_div(dy, det)
-        out.append("1 solucion (se cruzan):")
-        out.append("x = " + _s_txt(x))
-        out.append("y = " + _s_txt(y))
-        out.append("x + y = " + _s_txt(_s_add(x, y)))
-    elif dx[0] == 0 and dy[0] == 0:
-        out.append("INFINITAS soluciones:")
-        out.append("es la misma recta")
-        out.append("a1/a2 = b1/b2 = c1/c2")
-    else:
-        out.append("NINGUNA solucion:")
-        out.append("paralelas ('no solution')")
-        out.append("a1/a2 = b1/b2 != c1/c2")
-    _s_out(out)
-
-
-def _s_cuad():
-    print("a*x^2 + b*x + c = 0")
-    a = _s_pide("a = ")
-    if a[0] == 0:
-        print("a = 0: no es cuadratica")
-        return
-    b = _s_pide("b = ")
-    c = _s_pide("c = ")
-    dos_a = _s_mul((2, 1), a)
-    D = _s_sub(_s_mul(b, b), _s_mul((4, 1), _s_mul(a, c)))
-    h = _s_div((-b[0], b[1]), dos_a)
-    k = _s_sub(c, _s_div(_s_mul(b, b), _s_mul((4, 1), a)))
-    out = ["D = b^2 - 4ac = " + _s_sh(D)]
-    raices = None
-    if D[0] < 0:
-        out.append("D<0: 0 soluciones reales")
-    elif D[0] == 0:
-        out.append("D=0: 1 solucion real")
-        out.append("x = " + _s_txt(h))
-        raices = (h, h)
-    else:
-        out.append("D>0: 2 soluciones reales")
-        rp = _s_isqrt(D[0])
-        rq = _s_isqrt(D[1])
-        if rp * rp == D[0] and rq * rq == D[1]:
-            r = _s_fr(rp, rq)
-            xa = _s_div(_s_sub((-b[0], b[1]), r), dos_a)
-            xb = _s_div(_s_add((-b[0], b[1]), r), dos_a)
-            out.append("x1 = " + _s_txt(xa))
-            out.append("x2 = " + _s_txt(xb))
-            raices = (xa, xb)
-        else:
-            if a[1] == 1 and b[1] == 1 and c[1] == 1:
-                kk, rr = _s_radical(D[0])
-                nb = -b[0]
-                den = dos_a[0]
-                if den < 0:        # el +- absorbe el signo de la raiz
-                    nb = -nb
-                    den = -den
-                g = _s_mcd(_s_mcd(abs(nb), kk), den)
-                nb //= g
-                kk //= g
-                den //= g
-                rad = "sqrt({})".format(rr)
-                if kk != 1:
-                    rad = "{}*{}".format(kk, rad)
-                s = "{} +- {}".format(nb, rad) if nb else "+-" + rad
-                if den != 1:
-                    s = "({})/{}".format(s, den)
-                out.append("x = " + s)
+        sep()
+        print("MAS del mismo tiro (v0=" + r2(v0) + "):")
+        print("1) donde esta en un tiempo t")
+        print("2) v a d metros ANTES de hmax")
+        print("3) v y t a una altura y")
+        print("4) t al piso X m DEBAJO")
+        print("0) listo")
+        op = input("> ")
+        sep()
+        if op == "1":
+            t = num("t (s): ")
+            y = v0 * t - 0.5 * G * t * t
+            v = v0 - G * t
+            print("PROCEDIMIENTO:")
+            print("  y=v0t-.5gt^2 = " + r2(v0) + "(" + r2(t) + ")-4.905(" + r2(t) + ")^2 = " + r2(y))
+            print("  v=v0-gt = " + r2(v0) + "-9.81(" + r2(t) + ") = " + r2(v))
+            sep()
+            print("y =", r2(y), "m (sobre el punto de salida)")
+            if y < 0:
+                print("  negativo: ya esta DEBAJO de donde salio")
+            print("v =", r2(v), "m/s")
+            if v > 0.0005:
+                print("  + : va SUBIENDO")
+            elif v < -0.0005:
+                print("  - : va BAJANDO")
             else:
-                out.append("x = (-b +- sqrt(D))/(2a)")
-            sq = sqrt(_s_float(D))
-            fa = _s_float(dos_a)
-            fb = _s_float(b)
-            out.append("x1 = " + _s_g((-fb - sq) / fa))
-            out.append("x2 = " + _s_g((-fb + sq) / fa))
-    out.append("suma raices = -b/a = "
-               + _s_txt(_s_div((-b[0], b[1]), a)))
-    out.append("producto = c/a = " + _s_txt(_s_div(c, a)))
-    out.append("vertice = ({}, {})".format(_s_sh(h), _s_sh(k)))
-    if a[0] > 0:
-        out.append("abre arriba: MINIMO y = " + _s_sh(k))
+                print("  esta en la cima")
+            if t > tv:
+                print("  ojo: t > t vuelo; solo si cae mas abajo")
+        elif op == "2":
+            tip("'antes de llegar' a hmax = va SUBIENDO (+)")
+            d = abs(num("d metros antes de hmax (m): "))
+            v = sqrt(2 * G * d)
+            t1 = ts - v / G
+            t2 = ts + v / G
+            print("PROCEDIMIENTO:")
+            print("  desde la cima cae d: v=raiz(2gd)")
+            print("  v=raiz(19.62(" + r2(d) + ")) = " + r2(v))
+            print("  t=tsub -+ v/g = " + r2(ts) + " -+ " + r2(v) + "/9.81")
+            sep()
+            print("altura y = hmax-d =", r2(hm - d), "m")
+            if t1 > 0.0005:
+                print("subiendo: v = +" + r2(v), "m/s  (t =", r2(t1), "s)")
+            print("bajando:  v = -" + r2(v), "m/s  (t =", r2(t2), "s)")
+        elif op == "3":
+            y = num("y sobre la salida (m, - si abajo): ")
+            vert_nivel(v0, y, [])
+        elif op == "4":
+            h = abs(num("cuantos m DEBAJO de la salida: "))
+            v = sqrt(v0 * v0 + 2 * G * h)
+            t = (v0 + v) / G
+            print("PROCEDIMIENTO:")
+            print("  llega a y=-h: -h = v0t-4.905t^2")
+            print("  4.905t^2-" + r2(v0) + "t-" + r2(h) + " = 0")
+            print("  t=(v0+raiz(v0^2+2gh))/g")
+            print("   =(" + r2(v0) + "+raiz(" + r2(v0) + "^2+19.62(" + r2(h) + ")))/9.81")
+            sep()
+            print("t total =", r2(t), "s (desde que lo lanza)")
+            print("  =", r2(tv), "s de vuelo +", r2(t - tv), "s de mas")
+            print("v al llegar = -" + r2(v), "m/s (hacia abajo)")
+            tip("la otra raiz de t sale negativa: se descarta")
+        else:
+            return
+
+# ---------- 6. PROYECTILES ----------
+def proyectil():
+    print("1) con angulo (sale del piso)")
+    print("2) horizontal (sale de una altura)")
+    sub = input("> ")
+    if sub == "2":
+        proy_horizontal()
+        return
+    tip("45 da alcance max; complementarios empatan")
+    tip("R, H y t vuelo SOLO a misma altura")
+    v0 = num("v0 (m/s): ")
+    a = num("angulo en grados: ")
+    vx = v0 * cos(radians(a))
+    vy = v0 * sin(radians(a))
+    print("PROCEDIMIENTO:")
+    print("  vx=v0cos(" + r2(a) + ")  v0y=v0sen(" + r2(a) + ")")
+    print("  t=2v0y/g  R=vx*t  H=v0y^2/2g")
+    print("vx =", round(vx, 3), "m/s (horizontal, cte)")
+    print("v0y =", round(vy, 3), "m/s (vertical inicial)")
+    t = 2 * vy / G
+    print("t vuelo =", round(t, 3), "s (tiempo en el aire)")
+    print("R =", round(vx * t, 3), "m (alcance horizontal)")
+    print("H max =", round(vy * vy / (2 * G), 3), "m (altura maxima)")
+    print("(cae a otra altura? -> menu 7 Caida con v0y=", round(-vy, 2), ")")
+
+def proy_horizontal():
+    tip("sale HORIZONTAL: v0y=0; el tiempo lo manda la altura")
+    tip("dame 2 de: v0, h, R (vacio lo que no tengas)")
+    v0 = dato("v0 horizontal (m/s): ")
+    h = dato("h altura (m): ")
+    R = dato("R alcance (m): ")
+    proc = []
+    if h is not None and (v0 is not None or R is not None):
+        t = sqrt(2 * h / G)
+        proc.append("t=raiz(2h/g) = raiz(2(" + r2(h) + ")/9.81) = " + r2(t))
+        if v0 is None:
+            v0 = R / t
+            proc.append("v0=R/t = " + r2(R) + "/" + r2(t) + " = " + r2(v0))
+        if R is None:
+            R = v0 * t
+            proc.append("R=v0*t = " + r2(v0) + "(" + r2(t) + ") = " + r2(R))
+    elif v0 is not None and R is not None:
+        if v0 == 0:
+            print("v0=0 no es tiro horizontal (cae vertical)")
+            return
+        t = R / v0
+        proc.append("t=R/v0 = " + r2(R) + "/" + r2(v0) + " = " + r2(t))
+        h = 0.5 * G * t * t
+        proc.append("h=.5gt^2 = 4.905(" + r2(t) + ")^2 = " + r2(h))
     else:
-        out.append("abre abajo: MAXIMO y = " + _s_sh(k))
-    fv = _s_coef(a, _s_menos_var("x", h) + "^2")
-    if k[0] != 0:
-        fv += _s_signo(k)
-    out.append("'vertex': " + fv)
-    if raices:
-        ff = _s_coef(a, _s_menos_var("x", raices[0])
-                     + _s_menos_var("x", raices[1]))
-        out.append("'factored': " + ff)
-    out.append("corte eje y = c = " + _s_sh(c))
-    _s_out(out)
+        print("Necesito 2 de los 3 datos (v0, h, R)")
+        return
+    vfy = G * t
+    vf = sqrt(v0 * v0 + vfy * vfy)
+    angc = degrees(atan2(vfy, v0))
+    proc.append("vfy=g*t = 9.81(" + r2(t) + ") = " + r2(vfy))
+    proc.append("vf=raiz(v0^2+vfy^2) = " + r2(vf))
+    sep()
+    proc_print(proc)
+    sep()
+    print("v0 =", round(v0, 3), "m/s (horizontal, cte)")
+    print("h  =", round(h, 3), "m (altura de salida)")
+    print("t  =", round(t, 3), "s (tiempo de caida)")
+    print("R  =", round(R, 3), "m (alcance horizontal)")
+    print("vfy =", round(vfy, 3), "m/s (vertical al llegar)")
+    print("vf =", round(vf, 3), "m/s a", round(angc, 2), "grados bajo horizontal")
 
+# ---------- 7. PLANO HORIZONTAL ----------
+def horizontal():
+    print("1) caja jalada/empujada en piso")
+    print("2) elevador (bascula): N = m(g +- a)")
+    s = input("> ")
+    if s == "2":
+        tip("la bascula marca la NORMAL, no el peso")
+        m = num("masa (kg): ")
+        a = num("aceleracion (m/s2, 0 si va constante): ")
+        print("1) sube    2) baja")
+        d = input("> ")
+        if d == "2":
+            N = m * (G - a)
+            print("PROCEDIMIENTO:  N = m(g - a) = " + r2(m) + "(9.81-" + r2(a) + ")")
+        else:
+            N = m * (G + a)
+            print("PROCEDIMIENTO:  N = m(g + a) = " + r2(m) + "(9.81+" + r2(a) + ")")
+        print("peso real mg =", round(m * G, 3), "N")
+        print("N (lo que marca) =", round(N, 3), "N")
+        if abs(a) < 0.0001:
+            print("a=0: marca igual que en reposo (equilibrio)")
+        elif N <= 0:
+            print("N<=0: caida libre, sensacion de ingravidez")
+        return
+    tip("N NO es mg cuando F tiene angulo")
+    m = num("masa (kg): "); F = num("F (N): ")
+    a = num("angulo de F en grados (0 si horizontal): ")
+    mu = num("mu k (sin unidad): ")
+    print("1) F jala hacia arriba   2) F empuja hacia abajo")
+    d = input("> ")
+    if d == "2":
+        N = m * G + F * sin(radians(a))
+    else:
+        N = m * G - F * sin(radians(a))
+    f = mu * N
+    ac = (F * cos(radians(a)) - f) / m
+    print("PROCEDIMIENTO:")
+    if d == "2" or d == "e":
+        print("  N=mg+Fsen(" + r2(a) + ") (empuja: aprieta)")
+    else:
+        print("  N=mg-Fsen(" + r2(a) + ") (jala: alivia)")
+    print("  f=mu*N = (" + r2(mu) + ")(" + r2(N) + ")")
+    print("  a=(Fcos(" + r2(a) + ")-f)/m")
+    print("N =", round(N, 3), "N (normal)")
+    print("f =", round(f, 3), "N (friccion)")
+    print("a =", round(ac, 3), "m/s2 (aceleracion)")
+    if ac < 0:
+        print("Ojo: revisa si siquiera arranca (estatica)")
 
-def _s_porc():
-    print("1 p% de N")
-    print("2 A es que % de B")
-    print("3 cambio % de viejo a nuevo")
-    print("4 cambios sucesivos (+20, -10..)")
-    print("5 hallar el original")
-    op = input("? ").strip()
-    cien = (100, 1)
-    uno = (1, 1)
+# ---------- 8. PLANO INCLINADO ----------
+def inclinado():
+    tip("sen = a lo largo de la rampa; checa limite ang->0")
+    ang = num("angulo rampa en grados: ")
+    mu = num("mu (sin unidad; 0 si no hay): ")
+    m = num("masa en kg (0 si no la dan): ")
+    t = tan(radians(ang))
+    print("PROCEDIMIENTO:")
+    print("  N=mg*cos(" + r2(ang) + ")  f=mu*N")
+    print("  a=g(sen(" + r2(ang) + ")-mu*cos(" + r2(ang) + "))")
+    if m > 0:
+        N = m * G * cos(radians(ang))
+        print("N =", round(N, 3), "N (normal)")
+        print("f = mu*N =", round(mu * N, 3), "N (friccion)")
+        print("mg sen =", round(m * G * sin(radians(ang)), 3), "N (jala rampa abajo)")
+    else:
+        print("N =", round(G * cos(radians(ang)), 3), "* m  (N, con m en kg)")
+    print("mu min para NO deslizar = tan(ang) =", round(t, 3))
+    if t <= mu:
+        print("tan(ang) <=", mu, "-> NO desliza (estatico)")
+    else:
+        ab = G * (sin(radians(ang)) - mu * cos(radians(ang)))
+        print("a bajando =", round(ab, 3), "m/s2")
+    asu = G * (sin(radians(ang)) + mu * cos(radians(ang)))
+    print("a frenando al subir =", round(asu, 3), "m/s2")
+    tip("h = d*sen(ang): altura vs largo de rampa")
+
+# ---------- 9. POLEAS ----------
+def poleas():
+    tip("misma T y misma a; T queda ENTRE los dos pesos")
+    print("1) Atwood  2) mesa+polea  3) rampa+polea")
+    op = input("> ")
     if op == "1":
-        p = _s_pide("p (%) = ")
-        n = _s_pide("N = ")
-        print("(p/100)*N = " + _s_txt(_s_div(_s_mul(p, n), cien)))
+        m1 = num("m1 ligera (kg): "); m2 = num("m2 pesada (kg): ")
+        a = (m2 - m1) * G / (m1 + m2)
+        T = 2 * m1 * m2 * G / (m1 + m2)
     elif op == "2":
-        a = _s_pide("A = ")
-        b = _s_pide("B = ")
-        print("(A/B)*100 = " + _s_txt(_s_mul(_s_div(a, b), cien)) + " %")
+        m1 = num("m1 en mesa (kg): "); m2 = num("m2 colgando (kg): ")
+        mu = num("mu (sin unidad; 0 si no hay): ")
+        if m2 * G <= mu * m1 * G:
+            print("No arranca (estatica). a=0, T =", round(m2 * G, 2), "N")
+            return
+        a = (m2 - mu * m1) * G / (m1 + m2)
+        T = m2 * (G - a)
+    else:
+        m1 = num("m1 en rampa (kg): "); ang = num("angulo en grados: ")
+        m2 = num("m2 colgando (kg): ")
+        a = (m2 * G - m1 * G * sin(radians(ang))) / (m1 + m2)
+        T = m2 * (G - a)
+        if a < 0:
+            print("Gana la rampa: m1 baja, m2 sube")
+    print("PROCEDIMIENTO:")
+    print("  a=(jala-retiene)/(m1+m2)")
+    print("  T=m2(g-a) o T=m1(g+a) segun lado")
+    print("a =", round(abs(a), 3), "m/s2 (aceleracion del sistema)")
+    print("T =", round(T, 3), "N (tension de la cuerda)")
+
+# ---------- 10. ENERGIA ----------
+def energia():
+    tip("sin tiempo en el problema -> energia es el camino")
+    print("1) v = raiz(2gh)")
+    print("2) rampa con friccion")
+    print("3) energia perdida (Em0 vs Emf)")
+    op = input("> ")
+    if op == "1":
+        h = num("h altura (m): ")
+        print("PROCEDIMIENTO:  U=K -> mgh=.5mv^2")
+        print("  v=raiz(2gh) = raiz(19.62(" + r2(h) + "))")
+        print("v =", round(sqrt(2 * G * h), 3), "m/s")
+    elif op == "2":
+        tip("friccion cobra el LARGO de rampa, no la altura")
+        m = num("masa (kg): "); h = num("altura (m): ")
+        f = num("F friccion (N): "); d = num("largo rampa (m): ")
+        e = m * G * h - f * d
+        if e < 0:
+            print("La friccion gana: no llega abajo")
+        else:
+            print("v =", round(sqrt(2 * e / m), 3), "m/s")
+    else:
+        m = num("masa (kg): "); h = num("h inicial (m): "); v = num("v final (m/s): ")
+        e0 = m * G * h
+        ef = 0.5 * m * v * v
+        print("PROCEDIMIENTO:")
+        print("  Em0=mgh = (" + r2(m) + ")(9.81)(" + r2(h) + ")")
+        print("  Emf=.5mv^2 = .5(" + r2(m) + ")(" + r2(v) + ")^2")
+        print("  Ff*d = Em0-Emf")
+        print("Em0 =", round(e0, 2), "J (energia inicial)")
+        print("Emf =", round(ef, 2), "J (energia final)")
+        print("perdida Ff*d =", round(e0 - ef, 2), "J (se la llevo la friccion)")
+
+# ---------- 11. CONVERSIONES ----------
+PRE = {"E": 1e18, "P": 1e15, "T": 1e12, "G": 1e9,
+       "M": 1e6, "k": 1e3, "h": 1e2, "da": 1e1,
+       "1": 1.0,
+       "d": 1e-1, "c": 1e-2, "m": 1e-3, "u": 1e-6,
+       "n": 1e-9, "p": 1e-12, "f": 1e-15, "a": 1e-18}
+
+NOM = {"exa": "E", "peta": "P", "tera": "T", "giga": "G",
+       "mega": "M", "kilo": "k", "hecto": "h", "deca": "da",
+       "deci": "d", "centi": "c", "mili": "m", "micro": "u",
+       "nano": "n", "pico": "p", "femto": "f", "atto": "a"}
+UNI = ("mol", "cd", "Pa", "Hz", "m", "g", "s", "A", "L", "N", "J", "W")
+
+ORDEN = ["E","P","T","G","M","k","h","da","1","d","c","m","u","n","p","f","a"]
+PNOMD = {"E":"exa","P":"peta","T":"tera","G":"giga","M":"mega","k":"kilo",
+         "h":"hecto","da":"deca","1":"","d":"deci","c":"centi","m":"mili",
+         "u":"micro","n":"nano","p":"pico","f":"femto","a":"atto"}
+UNOM = {"m":"metros","g":"gramos","s":"segundos","L":"litros","A":"amperes",
+        "N":"newtons","J":"joules","W":"watts","Pa":"pascales",
+        "mol":"moles","cd":"candelas"}
+
+def nombre_completo(psym, uni):
+    if uni in UNOM:
+        base = UNOM[uni]
+    elif uni:
+        base = uni
+    else:
+        return ""
+    return "(" + PNOMD.get(psym, "") + base + ")"
+
+def tabla_completa(v, fac, uni):
+    sep()
+    print("valor en TODOS los prefijos:")
+    for q in ORDEN:
+        if q == "1":
+            et = (uni if uni else "base") + " (sin prefijo)"
+        else:
+            et = q + uni
+        print(" ", et, "=", "%g" % (v * fac / PRE[q]))
+
+ULT_UNI = [""]
+ULT_SYM = ["1"]
+
+def menu_pref():
+    print("1)E   2)P  3)T    4)G  5)M  6)k")
+    print("7)h   8)da 9)BASE 10)d 11)c 12)m")
+    print("13)u  14)n 15)p   16)f 17)a")
+
+def parse_pref(p):
+    if p.isdigit():
+        i = int(p)
+        if 1 <= i <= 17:
+            ULT_SYM[0] = ORDEN[i - 1]
+            return PRE[ORDEN[i - 1]]
+        return None
+    if p in UNI:
+        ULT_UNI[0] = p
+        ULT_SYM[0] = "1"
+        return 1.0
+    if p in PRE:
+        ULT_SYM[0] = p
+        return PRE[p]
+    if p in NOM:
+        ULT_SYM[0] = NOM[p]
+        return PRE[NOM[p]]
+    for u in UNI:
+        if p.endswith(u):
+            r = p[:-len(u)]
+            if r in PRE:
+                ULT_UNI[0] = u
+                ULT_SYM[0] = r
+                return PRE[r]
+            if r in NOM:
+                ULT_UNI[0] = u
+                ULT_SYM[0] = NOM[r]
+                return PRE[NOM[r]]
+    return None
+
+def etiqueta_pref(p, uni):
+    if p.isdigit():
+        q = ORDEN[int(p) - 1]
+        return (uni if uni else "base") if q == "1" else q + uni
+    return p
+
+def pedir_prefijo(msg):
+    menu_pref()
+    print("(numero, o letras tipo km, pico)")
+    while True:
+        p = input(msg)
+        if p == "":
+            return 1.0
+        f = parse_pref(p)
+        if f is not None:
+            return f
+        msg = "no valido, otra vez: "
+
+def conversiones():
+    print("1) prefijos (m, g, s, A, mol, cd...)")
+    print("2) area (cm2<->m2 etc)")
+    print("3) velocidad km/h <-> m/s")
+    print("4) temperatura C <-> K")
+    print("5) tiempo h/min <-> s")
+    print("6) volumen m3 <-> L <-> mL")
+    print("7) densidad g/cm3 <-> kg/m3")
+    print("8) chuleta: unidades derivadas")
+    print("9) operar en notacion cientifica")
+    op = input("> ")
+    if op == "1":
+        tip("mueve el punto: k=10^3, c=10^-2, m=10^-3")
+        v = num("valor (solo el numero): ")
+        ULT_UNI[0] = ""
+        a = pedir_prefijo("prefijo actual: ")
+        uni = ULT_UNI[0]
+        if uni == "":
+            print("unidad: 1)m 2)g 3)s 4)L 5)N 6)J 7)W 8)Pa 9)mol 10)cd 0)ninguna")
+            LU = ["m", "g", "s", "L", "N", "J", "W", "Pa", "mol", "cd"]
+            u = input("> ")
+            if u.isdigit() and 1 <= int(u) <= 10:
+                uni = LU[int(u) - 1]
+            elif u in UNOM:
+                uni = u
+        d = input("destino (ENTER = tabla con TODOS): ")
+        if d == "":
+            tabla_completa(v, a, uni)
+        else:
+            b = parse_pref(d)
+            if b is None:
+                print("no entendi el destino; tabla completa:")
+                tabla_completa(v, a, uni)
+            else:
+                ps = ULT_SYM[0]
+                sim = (uni if uni else "base") if ps == "1" else ps + uni
+                print("=", "%g" % (v * a / b), sim, nombre_completo(ps, uni))
+    elif op == "2":
+        tip("el prefijo se ELEVA: 1 cm2 = 10^-4 m2")
+        v = num("valor (solo el numero): ")
+        a = pedir_prefijo("prefijo actual: ")
+        b = pedir_prefijo("prefijo destino: ")
+        print("=", "%g" % (v * (a / b) ** 2))
     elif op == "3":
-        v = _s_pide("viejo = ")
-        n = _s_pide("nuevo = ")
-        ch = _s_mul(_s_div(_s_sub(n, v), v), cien)
-        _s_out(["(nuevo-viejo)/viejo*100",
-                "cambio = " + _s_txt(ch) + " %",
-                "factor = nuevo/viejo = " + _s_txt(_s_div(n, v))])
+        tip("1 m/s = 3.6 km/h")
+        v = num("valor (solo el numero): ")
+        print("1) km/h -> m/s    2) m/s -> km/h")
+        d = input("> ")
+        if d == "1":
+            print("=", round(v / 3.6, 4), "m/s")
+        else:
+            print("=", round(v * 3.6, 4), "km/h")
     elif op == "4":
-        n = _s_pide("valor inicial (enter=100) = ", cien)
-        ps = _s_pide_lista("cambios en % (ej: 20 -10): ")
-        f = uno
-        for p in ps:
-            f = _s_mul(f, _s_add(uno, _s_div(p, cien)))
-        tot = _s_mul(_s_sub(f, uno), cien)
-        _s_out(["factor total = " + _s_txt(f),
-                "final = " + _s_txt(_s_mul(n, f)),
-                "cambio total = " + _s_txt(tot) + " %",
-                "TIP: se multiplican, no se suman"])
+        tip("K = C + 273.15; el Kelvin no usa grados")
+        v = num("valor (solo el numero): ")
+        print("1) C -> K    2) K -> C")
+        d = input("> ")
+        if d == "1":
+            print("=", round(v + 273.15, 2), "K")
+        else:
+            print("=", round(v - 273.15, 2), "C")
     elif op == "5":
-        fin = _s_pide("valor final = ")
-        p = _s_pide("cambio que tuvo, % (-20 = bajo) = ")
-        f = _s_add(uno, _s_div(p, cien))
-        _s_out(["original = final/(1 + p/100)",
-                "original = " + _s_txt(_s_div(fin, f))])
+        v = num("valor (solo el numero): ")
+        print("1) horas -> s   2) min -> s   3) s -> min y h")
+        d = input("> ")
+        if d == "1":
+            print("=", v * 3600, "s")
+        elif d == "2":
+            print("=", v * 60, "s")
+        else:
+            print("=", v / 60, "min =", v / 3600, "h")
+    elif op == "6":
+        tip("1 m3 = 1000 L; 1 L = 1000 mL; 1 mL = 1 cm3")
+        v = num("valor (solo el numero): ")
+        print("1) m3 -> L y mL   2) L -> m3 y mL   3) mL -> L y m3")
+        d = input("> ")
+        if d == "1":
+            print("=", v * 1000, "L =", v * 1e6, "mL")
+        elif d == "2":
+            print("=", "%g" % (v / 1000), "m3 =", "%g" % (v * 1000), "mL")
+        else:
+            print("=", "%g" % (v / 1000), "L =", "%g" % (v / 1e6), "m3")
+    elif op == "7":
+        tip("g/cm3 -> kg/m3: multiplica x1000 (agua = 1000)")
+        v = num("valor (solo el numero): ")
+        print("1) g/cm3 -> kg/m3    2) kg/m3 -> g/cm3")
+        d = input("> ")
+        if d == "1":
+            print("=", v * 1000, "kg/m3")
+        else:
+            print("=", "%g" % (v / 1000), "g/cm3")
+    elif op == "9":
+        tip("escribe 4e-3 o 4x10^-3; da mantisa entre 1 y 10")
+        a = num("primer numero: ")
+        o = input("operacion (* / + -): ")
+        b = num("segundo numero: ")
+        if o == "*":
+            r = a * b
+        elif o == "/":
+            if b == 0:
+                print("no se divide entre cero")
+                return
+            r = a / b
+        elif o == "+":
+            r = a + b
+        else:
+            r = a - b
+        print("=", "%g" % r)
+        print("= ", "%e" % r, "(forma larga)")
+    elif op == "8":
+        print("N  = kg*m/s2   (fuerza)")
+        print("Pa = N/m2      (presion)")
+        print("J  = N*m       (trabajo/energia)")
+        print("W  = J/s       (potencia)")
+        print("L  = 0.001 m3  (volumen)")
+        print("rho= kg/m3     (densidad)")
+        tip("todo lo no fundamental es derivado")
+
+# ---------- 12. GRAFICAS POR TRAMOS ----------
+def graficas():
+    tip("x-t: pendiente = v | v-t: pendiente = a, AREA = x")
+    m = input("tipo (1=x-t, 2=v-t): ")
+    n = int(num("cuantos puntos (esquinas)? "))
+    ts = []
+    ys = []
+    if m == "1":
+        et = "x"
+        un = " (m): "
     else:
-        print("opcion no valida")
-
-
-def _s_estad():
-    vals = _s_pide_lista("datos (con espacios): ")
-    n = len(vals)
-    orden = sorted(vals, key=_s_float)
-    suma = (0, 1)
-    for v in vals:
-        suma = _s_add(suma, v)
-    media = _s_div(suma, (n, 1))
-    if n % 2:
-        med = orden[n // 2]
-    else:
-        med = _s_div(_s_add(orden[n // 2 - 1], orden[n // 2]), (2, 1))
-    cuenta = {}
-    for v in vals:
-        cuenta[v] = cuenta.get(v, 0) + 1
-    tope = max(cuenta.values())
-    if tope == 1:
-        moda = "no hay (nadie se repite)"
-    else:
-        ms = sorted([v for v in cuenta if cuenta[v] == tope],
-                    key=_s_float)
-        moda = ", ".join([_s_sh(v) for v in ms])
-    sc = (0, 1)
-    for v in vals:
-        dd = _s_sub(v, media)
-        sc = _s_add(sc, _s_mul(dd, dd))
-    out = ["n = {}   suma = {}".format(n, _s_sh(suma)),
-           "media 'mean' = " + _s_txt(media),
-           "mediana 'median' = " + _s_txt(med),
-           "moda 'mode' = " + moda,
-           "rango = {} - {} = {}".format(
-               _s_sh(orden[-1]), _s_sh(orden[0]),
-               _s_sh(_s_sub(orden[-1], orden[0]))),
-           "desv.est. poblacion = "
-           + _s_g(sqrt(_s_float(sc) / n))]
-    if n > 1:
-        out.append("desv.est. muestra = "
-                   + _s_g(sqrt(_s_float(sc) / (n - 1))))
-    out.append("TIP: el SAT casi nunca pide")
-    out.append("calcular la desv.: compara")
-    out.append("que tan dispersos estan")
-    _s_out(out)
-
-
-def _s_pi_txt(a):
-    """a*pi con decimal: (5/2)*pi = 7.85398."""
-    if a == (1, 1):
-        s = "pi"
-    elif a[1] == 1:
-        s = "{}*pi".format(a[0])
-    else:
-        s = "({})*pi".format(_s_sh(a))
-    return "{} = {}".format(s, _s_g(_s_float(a) * pi))
-
-
-def _s_circulo():
-    print("1 centro y radio desde")
-    print("  x^2+y^2+Dx+Ey+F = 0")
-    print("2 arco y sector (r y angulo)")
-    op = input("? ").strip()
-    if op == "1":
-        A = _s_pide("coef de x^2 y y^2 (enter=1) = ", (1, 1))
-        if A[0] == 0:
-            print("no es un circulo")
-            return
-        D = _s_div(_s_pide("D = "), A)
-        E = _s_div(_s_pide("E = "), A)
-        F = _s_div(_s_pide("F = "), A)
-        h = _s_div((-D[0], D[1]), (2, 1))
-        k = _s_div((-E[0], E[1]), (2, 1))
-        r2 = _s_sub(_s_add(_s_mul(h, h), _s_mul(k, k)), F)
-        if r2[0] <= 0:
-            print("r^2 = " + _s_sh(r2) + ": no es un circulo")
-            return
-        _s_out(["completando cuadrados:",
-                "centro (h,k) = ({}, {})".format(_s_sh(h), _s_sh(k)),
-                "h = -D/2, k = -E/2",
-                "r^2 = h^2 + k^2 - F = " + _s_sh(r2),
-                "r = " + _s_raiz_txt(r2),
-                "{}^2 + {}^2 = {}".format(_s_menos_var("x", h),
-                                          _s_menos_var("y", k),
-                                          _s_sh(r2)),
-                "diametro = 2r"])
-    elif op == "2":
-        r = _s_pide("r = ")
-        ang = _s_pide("angulo central (grados) = ")
-        fr = _s_div(ang, (360, 1))
-        arco = _s_mul(fr, _s_mul((2, 1), r))
-        sector = _s_mul(fr, _s_mul(r, r))
-        _s_out(["fraccion del circulo = ang/360",
-                "= " + _s_txt(fr),
-                "arco = frac*2*pi*r",
-                "= " + _s_pi_txt(arco),
-                "sector = frac*pi*r^2",
-                "= " + _s_pi_txt(sector),
-                "angulo en rad = "
-                + _s_pi_txt(_s_div(ang, (180, 1)))])
-    else:
-        print("opcion no valida")
-
-
-def _s_expo():
-    print("y = a*(1 + r/100)^t")
-    a = _s_float(_s_pide("a (valor inicial) = "))
-    r = _s_float(_s_pide("r en % (-5 = decae 5%) = "))
-    base = 1 + r / 100
-    if base <= 0:
-        print("1 + r/100 debe ser > 0")
-        return
-    t = _s_float(_s_pide("t (periodos) = "))
-    out = ["factor por periodo b = " + _s_g(base),
-           "y = a*b^t = " + _s_g(a * base ** t)]
-    if base > 1:
-        out.append("se duplica cada "
-                   + _s_g(log(2) / log(base)) + " periodos")
-    elif base < 1:
-        out.append("baja a la mitad cada "
-                   + _s_g(log(0.5) / log(base)) + " periodos")
-    _s_out(out)
-    meta = _s_pide("meta de y (enter=saltar) = ", (0, 1))
-    m = _s_float(meta)
-    if m != 0 and base != 1 and a != 0 and m / a > 0:
-        print("t = ln(meta/a)/ln(b) = " + _s_g(log(m / a) / log(base)))
-    print("TIP: tasa anual con t en meses:")
-    print("usa el exponente t/12")
-
-
-def _s_triang():
-    print("Triangulo rectangulo: da 2 lados")
-    print("(enter en el que no sabes)")
-    cero = (0, 1)
-    a = _s_pide("cateto a = ", cero)
-    b = _s_pide("cateto b = ", cero)
-    c = _s_pide("hipotenusa c = ", cero)
-    dados = [v for v in (a, b, c) if v[0] > 0]
-    if len(dados) != 2:
-        print("necesito exactamente 2 lados")
-        return
-    a2 = _s_mul(a, a)
-    b2 = _s_mul(b, b)
-    c2 = _s_mul(c, c)
-    out = []
-    if c[0] == 0:
-        c2 = _s_add(a2, b2)
-        out.append("c^2 = a^2 + b^2 = " + _s_sh(c2))
-        out.append("c = " + _s_raiz_txt(c2))
-    elif a[0] == 0:
-        a2 = _s_sub(c2, b2)
-        if a2[0] <= 0:
-            print("la hipotenusa debe ser mayor")
-            return
-        out.append("a^2 = c^2 - b^2 = " + _s_sh(a2))
-        out.append("a = " + _s_raiz_txt(a2))
-    else:
-        b2 = _s_sub(c2, a2)
-        if b2[0] <= 0:
-            print("la hipotenusa debe ser mayor")
-            return
-        out.append("b^2 = c^2 - a^2 = " + _s_sh(b2))
-        out.append("b = " + _s_raiz_txt(b2))
-    fa = sqrt(_s_float(a2))
-    fb = sqrt(_s_float(b2))
-    fc = sqrt(_s_float(c2))
-    angA = atan(fa / fb) * 180 / pi
-    out.append("angulo A (frente a a) = " + _s_g(angA))
-    out.append("angulo B = 90 - A = " + _s_g(90 - angA))
-    out.append("sin A = a/c = " + _s_g(fa / fc))
-    out.append("cos A = b/c = " + _s_g(fb / fc))
-    out.append("tan A = a/b = " + _s_g(fa / fb))
-    out.append("TIP: sin A = cos B (suman 90)")
-    if a2 == b2:
-        out.append("es 45-45-90: x, x, x*sqrt(2)")
-    elif _s_mul((4, 1), a2) == c2 or _s_mul((4, 1), b2) == c2:
-        out.append("es 30-60-90: x, x*sqrt(3), 2x")
-    out.append("area = a*b/2 = " + _s_g(fa * fb / 2))
-    _s_out(out)
-
-
-# ---------- menu ----------
-
-def sat():
-    print("")
-    print("Tu CAS NO entra al SAT: esto es")
-    print("para estudiar. Examen = Desmos.")
-    while True:
-        print("")
-        print("== SAT MATH (estudio) ==")
-        print("1 formulas y tips por dominio")
-        print("2 recta por 2 puntos")
-        print("3 sistema 2x2")
-        print("4 cuadratica")
-        print("5 porcentajes")
-        print("6 estadistica de una lista")
-        print("7 circulo / arco y sector")
-        print("8 exponencial (crece o decae)")
-        print("9 triangulo rectangulo y trig")
-        print("0 salir")
-        op = input("? ").strip()
-        if op == "0" or op == "":
-            return
-        try:
-            if op == "1":
-                _s_hojas()
-                continue
-            elif op == "2":
-                _s_recta()
-            elif op == "3":
-                _s_sistema()
-            elif op == "4":
-                _s_cuad()
-            elif op == "5":
-                _s_porc()
-            elif op == "6":
-                _s_estad()
-            elif op == "7":
-                _s_circulo()
-            elif op == "8":
-                _s_expo()
-            elif op == "9":
-                _s_triang()
+        et = "v"
+        un = " (m/s): "
+    for i in range(n):
+        ts.append(num("t" + str(i + 1) + " (s): "))
+        ys.append(num(et + str(i + 1) + un))
+    sep()
+    dist = 0.0
+    despl = 0.0
+    for i in range(n - 1):
+        dt = ts[i + 1] - ts[i]
+        dy = ys[i + 1] - ys[i]
+        if dt <= 0:
+            print("tramo", i + 1, ": tiempos no crecen, lo salto")
+            continue
+        print("tramo", ts[i], "-", ts[i + 1], "s:")
+        if m == "1":
+            v = dy / dt
+            if v == 0:
+                print("  REPOSO (linea plana)")
+            elif v > 0:
+                print("  MRU direccion + : v =", round(v, 3), "m/s")
             else:
-                print("escribe un numero del 0 al 9")
-                continue
-        except Exception as err:
-            print("Algo fallo: " + str(err))
-        input("-- enter --")
+                print("  MRU direccion - : v =", round(v, 3), "m/s")
+            print("  v=dx/dt = (" + r2(ys[i+1]) + "-" + r2(ys[i]) + ")/" + r2(dt))
+            dist = dist + abs(dy)
+        else:
+            a = dy / dt
+            v1 = ys[i]
+            v2 = ys[i + 1]
+            if v1 == 0 and v2 == 0:
+                print("  REPOSO")
+            elif a == 0:
+                print("  v constante (MRU): v =", round(v1, 3), "m/s")
+            elif v1 * a >= 0 and v2 * a >= 0:
+                print("  ACELERA: a =", round(a, 3), "m/s2")
+            else:
+                print("  FRENA: a =", round(a, 3), "m/s2")
+            if v1 * v2 < 0:
+                tc = -v1 / a
+                a1 = 0.5 * v1 * tc
+                a2 = 0.5 * v2 * (dt - tc)
+                area = a1 + a2
+                dist = dist + abs(a1) + abs(a2)
+                print("  (cruza v=0: cambia de sentido)")
+            else:
+                area = (v1 + v2) / 2 * dt
+                dist = dist + abs(area)
+            print("  area=(v1+v2)/2*dt =", round(area, 3), "m")
+            despl = despl + area
+    sep()
+    if m == "1":
+        despl = ys[-1] - ys[0]
+    T = ts[-1] - ts[0]
+    print("distancia total =", round(dist, 3), "m (todo lo recorrido)")
+    print("desplazamiento =", round(despl, 3), "m (final - inicial)")
+    if T > 0:
+        print("vel media =", round(despl / T, 3), "m/s (desplaz/t)")
+        print("rapidez media =", round(dist / T, 3), "m/s (dist/t)")
+
+# ---------- 13. TRABAJO Y POTENCIA ----------
+def trabajo():
+    tip("W = F*d*cos(ang) | solo la componente EN la direccion cuenta")
+    print("1) W de una fuerza (F, d, angulo)")
+    print("2) W neto por teorema (Kf - Ki)")
+    print("3) W contra la gravedad (subir masa)")
+    print("4) potencia (W y t, o F y v)")
+    op = input("> ")
+    if op == "1":
+        F = num("F (N): ")
+        d = num("d (m): ")
+        ang = num("angulo F-d en grados (0 si van juntas): ")
+        W = F * d * cos(radians(ang))
+        print("PROCEDIMIENTO:")
+        print("  W=F*d*cos(ang) = " + r2(F) + "(" + r2(d) + ")cos(" + r2(ang) + ")")
+        print("W =", round(W, 3), "J (trabajo)")
+        if abs(ang - 90) < 0.001:
+            print("ang=90: la fuerza NO hace trabajo (ni N ni peso horizontal)")
+        elif W < 0:
+            print("W negativo: la fuerza quita energia (friccion, frenar)")
+    elif op == "2":
+        tip("W neto = cambio de energia cinetica")
+        m = num("masa (kg): ")
+        v0 = num("v inicial (m/s): ")
+        vf = num("v final (m/s): ")
+        Ki = 0.5 * m * v0 * v0
+        Kf = 0.5 * m * vf * vf
+        print("PROCEDIMIENTO:")
+        print("  Ki=.5mv0^2 = " + r2(Ki) + "  Kf=.5mvf^2 = " + r2(Kf))
+        print("  W neto = Kf - Ki")
+        print("Ki =", round(Ki, 3), "J (cinetica inicial)")
+        print("Kf =", round(Kf, 3), "J (cinetica final)")
+        print("W neto =", round(Kf - Ki, 3), "J")
+    elif op == "3":
+        m = num("masa (kg): ")
+        h = num("altura (m): ")
+        print("PROCEDIMIENTO:  W = mgh (contra la gravedad)")
+        print("  W = " + r2(m) + "(9.81)(" + r2(h) + ")")
+        print("W =", round(m * G * h, 3), "J (= U ganada)")
+        tip("la gravedad hace -mgh; el camino no importa, solo h")
+    elif op == "4":
+        print("  1) con trabajo y tiempo   2) con fuerza y velocidad")
+        s = input("  > ")
+        if s == "2":
+            F = num("F (N): ")
+            v = num("v (m/s): ")
+            print("PROCEDIMIENTO:  P = F*v")
+            print("P =", round(F * v, 3), "W (potencia)")
+        else:
+            W = num("W (J): ")
+            t = num("t (s): ")
+            if t == 0:
+                print("t no puede ser 0")
+                return
+            P = W / t
+            print("PROCEDIMIENTO:  P = W/t = " + r2(W) + "/" + r2(t))
+            print("P =", round(P, 3), "W (potencia)")
+            print("  =", round(P / 745.7, 4), "hp")
+
+# ---------- MENU PRINCIPAL ----------
+ops = [("Unidades", conversiones),
+       ("Vectores", vectores),
+       ("Graficas", graficas),
+       ("MRU", mru),
+       ("MRUA", mrua),
+       ("Derrape", derrape),
+       ("Caida libre", caida),
+       ("Lanz vert", vertical),
+       ("Proyectil", proyectil),
+       ("Horizontal", horizontal),
+       ("Inclinado", inclinado),
+       ("Poleas", poleas),
+       ("Energia", energia),
+       ("Trabajo/Potencia", trabajo)]
+
+def fisica():
+    print(">>> FISICA v7")
+    while True:
+        sep()
+        print("FISICA - menu principal")
+        mit = (len(ops) + 1) // 2
+        for i in range(mit):
+            izq = str(i + 1) + ")" + ops[i][0]
+            j = i + mit
+            if j < len(ops):
+                der = str(j + 1) + ")" + ops[j][0]
+            else:
+                der = ""
+            print(izq + " " * (16 - len(izq)) + der)
+        print("0)SALIR")
+        op = input("> ")
+        if op == "0" or op == "q":
+            print("Saliste de FISICA. Exito en el examen!")
+            break
+        try:
+            k = int(op) - 1
+            if 0 <= k < len(ops):
+                sep()
+                ops[k][1]()
+                input("(enter para volver al menu)")
+        except ValueError:
+            print("Opcion no valida")
 
 
 # ===================== menu principal =====================
 
-def estudio():
+def general():
     try:
         while True:
             print("")
-            print("== ESTUDIO ==")
-            print("1 Calculo AP: herramientas")
-            print("2 Calculo AP: formulas y tips")
-            print("3 IA: regresion lineal")
-            print("4 SAT Math (para estudiar)")
+            print("== GENERAL: elige materia ==")
+            print("1 Calculo AP")
+            print("2 IA: regresion lineal")
+            print("3 Fisica")
             print("0 salir")
             op = input("? ").strip()
             if op == "0":
@@ -3871,18 +3716,20 @@ def estudio():
                 if op == "1":
                     ap()
                 elif op == "2":
-                    formulario()
-                elif op == "3":
                     ia()
-                elif op == "4":
-                    sat()
-                else:
-                    print("escribe un numero del 0 al 4")
+                elif op == "3":
+                    fisica()
+                elif op != "":
+                    print("escribe 1, 2, 3 o 0")
             except Exception as err:
                 print("Algo fallo: " + str(err))
     except KeyboardInterrupt:
         pass
-    print("Para abrir otra vez: estudio()")
+    print("Para abrir otra vez: general()")
 
 
-estudio()
+# correr el programa otra vez vuelve a abrir el menu
+try:
+    general()
+finally:
+    sys.modules.pop(__name__, None)

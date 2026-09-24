@@ -1,0 +1,1100 @@
+# fisica - Fisica
+# Para la TI-Nspire CX II CAS de Adrian (MicroPython 1.11).
+# GENERADO por build.py desde src/fisica.py:
+# no lo edites a mano; edita src/ y corre  python3 build.py
+
+from math import *
+import sys
+
+
+# ===================== fisica =====================
+
+# FISICA.PY — Solucionador de mecanica + conversiones
+# Para TI-Nspire CX II (Python / MicroPython)
+# Notacion del formulario: g suma (abajo positivo en caida)
+
+
+G = 9.81
+
+def nval(s):
+    # acepta 3e-5, 3x10^-5, 4*10^8, 10^-3
+    s = s.replace(" ", "")
+    for tk in ("x10^", "X10^", "*10^"):
+        s = s.replace(tk, "e")
+    if s.startswith("10^"):
+        s = "1e" + s[3:]
+    elif s.startswith("-10^"):
+        s = "-1e" + s[4:]
+    return float(s)
+
+def num(msg):
+    while True:
+        try:
+            return nval(input(msg))
+        except ValueError:
+            print("numero no valido (vale: 3e-5 o 3x10^-5)")
+
+def dato(msg):
+    while True:
+        s = input(msg)
+        if s == "":
+            return None
+        try:
+            return nval(s)
+        except ValueError:
+            print("numero no valido (vale: 3e-5 o 3x10^-5)")
+
+def sep():
+    print("-" * 26)
+
+def tip(t):
+    print("* TIP:", t)
+
+def r2(x):
+    # %.12g: sin colas tipo 78.43000000000001 de MicroPython
+    s = "%.12g" % round(x, 3)
+    if "." not in s and "e" not in s and "n" not in s:
+        s = s + ".0"
+    return s
+
+def proc_print(proc):
+    if proc:
+        print("PROCEDIMIENTO:")
+        for p in proc:
+            print(" ", p)
+
+CARD = {"E": 0.0, "ENE": 22.5, "NE": 45.0, "NNE": 67.5,
+        "N": 90.0, "NNO": 112.5, "NO": 135.0, "ONO": 157.5,
+        "O": 180.0, "OSO": 202.5, "SO": 225.0, "SSO": 247.5,
+        "S": 270.0, "SSE": 292.5, "SE": 315.0, "ESE": 337.5,
+        "W": 180.0, "NW": 135.0, "SW": 225.0}
+
+def ang_rumbo(s):
+    # devuelve angulo estandar (desde +x, antihorario) o None
+    s = s.replace(" ", "").upper()
+    if s in CARD:
+        return CARD[s]
+    # formato N30E : desde N, 30 grados hacia E
+    if len(s) >= 3 and s[0] in "NS" and s[-1] in "EO" + "W":
+        try:
+            g = float(s[1:-1])
+        except ValueError:
+            return None
+        base = s[0]
+        hacia = "O" if s[-1] == "W" else s[-1]
+        if base == "N" and hacia == "E":
+            return 90.0 - g
+        if base == "N" and hacia == "O":
+            return 90.0 + g
+        if base == "S" and hacia == "E":
+            return 270.0 + g
+        if base == "S" and hacia == "O":
+            return 270.0 - g
+    return None
+
+def pedir_angulo(msg):
+    print("  desde donde mides el angulo:")
+    print("  1)+x(E) arriba  2)+x(E) abajo")
+    print("  3)+y(N) hacia E 4)+y(N) hacia O")
+    print("  5)-x(O) abajo   6)-y(S) hacia E")
+    print("  7)rumbo N30E/NE 8)ya es estandar")
+    ref = input("  > ")
+    while True:
+        if ref == "7":
+            s = input("  rumbo (N30E, NE, S...): ")
+            r = ang_rumbo(s)
+            if r is None:
+                print("  rumbo no valido")
+                continue
+            print("  ", s, "=", round(r, 2), "grados estandar")
+            return r
+        try:
+            a = nval(input(msg))
+        except ValueError:
+            print("  numero no valido")
+            continue
+        if ref == "2":
+            r = -a
+        elif ref == "3":
+            r = 90.0 - a
+        elif ref == "4":
+            r = 90.0 + a
+        elif ref == "5":
+            r = 180.0 + a
+        elif ref == "6":
+            r = 270.0 - a
+        else:
+            r = a
+        r = r % 360
+        if ref != "1" and ref != "8":
+            print("  =", round(r, 2), "grados estandar")
+        return r
+
+# ---------- 1. VECTORES CONCURRENTES ----------
+def vectores():
+    tip("cos va con el eje DESDE el que mides el angulo")
+    tip("angulo desde +x (E=0 N=90 O=180 S=270) o rumbo N30E")
+    n = int(num("Cuantos vectores? "))
+    rx = 0.0
+    ry = 0.0
+    tab = []
+    for i in range(n):
+        print("Vector", i + 1)
+        m = num("  magnitud (N o m): ")
+        a = pedir_angulo("  angulo en grados: ")
+        x = m * cos(radians(a))
+        y = m * sin(radians(a))
+        tab.append((i + 1, m, a, x, y))
+        rx = rx + x
+        ry = ry + y
+    sep()
+    print("TABLA DE COMPONENTES")
+    print("  #   mag    ang     x       y")
+    for (i, m, a, x, y) in tab:
+        print(" ", i, " ", round(m, 2), " ", round(a, 1), " ",
+              round(x, 2), " ", round(y, 2))
+    print("  SUMA          ", round(rx, 2), " ", round(ry, 2))
+    sep()
+    print("Rx =", round(rx, 3), " Ry =", round(ry, 3), "(sumas de componentes)")
+    r = sqrt(rx * rx + ry * ry)
+    ang = degrees(atan2(ry, rx))
+    if ang < 0:
+        ang = ang + 360
+    print("R (resultante) =", round(r, 3), "(N o m, segun el dato)")
+    print("angulo de R =", round(ang, 2), "grados (cuadrante ok)")
+    print("Equilibrante (la anula):", round(r, 3), "a", round((ang + 180) % 360, 2), "grados")
+
+# ---------- MRU (velocidad constante) ----------
+def mru():
+    tip("a=0: solo x = v*t. No uses las formulas de MRUA aqui")
+    print("1) v, x o t (deja VACIO lo que buscas)")
+    print("2) encuentro de dos moviles")
+    op = input("> ")
+    if op == "1":
+        v = dato("v (m/s): ")
+        x = dato("x (m): ")
+        t = dato("t (s): ")
+        if v is None and x is not None and t is not None and t != 0:
+            v = x / t
+            print("PROCEDIMIENTO:  v=x/t = " + r2(x) + "/" + r2(t))
+        elif x is None and v is not None and t is not None:
+            x = v * t
+            print("PROCEDIMIENTO:  x=v*t = " + r2(v) + "(" + r2(t) + ")")
+        elif t is None and v is not None and x is not None and v != 0:
+            t = x / v
+            print("PROCEDIMIENTO:  t=x/v = " + r2(x) + "/" + r2(v))
+        else:
+            print("Dame 2 de los 3 (y sin ceros que dividan)")
+            return
+        sep()
+        print("v =", round(v, 3), "m/s (velocidad constante)")
+        print("x =", round(x, 3), "m (distancia)")
+        print("t =", round(t, 3), "s (tiempo)")
+    else:
+        tip("frente a frente: se suman las rapideces")
+        tip("persecucion: se restan")
+        x1 = num("posicion inicial de A (m): ")
+        v1 = num("velocidad de A (m/s, con signo): ")
+        x2 = num("posicion inicial de B (m): ")
+        v2 = num("velocidad de B (m/s, con signo): ")
+        if v1 == v2:
+            print("Misma velocidad: nunca se encuentran (o van juntos)")
+            return
+        t = (x2 - x1) / (v1 - v2)
+        print("PROCEDIMIENTO:")
+        print("  x1+v1*t = x2+v2*t  ->  t=(x2-x1)/(v1-v2)")
+        print("  t = (" + r2(x2) + "-" + r2(x1) + ")/(" + r2(v1) + "-" + r2(v2) + ")")
+        if t < 0:
+            print("t negativo: ya se cruzaron antes, revisa signos")
+            return
+        xe = x1 + v1 * t
+        sep()
+        print("t =", round(t, 3), "s (tiempo de encuentro)")
+        print("x =", round(xe, 3), "m (posicion del encuentro)")
+        print("A recorrio", round(abs(v1 * t), 3), "m ; B recorrio", round(abs(v2 * t), 3), "m")
+
+# ---------- 2. MRUA ----------
+def mrua():
+    tip("escribe lo que TENGAS; deja VACIO (solo enter) lo demas")
+    tip("0 si el dato vale cero (reposo); necesito 3 datos")
+    tip("si te dan FUERZA en N y masa, sale la a sola (Newton)")
+    mu = num("mu (sin unidad; 0 si no hay): ")
+    F = dato("F aplicada en N (enter si no hay): ")
+    mm = dato("masa en kg (enter si no hay): ")
+    v0 = dato("v0 (m/s): ")
+    vf = dato("vf (m/s): ")
+    a = dato("a (m/s2, con signo): ")
+    t = dato("t (s): ")
+    x = dato("x (m): ")
+    proc = []
+    if F is not None and mm is not None and mm > 0 and a is None:
+        f = mu * mm * G
+        a = (F - f) / mm
+        proc.append("f=mu*m*g = " + r2(mu) + "(" + r2(mm) + ")(9.81) = " + r2(f) + " N")
+        proc.append("a=(F-f)/m = (" + r2(F) + "-" + r2(f) + ")/" + r2(mm) + " = " + r2(a))
+        if a < 0:
+            proc.append("F no vence la friccion: revisa si arranca")
+    elif mu > 0 and a is None:
+        a = -mu * G
+        proc.append("a=-mu*g = -(" + r2(mu) + ")(9.81) = " + r2(a))
+    try:
+        for _ in range(3):
+            if v0 is not None and a is not None and t is not None:
+                if vf is None:
+                    vf = v0 + a * t
+                    proc.append("vf=v0+a*t = " + r2(v0) + "+(" + r2(a) + ")(" + r2(t) + ") = " + r2(vf))
+                if x is None:
+                    x = v0 * t + 0.5 * a * t * t
+                    proc.append("x=v0t+.5at^2 = " + r2(v0) + "(" + r2(t) + ")+.5(" + r2(a) + ")(" + r2(t) + ")^2 = " + r2(x))
+            if v0 is not None and vf is not None and t is not None:
+                if a is None:
+                    a = (vf - v0) / t
+                    proc.append("a=(vf-v0)/t = (" + r2(vf) + "-" + r2(v0) + ")/" + r2(t) + " = " + r2(a))
+                if x is None:
+                    x = (v0 + vf) / 2 * t
+                    proc.append("x=(v0+vf)/2*t = (" + r2(v0) + "+" + r2(vf) + ")/2*" + r2(t) + " = " + r2(x))
+            if v0 is not None and vf is not None and a is not None and a != 0:
+                if t is None:
+                    t = (vf - v0) / a
+                    proc.append("t=(vf-v0)/a = (" + r2(vf) + "-" + r2(v0) + ")/" + r2(a) + " = " + r2(t))
+                if x is None:
+                    x = (vf * vf - v0 * v0) / (2 * a)
+                    proc.append("x=(vf^2-v0^2)/2a = " + r2(x))
+            if v0 is not None and vf is not None and x is not None and (v0 + vf) != 0:
+                if t is None:
+                    t = 2 * x / (v0 + vf)
+                    proc.append("t=2x/(v0+vf) = 2(" + r2(x) + ")/(" + r2(v0) + "+" + r2(vf) + ") = " + r2(t))
+            if v0 is not None and a is not None and x is not None and vf is None:
+                v2 = v0 * v0 + 2 * a * x
+                if v2 < 0:
+                    print("Imposible: vf^2 negativo, revisa datos")
+                    return
+                vf = sqrt(v2)
+                proc.append("vf=raiz(v0^2+2ax) = raiz(" + r2(v0) + "^2+2(" + r2(a) + ")(" + r2(x) + ")) = " + r2(vf))
+            if v0 is not None and t is not None and x is not None and t != 0:
+                if a is None:
+                    a = 2 * (x - v0 * t) / (t * t)
+                    proc.append("a=2(x-v0t)/t^2 = " + r2(a))
+            if vf is not None and a is not None and t is not None and v0 is None:
+                v0 = vf - a * t
+                proc.append("v0=vf-a*t = " + r2(vf) + "-(" + r2(a) + ")(" + r2(t) + ") = " + r2(v0))
+            if vf is not None and t is not None and x is not None and v0 is None and t != 0:
+                v0 = 2 * x / t - vf
+                proc.append("v0=2x/t-vf = " + r2(v0))
+            if a is not None and t is not None and x is not None and v0 is None and t != 0:
+                v0 = (x - 0.5 * a * t * t) / t
+                proc.append("v0=(x-.5at^2)/t = " + r2(v0))
+            if vf is not None and a is not None and x is not None and v0 is None:
+                v2 = vf * vf - 2 * a * x
+                if v2 < 0:
+                    print("Imposible: v0^2 negativo, revisa datos")
+                    return
+                v0 = sqrt(v2)
+                proc.append("v0=raiz(vf^2-2ax) = " + r2(v0))
+    except ZeroDivisionError:
+        print("Division entre cero: si a=0 es MRU, usa x=v*t")
+        return
+    faltan = [n for n, z in [("v0",v0),("vf",vf),("a",a),("t",t),("x",x)] if z is None]
+    if faltan:
+        print("Me faltan datos, no pude despejar:", faltan)
+        print("Da al menos 3 de las 5 magnitudes")
+        return
+    sep()
+    proc_print(proc)
+    sep()
+    print("v0 =", round(v0, 3), "m/s (vel inicial)")
+    print("vf =", round(vf, 3), "m/s (vel final)")
+    print("a  =", round(a, 3), "m/s2 (aceleracion)")
+    print("t  =", round(t, 3), "s (tiempo)")
+    print("x  =", round(x, 3), "m (distancia)")
+
+# ---------- 3. MRUA + FRICCION (derrape) ----------
+def derrape():
+    tip("la masa se cancela: a = mu*g siempre")
+    print("1) v0 desde huella (mu, d)")
+    print("2) distancia de alto (v0, mu)")
+    op = input("> ")
+    if op == "1":
+        mu = num("mu (sin unidad): "); d = num("d huella (m): ")
+        v0 = sqrt(2 * mu * G * d)
+        print("PROCEDIMIENTO:")
+        print("  a=mu*g = (" + r2(mu) + ")(9.81) = " + r2(mu * G))
+        print("  v0=raiz(2*mu*g*d) = raiz(2(" + r2(mu) + ")(9.81)(" + r2(d) + "))")
+        print("a =", round(mu * G, 3), "m/s2 (frenado por friccion)")
+        print("v0 (vel al iniciar el derrape) =", round(v0, 3), "m/s =", round(v0 * 3.6, 1), "km/h")
+    else:
+        v0 = num("v0 (m/s): "); mu = num("mu (sin unidad): ")
+        print("PROCEDIMIENTO:")
+        print("  d=v0^2/(2*mu*g) = " + r2(v0) + "^2/(2(" + r2(mu) + ")(9.81))")
+        print("  t=v0/(mu*g)")
+        print("d =", round(v0 * v0 / (2 * mu * G), 3), "m (distancia para parar)")
+        print("t =", round(v0 / (mu * G), 3), "s (tiempo para parar)")
+
+# ---------- 4. CAIDA LIBRE (abajo positivo) ----------
+def caida():
+    tip("abajo es +; se suelta: v0y=0; sube: v0y NEGATIVA")
+    tip("escribe lo que tengas; VACIO lo demas (2 datos minimo)")
+    v0 = dato("v0y (m/s): ")
+    vf = dato("vf (m/s): ")
+    t = dato("t (s): ")
+    h = dato("h (m): ")
+    proc = []
+    for _ in range(3):
+        if v0 is not None and t is not None:
+            if vf is None:
+                vf = v0 + G * t
+                proc.append("vf=v0+g*t = " + r2(v0) + "+9.81(" + r2(t) + ") = " + r2(vf))
+            if h is None:
+                h = v0 * t + 0.5 * G * t * t
+                proc.append("h=v0t+.5gt^2 = " + r2(v0) + "(" + r2(t) + ")+4.905(" + r2(t) + ")^2 = " + r2(h))
+        if v0 is not None and h is not None and vf is None:
+            v2 = v0 * v0 + 2 * G * h
+            if v2 < 0:
+                print("Imposible: revisa datos")
+                return
+            vf = sqrt(v2)
+            proc.append("vf=raiz(v0^2+2gh) = raiz(" + r2(v0) + "^2+19.62(" + r2(h) + ")) = " + r2(vf))
+        if v0 is not None and vf is not None:
+            if t is None:
+                t = (vf - v0) / G
+                proc.append("t=(vf-v0)/g = (" + r2(vf) + "-(" + r2(v0) + "))/9.81 = " + r2(t))
+            if h is None:
+                h = (vf * vf - v0 * v0) / (2 * G)
+                proc.append("h=(vf^2-v0^2)/2g = " + r2(h))
+        if vf is not None and t is not None and v0 is None:
+            v0 = vf - G * t
+            proc.append("v0=vf-g*t = " + r2(vf) + "-9.81(" + r2(t) + ") = " + r2(v0))
+        if vf is not None and h is not None and v0 is None:
+            v2 = vf * vf - 2 * G * h
+            if v2 < 0:
+                print("Imposible: vf^2 < 2gh, revisa datos")
+                return
+            v0 = sqrt(v2)
+            proc.append("v0=raiz(vf^2-2gh) = " + r2(v0) + " (se tomo +)")
+        if t is not None and h is not None and v0 is None and t != 0:
+            v0 = (h - 0.5 * G * t * t) / t
+            proc.append("v0=(h-4.905t^2)/t = " + r2(v0))
+    faltan = [n for n, z in [("v0y",v0),("vf",vf),("t",t),("h",h)] if z is None]
+    if faltan:
+        print("Me faltan datos:", faltan, "- da al menos 2")
+        return
+    sep()
+    proc_print(proc)
+    sep()
+    print("v0y =", round(v0, 3), "m/s (vel inicial)")
+    print("vf  =", round(vf, 3), "m/s (vel al llegar)")
+    print("t   =", round(t, 3), "s (tiempo en el aire)")
+    print("h   =", round(h, 3), "m (altura/desplazamiento)")
+    if v0 < 0:
+        print("subio", round(v0 * v0 / (2 * G), 3), "m antes de caer")
+
+# ---------- 5. LANZAMIENTO VERTICAL ----------
+def vert_nivel(v0, y, proc):
+    # v y tiempos al pasar por la altura y (arriba +, y=0 en la salida)
+    v2 = v0 * v0 - 2 * G * y
+    proc.append("v^2=v0^2-2gy = " + r2(v0) + "^2-19.62(" + r2(y) + ") = " + r2(v2))
+    if v2 < 0:
+        proc_print(proc)
+        sep()
+        print("NO llega a esa altura (hmax =", r2(v0 * v0 / (2 * G)), "m)")
+        return
+    v = sqrt(v2)
+    proc.append("v=raiz(" + r2(v2) + ") = " + r2(v))
+    proc.append("t=(v0 -+ v)/g = (" + r2(v0) + " -+ " + r2(v) + ")/9.81")
+    proc_print(proc)
+    sep()
+    t1 = (v0 - v) / G
+    t2 = (v0 + v) / G
+    if v < 0.0005:
+        print("es la cima: v = 0 en t =", r2(t1), "s")
+        return
+    if t1 > 0.0005:
+        print("subiendo: v = +" + r2(v), "m/s  (t =", r2(t1), "s)")
+    print("bajando:  v = -" + r2(v), "m/s  (t =", r2(t2), "s)")
+    print("rapidez =", r2(v), "m/s (sin signo)")
+
+def vertical():
+    tip("arriba es +; y=0 donde sale; en la cima v=0 pero a=g")
+    v0 = num("v0 hacia arriba (m/s): ")
+    if v0 <= 0:
+        print("v0 debe ser > 0 (si solo se suelta: Caida libre)")
+        return
+    hm = v0 * v0 / (2 * G)
+    ts = v0 / G
+    tv = 2 * v0 / G
+    print("PROCEDIMIENTO:")
+    print("  hmax=v0^2/2g = " + r2(v0) + "^2/19.62 = " + r2(hm))
+    print("  tsub=v0/g = " + r2(v0) + "/9.81 = " + r2(ts))
+    print("  tvuelo=2v0/g = 2(" + r2(v0) + ")/9.81 = " + r2(tv))
+    sep()
+    print("h max =", r2(hm), "m (sobre el punto de salida)")
+    print("t subida =", r2(ts), "s (hasta la cima)")
+    print("t vuelo =", r2(tv), "s (vuelve al mismo nivel)")
+    ta = 2 * round(ts, 2)
+    if round(tv, 2) != round(ta, 2):
+        print("  ojo: si redondeas tsub a", round(ts, 2), "antes:", round(ta, 2), "s")
+    print("regresa con", r2(v0), "m/s hacia abajo (misma rapidez)")
+    while True:
+        sep()
+        print("MAS del mismo tiro (v0=" + r2(v0) + "):")
+        print("1) donde esta en un tiempo t")
+        print("2) v a d metros ANTES de hmax")
+        print("3) v y t a una altura y")
+        print("4) t al piso X m DEBAJO")
+        print("0) listo")
+        op = input("> ")
+        sep()
+        if op == "1":
+            t = num("t (s): ")
+            y = v0 * t - 0.5 * G * t * t
+            v = v0 - G * t
+            print("PROCEDIMIENTO:")
+            print("  y=v0t-.5gt^2 = " + r2(v0) + "(" + r2(t) + ")-4.905(" + r2(t) + ")^2 = " + r2(y))
+            print("  v=v0-gt = " + r2(v0) + "-9.81(" + r2(t) + ") = " + r2(v))
+            sep()
+            print("y =", r2(y), "m (sobre el punto de salida)")
+            if y < 0:
+                print("  negativo: ya esta DEBAJO de donde salio")
+            print("v =", r2(v), "m/s")
+            if v > 0.0005:
+                print("  + : va SUBIENDO")
+            elif v < -0.0005:
+                print("  - : va BAJANDO")
+            else:
+                print("  esta en la cima")
+            if t > tv:
+                print("  ojo: t > t vuelo; solo si cae mas abajo")
+        elif op == "2":
+            tip("'antes de llegar' a hmax = va SUBIENDO (+)")
+            d = abs(num("d metros antes de hmax (m): "))
+            v = sqrt(2 * G * d)
+            t1 = ts - v / G
+            t2 = ts + v / G
+            print("PROCEDIMIENTO:")
+            print("  desde la cima cae d: v=raiz(2gd)")
+            print("  v=raiz(19.62(" + r2(d) + ")) = " + r2(v))
+            print("  t=tsub -+ v/g = " + r2(ts) + " -+ " + r2(v) + "/9.81")
+            sep()
+            print("altura y = hmax-d =", r2(hm - d), "m")
+            if t1 > 0.0005:
+                print("subiendo: v = +" + r2(v), "m/s  (t =", r2(t1), "s)")
+            print("bajando:  v = -" + r2(v), "m/s  (t =", r2(t2), "s)")
+        elif op == "3":
+            y = num("y sobre la salida (m, - si abajo): ")
+            vert_nivel(v0, y, [])
+        elif op == "4":
+            h = abs(num("cuantos m DEBAJO de la salida: "))
+            v = sqrt(v0 * v0 + 2 * G * h)
+            t = (v0 + v) / G
+            print("PROCEDIMIENTO:")
+            print("  llega a y=-h: -h = v0t-4.905t^2")
+            print("  4.905t^2-" + r2(v0) + "t-" + r2(h) + " = 0")
+            print("  t=(v0+raiz(v0^2+2gh))/g")
+            print("   =(" + r2(v0) + "+raiz(" + r2(v0) + "^2+19.62(" + r2(h) + ")))/9.81")
+            sep()
+            print("t total =", r2(t), "s (desde que lo lanza)")
+            print("  =", r2(tv), "s de vuelo +", r2(t - tv), "s de mas")
+            print("v al llegar = -" + r2(v), "m/s (hacia abajo)")
+            tip("la otra raiz de t sale negativa: se descarta")
+        else:
+            return
+
+# ---------- 6. PROYECTILES ----------
+def proyectil():
+    print("1) con angulo (sale del piso)")
+    print("2) horizontal (sale de una altura)")
+    sub = input("> ")
+    if sub == "2":
+        proy_horizontal()
+        return
+    tip("45 da alcance max; complementarios empatan")
+    tip("R, H y t vuelo SOLO a misma altura")
+    v0 = num("v0 (m/s): ")
+    a = num("angulo en grados: ")
+    vx = v0 * cos(radians(a))
+    vy = v0 * sin(radians(a))
+    print("PROCEDIMIENTO:")
+    print("  vx=v0cos(" + r2(a) + ")  v0y=v0sen(" + r2(a) + ")")
+    print("  t=2v0y/g  R=vx*t  H=v0y^2/2g")
+    print("vx =", round(vx, 3), "m/s (horizontal, cte)")
+    print("v0y =", round(vy, 3), "m/s (vertical inicial)")
+    t = 2 * vy / G
+    print("t vuelo =", round(t, 3), "s (tiempo en el aire)")
+    print("R =", round(vx * t, 3), "m (alcance horizontal)")
+    print("H max =", round(vy * vy / (2 * G), 3), "m (altura maxima)")
+    print("(cae a otra altura? -> menu 7 Caida con v0y=", round(-vy, 2), ")")
+
+def proy_horizontal():
+    tip("sale HORIZONTAL: v0y=0; el tiempo lo manda la altura")
+    tip("dame 2 de: v0, h, R (vacio lo que no tengas)")
+    v0 = dato("v0 horizontal (m/s): ")
+    h = dato("h altura (m): ")
+    R = dato("R alcance (m): ")
+    proc = []
+    if h is not None and (v0 is not None or R is not None):
+        t = sqrt(2 * h / G)
+        proc.append("t=raiz(2h/g) = raiz(2(" + r2(h) + ")/9.81) = " + r2(t))
+        if v0 is None:
+            v0 = R / t
+            proc.append("v0=R/t = " + r2(R) + "/" + r2(t) + " = " + r2(v0))
+        if R is None:
+            R = v0 * t
+            proc.append("R=v0*t = " + r2(v0) + "(" + r2(t) + ") = " + r2(R))
+    elif v0 is not None and R is not None:
+        if v0 == 0:
+            print("v0=0 no es tiro horizontal (cae vertical)")
+            return
+        t = R / v0
+        proc.append("t=R/v0 = " + r2(R) + "/" + r2(v0) + " = " + r2(t))
+        h = 0.5 * G * t * t
+        proc.append("h=.5gt^2 = 4.905(" + r2(t) + ")^2 = " + r2(h))
+    else:
+        print("Necesito 2 de los 3 datos (v0, h, R)")
+        return
+    vfy = G * t
+    vf = sqrt(v0 * v0 + vfy * vfy)
+    angc = degrees(atan2(vfy, v0))
+    proc.append("vfy=g*t = 9.81(" + r2(t) + ") = " + r2(vfy))
+    proc.append("vf=raiz(v0^2+vfy^2) = " + r2(vf))
+    sep()
+    proc_print(proc)
+    sep()
+    print("v0 =", round(v0, 3), "m/s (horizontal, cte)")
+    print("h  =", round(h, 3), "m (altura de salida)")
+    print("t  =", round(t, 3), "s (tiempo de caida)")
+    print("R  =", round(R, 3), "m (alcance horizontal)")
+    print("vfy =", round(vfy, 3), "m/s (vertical al llegar)")
+    print("vf =", round(vf, 3), "m/s a", round(angc, 2), "grados bajo horizontal")
+
+# ---------- 7. PLANO HORIZONTAL ----------
+def horizontal():
+    print("1) caja jalada/empujada en piso")
+    print("2) elevador (bascula): N = m(g +- a)")
+    s = input("> ")
+    if s == "2":
+        tip("la bascula marca la NORMAL, no el peso")
+        m = num("masa (kg): ")
+        a = num("aceleracion (m/s2, 0 si va constante): ")
+        print("1) sube    2) baja")
+        d = input("> ")
+        if d == "2":
+            N = m * (G - a)
+            print("PROCEDIMIENTO:  N = m(g - a) = " + r2(m) + "(9.81-" + r2(a) + ")")
+        else:
+            N = m * (G + a)
+            print("PROCEDIMIENTO:  N = m(g + a) = " + r2(m) + "(9.81+" + r2(a) + ")")
+        print("peso real mg =", round(m * G, 3), "N")
+        print("N (lo que marca) =", round(N, 3), "N")
+        if abs(a) < 0.0001:
+            print("a=0: marca igual que en reposo (equilibrio)")
+        elif N <= 0:
+            print("N<=0: caida libre, sensacion de ingravidez")
+        return
+    tip("N NO es mg cuando F tiene angulo")
+    m = num("masa (kg): "); F = num("F (N): ")
+    a = num("angulo de F en grados (0 si horizontal): ")
+    mu = num("mu k (sin unidad): ")
+    print("1) F jala hacia arriba   2) F empuja hacia abajo")
+    d = input("> ")
+    if d == "2":
+        N = m * G + F * sin(radians(a))
+    else:
+        N = m * G - F * sin(radians(a))
+    f = mu * N
+    ac = (F * cos(radians(a)) - f) / m
+    print("PROCEDIMIENTO:")
+    if d == "2" or d == "e":
+        print("  N=mg+Fsen(" + r2(a) + ") (empuja: aprieta)")
+    else:
+        print("  N=mg-Fsen(" + r2(a) + ") (jala: alivia)")
+    print("  f=mu*N = (" + r2(mu) + ")(" + r2(N) + ")")
+    print("  a=(Fcos(" + r2(a) + ")-f)/m")
+    print("N =", round(N, 3), "N (normal)")
+    print("f =", round(f, 3), "N (friccion)")
+    print("a =", round(ac, 3), "m/s2 (aceleracion)")
+    if ac < 0:
+        print("Ojo: revisa si siquiera arranca (estatica)")
+
+# ---------- 8. PLANO INCLINADO ----------
+def inclinado():
+    tip("sen = a lo largo de la rampa; checa limite ang->0")
+    ang = num("angulo rampa en grados: ")
+    mu = num("mu (sin unidad; 0 si no hay): ")
+    m = num("masa en kg (0 si no la dan): ")
+    t = tan(radians(ang))
+    print("PROCEDIMIENTO:")
+    print("  N=mg*cos(" + r2(ang) + ")  f=mu*N")
+    print("  a=g(sen(" + r2(ang) + ")-mu*cos(" + r2(ang) + "))")
+    if m > 0:
+        N = m * G * cos(radians(ang))
+        print("N =", round(N, 3), "N (normal)")
+        print("f = mu*N =", round(mu * N, 3), "N (friccion)")
+        print("mg sen =", round(m * G * sin(radians(ang)), 3), "N (jala rampa abajo)")
+    else:
+        print("N =", round(G * cos(radians(ang)), 3), "* m  (N, con m en kg)")
+    print("mu min para NO deslizar = tan(ang) =", round(t, 3))
+    if t <= mu:
+        print("tan(ang) <=", mu, "-> NO desliza (estatico)")
+    else:
+        ab = G * (sin(radians(ang)) - mu * cos(radians(ang)))
+        print("a bajando =", round(ab, 3), "m/s2")
+    asu = G * (sin(radians(ang)) + mu * cos(radians(ang)))
+    print("a frenando al subir =", round(asu, 3), "m/s2")
+    tip("h = d*sen(ang): altura vs largo de rampa")
+
+# ---------- 9. POLEAS ----------
+def poleas():
+    tip("misma T y misma a; T queda ENTRE los dos pesos")
+    print("1) Atwood  2) mesa+polea  3) rampa+polea")
+    op = input("> ")
+    if op == "1":
+        m1 = num("m1 ligera (kg): "); m2 = num("m2 pesada (kg): ")
+        a = (m2 - m1) * G / (m1 + m2)
+        T = 2 * m1 * m2 * G / (m1 + m2)
+    elif op == "2":
+        m1 = num("m1 en mesa (kg): "); m2 = num("m2 colgando (kg): ")
+        mu = num("mu (sin unidad; 0 si no hay): ")
+        if m2 * G <= mu * m1 * G:
+            print("No arranca (estatica). a=0, T =", round(m2 * G, 2), "N")
+            return
+        a = (m2 - mu * m1) * G / (m1 + m2)
+        T = m2 * (G - a)
+    else:
+        m1 = num("m1 en rampa (kg): "); ang = num("angulo en grados: ")
+        m2 = num("m2 colgando (kg): ")
+        a = (m2 * G - m1 * G * sin(radians(ang))) / (m1 + m2)
+        T = m2 * (G - a)
+        if a < 0:
+            print("Gana la rampa: m1 baja, m2 sube")
+    print("PROCEDIMIENTO:")
+    print("  a=(jala-retiene)/(m1+m2)")
+    print("  T=m2(g-a) o T=m1(g+a) segun lado")
+    print("a =", round(abs(a), 3), "m/s2 (aceleracion del sistema)")
+    print("T =", round(T, 3), "N (tension de la cuerda)")
+
+# ---------- 10. ENERGIA ----------
+def energia():
+    tip("sin tiempo en el problema -> energia es el camino")
+    print("1) v = raiz(2gh)")
+    print("2) rampa con friccion")
+    print("3) energia perdida (Em0 vs Emf)")
+    op = input("> ")
+    if op == "1":
+        h = num("h altura (m): ")
+        print("PROCEDIMIENTO:  U=K -> mgh=.5mv^2")
+        print("  v=raiz(2gh) = raiz(19.62(" + r2(h) + "))")
+        print("v =", round(sqrt(2 * G * h), 3), "m/s")
+    elif op == "2":
+        tip("friccion cobra el LARGO de rampa, no la altura")
+        m = num("masa (kg): "); h = num("altura (m): ")
+        f = num("F friccion (N): "); d = num("largo rampa (m): ")
+        e = m * G * h - f * d
+        if e < 0:
+            print("La friccion gana: no llega abajo")
+        else:
+            print("v =", round(sqrt(2 * e / m), 3), "m/s")
+    else:
+        m = num("masa (kg): "); h = num("h inicial (m): "); v = num("v final (m/s): ")
+        e0 = m * G * h
+        ef = 0.5 * m * v * v
+        print("PROCEDIMIENTO:")
+        print("  Em0=mgh = (" + r2(m) + ")(9.81)(" + r2(h) + ")")
+        print("  Emf=.5mv^2 = .5(" + r2(m) + ")(" + r2(v) + ")^2")
+        print("  Ff*d = Em0-Emf")
+        print("Em0 =", round(e0, 2), "J (energia inicial)")
+        print("Emf =", round(ef, 2), "J (energia final)")
+        print("perdida Ff*d =", round(e0 - ef, 2), "J (se la llevo la friccion)")
+
+# ---------- 11. CONVERSIONES ----------
+PRE = {"E": 1e18, "P": 1e15, "T": 1e12, "G": 1e9,
+       "M": 1e6, "k": 1e3, "h": 1e2, "da": 1e1,
+       "1": 1.0,
+       "d": 1e-1, "c": 1e-2, "m": 1e-3, "u": 1e-6,
+       "n": 1e-9, "p": 1e-12, "f": 1e-15, "a": 1e-18}
+
+NOM = {"exa": "E", "peta": "P", "tera": "T", "giga": "G",
+       "mega": "M", "kilo": "k", "hecto": "h", "deca": "da",
+       "deci": "d", "centi": "c", "mili": "m", "micro": "u",
+       "nano": "n", "pico": "p", "femto": "f", "atto": "a"}
+UNI = ("mol", "cd", "Pa", "Hz", "m", "g", "s", "A", "L", "N", "J", "W")
+
+ORDEN = ["E","P","T","G","M","k","h","da","1","d","c","m","u","n","p","f","a"]
+PNOMD = {"E":"exa","P":"peta","T":"tera","G":"giga","M":"mega","k":"kilo",
+         "h":"hecto","da":"deca","1":"","d":"deci","c":"centi","m":"mili",
+         "u":"micro","n":"nano","p":"pico","f":"femto","a":"atto"}
+UNOM = {"m":"metros","g":"gramos","s":"segundos","L":"litros","A":"amperes",
+        "N":"newtons","J":"joules","W":"watts","Pa":"pascales",
+        "mol":"moles","cd":"candelas"}
+
+def nombre_completo(psym, uni):
+    if uni in UNOM:
+        base = UNOM[uni]
+    elif uni:
+        base = uni
+    else:
+        return ""
+    return "(" + PNOMD.get(psym, "") + base + ")"
+
+def tabla_completa(v, fac, uni):
+    sep()
+    print("valor en TODOS los prefijos:")
+    for q in ORDEN:
+        if q == "1":
+            et = (uni if uni else "base") + " (sin prefijo)"
+        else:
+            et = q + uni
+        print(" ", et, "=", "%g" % (v * fac / PRE[q]))
+
+ULT_UNI = [""]
+ULT_SYM = ["1"]
+
+def menu_pref():
+    print("1)E   2)P  3)T    4)G  5)M  6)k")
+    print("7)h   8)da 9)BASE 10)d 11)c 12)m")
+    print("13)u  14)n 15)p   16)f 17)a")
+
+def parse_pref(p):
+    if p.isdigit():
+        i = int(p)
+        if 1 <= i <= 17:
+            ULT_SYM[0] = ORDEN[i - 1]
+            return PRE[ORDEN[i - 1]]
+        return None
+    if p in UNI:
+        ULT_UNI[0] = p
+        ULT_SYM[0] = "1"
+        return 1.0
+    if p in PRE:
+        ULT_SYM[0] = p
+        return PRE[p]
+    if p in NOM:
+        ULT_SYM[0] = NOM[p]
+        return PRE[NOM[p]]
+    for u in UNI:
+        if p.endswith(u):
+            r = p[:-len(u)]
+            if r in PRE:
+                ULT_UNI[0] = u
+                ULT_SYM[0] = r
+                return PRE[r]
+            if r in NOM:
+                ULT_UNI[0] = u
+                ULT_SYM[0] = NOM[r]
+                return PRE[NOM[r]]
+    return None
+
+def etiqueta_pref(p, uni):
+    if p.isdigit():
+        q = ORDEN[int(p) - 1]
+        return (uni if uni else "base") if q == "1" else q + uni
+    return p
+
+def pedir_prefijo(msg):
+    menu_pref()
+    print("(numero, o letras tipo km, pico)")
+    while True:
+        p = input(msg)
+        if p == "":
+            return 1.0
+        f = parse_pref(p)
+        if f is not None:
+            return f
+        msg = "no valido, otra vez: "
+
+def conversiones():
+    print("1) prefijos (m, g, s, A, mol, cd...)")
+    print("2) area (cm2<->m2 etc)")
+    print("3) velocidad km/h <-> m/s")
+    print("4) temperatura C <-> K")
+    print("5) tiempo h/min <-> s")
+    print("6) volumen m3 <-> L <-> mL")
+    print("7) densidad g/cm3 <-> kg/m3")
+    print("8) chuleta: unidades derivadas")
+    print("9) operar en notacion cientifica")
+    op = input("> ")
+    if op == "1":
+        tip("mueve el punto: k=10^3, c=10^-2, m=10^-3")
+        v = num("valor (solo el numero): ")
+        ULT_UNI[0] = ""
+        a = pedir_prefijo("prefijo actual: ")
+        uni = ULT_UNI[0]
+        if uni == "":
+            print("unidad: 1)m 2)g 3)s 4)L 5)N 6)J 7)W 8)Pa 9)mol 10)cd 0)ninguna")
+            LU = ["m", "g", "s", "L", "N", "J", "W", "Pa", "mol", "cd"]
+            u = input("> ")
+            if u.isdigit() and 1 <= int(u) <= 10:
+                uni = LU[int(u) - 1]
+            elif u in UNOM:
+                uni = u
+        d = input("destino (ENTER = tabla con TODOS): ")
+        if d == "":
+            tabla_completa(v, a, uni)
+        else:
+            b = parse_pref(d)
+            if b is None:
+                print("no entendi el destino; tabla completa:")
+                tabla_completa(v, a, uni)
+            else:
+                ps = ULT_SYM[0]
+                sim = (uni if uni else "base") if ps == "1" else ps + uni
+                print("=", "%g" % (v * a / b), sim, nombre_completo(ps, uni))
+    elif op == "2":
+        tip("el prefijo se ELEVA: 1 cm2 = 10^-4 m2")
+        v = num("valor (solo el numero): ")
+        a = pedir_prefijo("prefijo actual: ")
+        b = pedir_prefijo("prefijo destino: ")
+        print("=", "%g" % (v * (a / b) ** 2))
+    elif op == "3":
+        tip("1 m/s = 3.6 km/h")
+        v = num("valor (solo el numero): ")
+        print("1) km/h -> m/s    2) m/s -> km/h")
+        d = input("> ")
+        if d == "1":
+            print("=", round(v / 3.6, 4), "m/s")
+        else:
+            print("=", round(v * 3.6, 4), "km/h")
+    elif op == "4":
+        tip("K = C + 273.15; el Kelvin no usa grados")
+        v = num("valor (solo el numero): ")
+        print("1) C -> K    2) K -> C")
+        d = input("> ")
+        if d == "1":
+            print("=", round(v + 273.15, 2), "K")
+        else:
+            print("=", round(v - 273.15, 2), "C")
+    elif op == "5":
+        v = num("valor (solo el numero): ")
+        print("1) horas -> s   2) min -> s   3) s -> min y h")
+        d = input("> ")
+        if d == "1":
+            print("=", v * 3600, "s")
+        elif d == "2":
+            print("=", v * 60, "s")
+        else:
+            print("=", v / 60, "min =", v / 3600, "h")
+    elif op == "6":
+        tip("1 m3 = 1000 L; 1 L = 1000 mL; 1 mL = 1 cm3")
+        v = num("valor (solo el numero): ")
+        print("1) m3 -> L y mL   2) L -> m3 y mL   3) mL -> L y m3")
+        d = input("> ")
+        if d == "1":
+            print("=", v * 1000, "L =", v * 1e6, "mL")
+        elif d == "2":
+            print("=", "%g" % (v / 1000), "m3 =", "%g" % (v * 1000), "mL")
+        else:
+            print("=", "%g" % (v / 1000), "L =", "%g" % (v / 1e6), "m3")
+    elif op == "7":
+        tip("g/cm3 -> kg/m3: multiplica x1000 (agua = 1000)")
+        v = num("valor (solo el numero): ")
+        print("1) g/cm3 -> kg/m3    2) kg/m3 -> g/cm3")
+        d = input("> ")
+        if d == "1":
+            print("=", v * 1000, "kg/m3")
+        else:
+            print("=", "%g" % (v / 1000), "g/cm3")
+    elif op == "9":
+        tip("escribe 4e-3 o 4x10^-3; da mantisa entre 1 y 10")
+        a = num("primer numero: ")
+        o = input("operacion (* / + -): ")
+        b = num("segundo numero: ")
+        if o == "*":
+            r = a * b
+        elif o == "/":
+            if b == 0:
+                print("no se divide entre cero")
+                return
+            r = a / b
+        elif o == "+":
+            r = a + b
+        else:
+            r = a - b
+        print("=", "%g" % r)
+        print("= ", "%e" % r, "(forma larga)")
+    elif op == "8":
+        print("N  = kg*m/s2   (fuerza)")
+        print("Pa = N/m2      (presion)")
+        print("J  = N*m       (trabajo/energia)")
+        print("W  = J/s       (potencia)")
+        print("L  = 0.001 m3  (volumen)")
+        print("rho= kg/m3     (densidad)")
+        tip("todo lo no fundamental es derivado")
+
+# ---------- 12. GRAFICAS POR TRAMOS ----------
+def graficas():
+    tip("x-t: pendiente = v | v-t: pendiente = a, AREA = x")
+    m = input("tipo (1=x-t, 2=v-t): ")
+    n = int(num("cuantos puntos (esquinas)? "))
+    ts = []
+    ys = []
+    if m == "1":
+        et = "x"
+        un = " (m): "
+    else:
+        et = "v"
+        un = " (m/s): "
+    for i in range(n):
+        ts.append(num("t" + str(i + 1) + " (s): "))
+        ys.append(num(et + str(i + 1) + un))
+    sep()
+    dist = 0.0
+    despl = 0.0
+    for i in range(n - 1):
+        dt = ts[i + 1] - ts[i]
+        dy = ys[i + 1] - ys[i]
+        if dt <= 0:
+            print("tramo", i + 1, ": tiempos no crecen, lo salto")
+            continue
+        print("tramo", ts[i], "-", ts[i + 1], "s:")
+        if m == "1":
+            v = dy / dt
+            if v == 0:
+                print("  REPOSO (linea plana)")
+            elif v > 0:
+                print("  MRU direccion + : v =", round(v, 3), "m/s")
+            else:
+                print("  MRU direccion - : v =", round(v, 3), "m/s")
+            print("  v=dx/dt = (" + r2(ys[i+1]) + "-" + r2(ys[i]) + ")/" + r2(dt))
+            dist = dist + abs(dy)
+        else:
+            a = dy / dt
+            v1 = ys[i]
+            v2 = ys[i + 1]
+            if v1 == 0 and v2 == 0:
+                print("  REPOSO")
+            elif a == 0:
+                print("  v constante (MRU): v =", round(v1, 3), "m/s")
+            elif v1 * a >= 0 and v2 * a >= 0:
+                print("  ACELERA: a =", round(a, 3), "m/s2")
+            else:
+                print("  FRENA: a =", round(a, 3), "m/s2")
+            if v1 * v2 < 0:
+                tc = -v1 / a
+                a1 = 0.5 * v1 * tc
+                a2 = 0.5 * v2 * (dt - tc)
+                area = a1 + a2
+                dist = dist + abs(a1) + abs(a2)
+                print("  (cruza v=0: cambia de sentido)")
+            else:
+                area = (v1 + v2) / 2 * dt
+                dist = dist + abs(area)
+            print("  area=(v1+v2)/2*dt =", round(area, 3), "m")
+            despl = despl + area
+    sep()
+    if m == "1":
+        despl = ys[-1] - ys[0]
+    T = ts[-1] - ts[0]
+    print("distancia total =", round(dist, 3), "m (todo lo recorrido)")
+    print("desplazamiento =", round(despl, 3), "m (final - inicial)")
+    if T > 0:
+        print("vel media =", round(despl / T, 3), "m/s (desplaz/t)")
+        print("rapidez media =", round(dist / T, 3), "m/s (dist/t)")
+
+# ---------- 13. TRABAJO Y POTENCIA ----------
+def trabajo():
+    tip("W = F*d*cos(ang) | solo la componente EN la direccion cuenta")
+    print("1) W de una fuerza (F, d, angulo)")
+    print("2) W neto por teorema (Kf - Ki)")
+    print("3) W contra la gravedad (subir masa)")
+    print("4) potencia (W y t, o F y v)")
+    op = input("> ")
+    if op == "1":
+        F = num("F (N): ")
+        d = num("d (m): ")
+        ang = num("angulo F-d en grados (0 si van juntas): ")
+        W = F * d * cos(radians(ang))
+        print("PROCEDIMIENTO:")
+        print("  W=F*d*cos(ang) = " + r2(F) + "(" + r2(d) + ")cos(" + r2(ang) + ")")
+        print("W =", round(W, 3), "J (trabajo)")
+        if abs(ang - 90) < 0.001:
+            print("ang=90: la fuerza NO hace trabajo (ni N ni peso horizontal)")
+        elif W < 0:
+            print("W negativo: la fuerza quita energia (friccion, frenar)")
+    elif op == "2":
+        tip("W neto = cambio de energia cinetica")
+        m = num("masa (kg): ")
+        v0 = num("v inicial (m/s): ")
+        vf = num("v final (m/s): ")
+        Ki = 0.5 * m * v0 * v0
+        Kf = 0.5 * m * vf * vf
+        print("PROCEDIMIENTO:")
+        print("  Ki=.5mv0^2 = " + r2(Ki) + "  Kf=.5mvf^2 = " + r2(Kf))
+        print("  W neto = Kf - Ki")
+        print("Ki =", round(Ki, 3), "J (cinetica inicial)")
+        print("Kf =", round(Kf, 3), "J (cinetica final)")
+        print("W neto =", round(Kf - Ki, 3), "J")
+    elif op == "3":
+        m = num("masa (kg): ")
+        h = num("altura (m): ")
+        print("PROCEDIMIENTO:  W = mgh (contra la gravedad)")
+        print("  W = " + r2(m) + "(9.81)(" + r2(h) + ")")
+        print("W =", round(m * G * h, 3), "J (= U ganada)")
+        tip("la gravedad hace -mgh; el camino no importa, solo h")
+    elif op == "4":
+        print("  1) con trabajo y tiempo   2) con fuerza y velocidad")
+        s = input("  > ")
+        if s == "2":
+            F = num("F (N): ")
+            v = num("v (m/s): ")
+            print("PROCEDIMIENTO:  P = F*v")
+            print("P =", round(F * v, 3), "W (potencia)")
+        else:
+            W = num("W (J): ")
+            t = num("t (s): ")
+            if t == 0:
+                print("t no puede ser 0")
+                return
+            P = W / t
+            print("PROCEDIMIENTO:  P = W/t = " + r2(W) + "/" + r2(t))
+            print("P =", round(P, 3), "W (potencia)")
+            print("  =", round(P / 745.7, 4), "hp")
+
+# ---------- MENU PRINCIPAL ----------
+ops = [("Unidades", conversiones),
+       ("Vectores", vectores),
+       ("Graficas", graficas),
+       ("MRU", mru),
+       ("MRUA", mrua),
+       ("Derrape", derrape),
+       ("Caida libre", caida),
+       ("Lanz vert", vertical),
+       ("Proyectil", proyectil),
+       ("Horizontal", horizontal),
+       ("Inclinado", inclinado),
+       ("Poleas", poleas),
+       ("Energia", energia),
+       ("Trabajo/Potencia", trabajo)]
+
+def fisica():
+    print(">>> FISICA v7")
+    while True:
+        sep()
+        print("FISICA - menu principal")
+        mit = (len(ops) + 1) // 2
+        for i in range(mit):
+            izq = str(i + 1) + ")" + ops[i][0]
+            j = i + mit
+            if j < len(ops):
+                der = str(j + 1) + ")" + ops[j][0]
+            else:
+                der = ""
+            print(izq + " " * (16 - len(izq)) + der)
+        print("0)SALIR")
+        op = input("> ")
+        if op == "0" or op == "q":
+            print("Saliste de FISICA. Exito en el examen!")
+            break
+        try:
+            k = int(op) - 1
+            if 0 <= k < len(ops):
+                sep()
+                ops[k][1]()
+                input("(enter para volver al menu)")
+        except ValueError:
+            print("Opcion no valida")
+
+
+# correr el programa otra vez vuelve a abrir el menu
+try:
+    fisica()
+finally:
+    sys.modules.pop(__name__, None)
