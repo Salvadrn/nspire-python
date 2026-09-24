@@ -293,6 +293,51 @@ def rk4(F, x0, y0, xf, n=200):
     return pts
 
 
+# ---------- movimiento de particula (clasico de Calculo AP) ----------
+
+def desplazamiento(v, t1, t2):
+    """Integral de v(t): cambio de posicion (con signo)."""
+    return integra(v, t1, t2)
+
+
+def distancia(v, t1, t2):
+    """Integral de |v(t)|: distancia total recorrida.
+    Parte el intervalo donde v cambia de signo."""
+    cortes = _limpia([t1] + raices(v, t1, t2) + [t2])
+    total = 0.0
+    for i in range(len(cortes) - 1):
+        total += abs(integra(v, cortes[i], cortes[i+1]))
+    return total
+
+
+def particula(v, t1, t2, x0=0):
+    """Reporte completo de movimiento de particula dado v(t)."""
+    dx = desplazamiento(v, t1, t2)
+    print("desplazamiento: {:.6g}".format(dx))
+    print("distancia:      {:.6g}".format(distancia(v, t1, t2)))
+    print("pos final:      {:.6g}".format(x0 + dx))
+    paradas = raices(v, t1, t2)
+    if paradas:
+        print("v=0 en t:", ", ".join("{:.6g}".format(t) for t in paradas))
+    for t in paradas:
+        a = d(v, t)
+        if a > 0:
+            print("  t={:.4g}: da vuelta (min de x)".format(t))
+        elif a < 0:
+            print("  t={:.4g}: da vuelta (max de x)".format(t))
+
+
+def rapidez(v, t):
+    """'aumenta' si v y a tienen el mismo signo, 'disminuye' si no.
+    (Pregunta favorita del AP.)"""
+    vt, at = v(t), d(v, t)
+    if vt * at > 0:
+        return "aumenta"
+    if vt * at < 0:
+        return "disminuye"
+    return "indeterminado"
+
+
 # ---------- utilidades ----------
 
 def tabla(f, a, b, n=10):
