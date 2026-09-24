@@ -25,9 +25,21 @@ def _ap_txt(prompt):
     return input(prompt).strip().replace("^", "**")
 
 
+_ap_ult = [""]    # ultimo texto de funcion tecleado
+
+
+def _ap_tip_raiz(f, a):
+    """x^(p/q) con x<0 da complejo en Python (en la calc, real)."""
+    if "**(" in _ap_ult[0] and a < 0 and _seguro(f, a) is None:
+        print("ojo: x^(p/q) con x<0 no existe")
+        print("en Python. Usa abs(x)^(2/3), o")
+        print("x/abs(x)*abs(x)^(1/3) (cubica)")
+
+
 def _ap_f(prompt="f(x) = "):
     """Lee una funcion tecleada como texto. Acepta ^ como potencia."""
     s = _ap_txt(prompt)
+    _ap_ult[0] = s
     def g(x):
         return eval(s, _ap_ns, {"x": x, "t": x})
     try:
@@ -95,10 +107,12 @@ def _ap_corre(op):
         f = _ap_f()
         a, b = _ap_intervalo()
         analiza(f, a, b)
+        _ap_tip_raiz(f, a)
     elif op == "2":
         f = _ap_f()
         a, b = _ap_intervalo()
         alto_bajo(f, a, b)
+        _ap_tip_raiz(f, a)
     elif op == "3":
         f = _ap_f()
         x0 = _ap_num("en x = ")
