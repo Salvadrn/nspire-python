@@ -478,6 +478,46 @@ caso("fisica r2", lambda: _buf.append(
          + " " + E.r2(123456789012.345) + " " + E.r2(1e20)),
      [], ["78.43 7.0 1.337 0.0 2970024100.046 123456789012.345 1e+20"])
 
+# ---------- AP: bateria de la 4a ronda (ceros planos, saltos, limites) ----------
+
+_AP4 = [
+    ("1", ["x^5*(x-3)", "-1", "3.3"], ["raices: 0, 3\n",
+                                      "ni max ni min: x=0  y=0\n",
+                                      "inflex: 0, 2\n"]),
+    ("1", ["x^7-7*x", "-1.3", "1.1"], ["inflex: 0\n"]),
+    ("1", ["(x-0.5)^5+x", "-1", "2.3"], ["inflex: 0.5\n"]),
+    ("1", ["abs(x^2-3)", "-2.5", "2.5"], ["inflex: -1.73205, 1.73205\n"]),
+    ("1", ["x^2*exp(-x)", "0", "50"], ["inflex: 0.585786, 3.41421\n"]),
+    ("1", ["x*exp(-x)", "0", "100"], ["max: x=1  y=0.367879", "inflex: 2\n"]),
+    ("1", ["cbrt(x-1)+x", "-1", "2.3"], ["inflex: 1\n"]),
+    ("1", ["x^2 if x<=1 else 3-x^2", "-1", "2"],
+     ["salto en x=1: izq 1, der 2", "no hay abs max: y->2"]),
+    ("1", ["abs(x-1)+abs(x+1)-2", "-2.3", "1.7"], ["f = 0 en todo [-1, 1]"]),
+    ("1", ["x+50*sqrt(1-x)", "0", "2"], ["abs min: y=1 en x=1"]),
+    ("6", ["(exp(x)-1-x-x^2/2)/x^3", "0"], ["limite = 0.166667"]),
+    ("6", ["(cos(x)-1+x^2/2)/x^4", "0"], ["limite = 0.0416667"]),
+    ("6", ["(1-cos(x))/x^3", "0"], ["(no existe bilateral)"]),
+]
+for _op, _ent, _esp in _AP4:
+    caso("ap4 " + _op + " " + _ent[0], (lambda o: lambda: E._ap_corre(o))(_op),
+         _ent, _esp)
+
+# ---------- FISICA: 4a ronda ----------
+
+caso("fisica mrua vf baja", E.mrua, ["0", "", "", "10", "", "-9.81", "", "-5"],
+     ["(vf negativa: con + saldria t < 0)", "vf = -14.075 m/s", "t  = 2.454 s"])
+caso("fisica mrua t negativo", E.mrua, ["0", "", "", "10", "5", "2", "", ""],
+     ["OJO: t negativo = datos imposibles", "t  = -2.5 s"])
+caso("fisica elevador a negativa", E.horizontal, ["2", "70", "-2", "2"],
+     ["N = m(g - a) = 70.0(9.81-(-2.0))"])
+caso("fisica tiempo sin colas", E.conversiones, ["5", "0.1", "1"], ["= 360 s"])
+caso("fisica volumen sin colas", E.conversiones, ["6", "0.3", "1"],
+     ["= 300 L = 300000 mL"])
+caso("fisica inclinado mu", E.inclinado, ["10", "0.3", "0"],
+     ["tan(ang) <= 0.3 -> NO desliza"])
+caso("fisica divisor negativo", E.mrua, ["0", "", "", "10", "0", "-2", "", ""],
+     ["t=(vf-v0)/a = (0.0-10.0)/(-2.0) = 5.0"])
+
 # ---------- resultado ----------
 
 if fallas:
