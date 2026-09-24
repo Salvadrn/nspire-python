@@ -13,10 +13,15 @@ except ImportError:
     formulario = None
 # --- bundle: end skip ---
 
+def _ap_cbrt(x):
+    """Raiz cubica real (Python da complejo con x^(1/3) si x<0)."""
+    return abs(x) ** (1.0 / 3) if x >= 0 else -(abs(x) ** (1.0 / 3))
+
+
 _ap_ns = {"sin": sin, "cos": cos, "tan": tan, "asin": asin, "acos": acos,
           "atan": atan, "sqrt": sqrt, "exp": exp, "log": log, "ln": log,
           "log10": log10, "pi": pi, "e": e, "abs": abs,
-          "sen": sin, "__builtins__": {}}
+          "sen": sin, "cbrt": _ap_cbrt, "__builtins__": {}}
 
 
 def _ap_txt(prompt):
@@ -32,8 +37,8 @@ def _ap_tip_raiz(f, a):
     """x^(p/q) con x<0 da complejo en Python (en la calc, real)."""
     if "**(" in _ap_ult[0] and a < 0 and _seguro(f, a) is None:
         print("ojo: x^(p/q) con x<0 no existe")
-        print("en Python. Usa abs(x)^(2/3), o")
-        print("x/abs(x)*abs(x)^(1/3) (cubica)")
+        print("en Python. Usa cbrt(x) (raiz")
+        print("cubica) o cbrt(x)^2 = x^(2/3)")
 
 
 def _ap_f(prompt="f(x) = "):
