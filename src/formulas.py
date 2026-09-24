@@ -1,6 +1,6 @@
 # formulas - formulario de AP Calculus para TI-Nspire CX II CAS
 # Adrian. Solo formulas y tips, cero calculos.
-# Se abre desde ap() (opcion 12) o corriendo este programa.
+# Pieza de ap y general: se abre con la opcion 9 del menu de ap.
 # Contenido redactado y verificado matematicamente (2026-09-14).
 
 TEMAS = [
