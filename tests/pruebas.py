@@ -169,9 +169,42 @@ caso("ap integral", lambda: E._ap_corre("4"), ["x^2", "", "0", "3"],
      ["integral = 9"])
 caso("ap area", lambda: E._ap_corre("4"), ["x^2", "x", "0", "2"],
      ["area = 1"])
-caso("ap particula", lambda: E._ap_corre("8"), ["t*t-4", "0", "3", "1"],
+caso("ap particula", lambda: E._ap_corre("8"),
+     ["t*t-4", "0", "3", "2", "1"],
      ["desplazamiento: -3", "distancia:      7.66667",
-      "la rapidez disminuye"])
+      "pos final:      -1", "la rapidez disminuye"])
+caso("ap raiz doble", lambda: E._ap_corre("1"), ["x^2", "-1", "2"],
+     ["raices: 0", "min: x=0  y=0", "abs min: 0 en x=0"])
+caso("ap raiz doble corrida", lambda: E._ap_corre("1"), ["(x-1)^2", "0", "3"],
+     ["raices: 1", "abs min: 0 en x=1"])
+caso("ap asintota", lambda: E._ap_corre("1"), ["1/(x-1)", "0", "3"],
+     ["raices: ninguna", "asintota en x=1", "no hay max/min absolutos"])
+caso("ap tan", lambda: E._ap_corre("1"), ["tan(x)", "0", "3"],
+     ["raices: 0", "asintota en x=1.5708"])
+caso("ap sin raiz falsa", lambda: E._ap_corre("1"), ["x^2+1", "-2", "2"],
+     ["raices: ninguna", "min: x=0  y=1"])
+caso("ap salto no es raiz", lambda: E._ap_corre("1"), ["abs(x)/x", "-1", "2"],
+     ["raices: ninguna"])
+caso("ap 1/x^2 sin cambio de signo", lambda: E._ap_corre("2"),
+     ["1/x^2", "-1", "2"], ["asintota en x=0:"])
+caso("ap hueco no es asintota", lambda: E._ap_corre("1"),
+     ["sin(x)/x", "-1", "1"], ["raices: ninguna", "abs max"])
+caso("ap pico alto no es asintota", lambda: E._ap_corre("2"),
+     ["1/(x^2+0.01)", "-1", "1"], ["mas alto: y=100 en x=0"])
+caso("ap raiz empinada", lambda: E._ap_corre("1"),
+     ["x^3-0.001", "-1", "1"], ["raices: 0.1"])
+caso("ap max con asintota", lambda: E._ap_corre("2"), ["1/(x-1)", "0", "3"],
+     ["asintota en x=1:"])
+caso("ap lim 1/x^2", lambda: E._ap_corre("6"), ["1/x^2", "0"],
+     ["limite = +infinito"])
+caso("ap lim 1/x", lambda: E._ap_corre("6"), ["1/x", "0"],
+     ["izq: -infinito", "der: +infinito", "(no existe bilateral)"])
+caso("ap lim sin(x)/x", lambda: E._ap_corre("6"), ["sin(x)/x", "0"],
+     ["limite = 1"])
+caso("ap lim salto", lambda: E._ap_corre("6"), ["abs(x)/x", "0"],
+     ["izq: -1", "der: 1"])
+caso("ap lim (x^2-1)/(x-1)", lambda: E._ap_corre("6"), ["(x^2-1)/(x-1)", "1"],
+     ["limite = 2"])
 
 # ---------- hojas: formulario AP y SAT completas ----------
 
@@ -245,10 +278,10 @@ caso("fisica vertical", E.vertical,
      ["7", "1", "1.2", "2", "0.4", "3", "-1.5", "4", "1.5", "0"],
      ["h max = 2.497 m", "t subida = 0.714 s", "t vuelo = 1.427 s",
       "ojo: si redondeas tsub a 0.71 antes: 1.42 s",
-      "regresa con 7.0 m/s hacia abajo",
+      "regresa con 7 m/s hacia abajo",
       "y = 1.337 m", "v = -4.772 m/s", "va BAJANDO",
       "subiendo: v = +2.801 m/s  (t = 0.428 s)",
-      "v^2=v0^2-2gy = 7.0^2-19.62(-1.5) = 78.43",
+      "v^2=v0^2-2gy = 7^2-19.62(-1.5) = 78.43",
       "bajando:  v = -8.856 m/s  (t = 1.616 s)",
       "t total = 1.616 s", "v al llegar = -8.856 m/s"])
 caso("fisica vertical cima", E.vertical, ["7", "3", "2.497451580020387", "0"],
@@ -256,11 +289,43 @@ caso("fisica vertical cima", E.vertical, ["7", "3", "2.497451580020387", "0"],
 caso("fisica vertical no llega", E.vertical, ["7", "3", "3", "0"],
      ["NO llega a esa altura"])
 caso("fisica vertical v0 malo", E.vertical, ["-3"], ["v0 debe ser > 0"])
+caso("fisica cima mostrada", E.vertical, ["10", "3", "5.097", "0"],
+     ["h max = 5.097 m", "es la cima: v = 0 en t = 1.019 s"])
+caso("fisica cima exacta", E.vertical, ["29.43", "3", "44.145", "0"],
+     ["es la cima: v = 0 en t = 3.0 s"])
+caso("fisica t en la cima", E.vertical, ["7", "1", "0.714", "0"],
+     ["esta en la CIMA"])
+caso("fisica t negativo", E.vertical, ["7", "1", "-1", "1.2", "0"],
+     ["t debe ser >= 0", "y = 1.337 m"])
+caso("fisica dato completo", E.vertical, ["7", "1", "0.7135", "0"],
+     ["v=v0-gt = 7-9.81(0.7135) = 0.001", "esta en la CIMA"])
+caso("fisica d > hmax", E.vertical, ["7", "2", "3", "0"],
+     ["ojo: d > hmax", "bajando:  v = -7.672 m/s"])
+caso("fisica d = 0", E.vertical, ["7", "2", "0", "0"],
+     ["d = 0: es la cima"])
+caso("fisica opcion mala", E.vertical, ["7", "5", "1 ", "1.2", "0"],
+     ["opcion no valida", "y = 1.337 m"])
+caso("fisica ojo sin colas", E.vertical, ["2.3", "0"],
+     ["ojo: si redondeas tsub a 0.23 antes: 0.46 s"])
+caso("fisica piso suma", E.vertical, ["1", "4", "10", "0"],
+     ["t total = 1.533 s", "= 0.204 s de vuelo + 1.329 s de mas"])
+caso("fisica piso h=0", E.vertical, ["7", "4", "0", "0"],
+     ["la otra raiz es t=0"])
+caso("fisica derrape mu=0", E.fisica, ["6", "2", "20", "0", "", "0"],
+     ["Error con esos datos", "Saliste de FISICA"])
+caso("fisica graficas 0 puntos", E.fisica, ["3", "2", "0", "", "0"],
+     ["Error con esos datos", "Saliste de FISICA"])
+caso("fisica nval **", lambda: _buf.append(
+         str(E.nval("3*10**-1")) + " " + str(E.nval("10**3"))
+         + " " + str(E.nval("-10^2")) + " " + str(E.nval("2x10^3"))),
+     [], ["0.3 1000.0 -100.0 2000.0"])
 caso("fisica mrua", E.mrua, ["0", "", "", "0", "", "2", "3", ""],
      ["vf = 6.0 m/s", "x  = 9.0 m"])
-caso("fisica r2", lambda: _buf.append(E.r2(78.43000000000001) + " "
-                                      + E.r2(7) + " " + E.r2(1.3368)),
-     [], ["78.43 7.0 1.337"])
+caso("fisica r2", lambda: _buf.append(
+         E.r2(78.43000000000001) + " " + E.r2(7) + " " + E.r2(1.3368)
+         + " " + E.r2(-0.0004) + " " + E.r2(2970024100.046)
+         + " " + E.r2(123456789012.345) + " " + E.r2(1e20)),
+     [], ["78.43 7.0 1.337 0.0 2970024100.046 123456789012.345 1e+20"])
 
 # ---------- resultado ----------
 
