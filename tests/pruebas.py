@@ -428,7 +428,8 @@ caso("fisica t en la cima", E.vertical, ["7", "1", "0.714", "0"],
 caso("fisica t negativo", E.vertical, ["7", "1", "-1", "1.2", "0"],
      ["t debe ser >= 0", "y = 1.337 m"])
 caso("fisica dato completo", E.vertical, ["7", "1", "0.7135", "0"],
-     ["v=v0-gt = 7-9.81(0.7135) = 0.001", "esta en la CIMA"])
+     ["(t = t subida exacto = 0.71355759)", "v=v0-gt = 7-9.81(0.71355759) = 0.0",
+      "esta en la CIMA"])
 caso("fisica d > hmax", E.vertical, ["7", "2", "3", "0"],
      ["ojo: d > hmax", "bajando:  v = -7.672 m/s"])
 caso("fisica d = 0", E.vertical, ["7", "2", "0", "0"],
@@ -453,6 +454,14 @@ caso("fisica nval sin mantisa", lambda: _buf.append(
 caso("fisica r2 medio arriba", lambda: _buf.append(
          E.r2(0.5095) + " " + E.r2(0.0025) + " " + E.r2(-7.3385)),
      [], ["0.51 0.003 -7.339"])
+caso("fisica rp negativo", E.caida, ["-8", "", "", "30"],
+     ["raiz((-8.0)^2+19.62(30.0))", "vf  = 25.546 m/s"])
+caso("fisica resultado = procedimiento", E.derrape, ["1", "0.25", "25"],
+     ["(0.25)(9.81) = 2.453", "a = 2.453 m/s2"])
+caso("fisica nan", lambda: _buf.append(_prueba_nval("nan") + " " + _prueba_nval("inf")),
+     [], ["mal mal"])
+caso("fisica t vuelo exacto", E.vertical, ["100", "1", "20.387", "0"],
+     ["(t = t vuelo exacto = 20.38736)", "de vuelta al nivel de salida"])
 caso("fisica derrape mu=0", E.fisica, ["6", "2", "20", "0", "", "0"],
      ["Error con esos datos", "Saliste de FISICA"])
 caso("fisica graficas 0 puntos", E.fisica, ["3", "2", "0", "", "0"],
