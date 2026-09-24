@@ -255,9 +255,27 @@ def mrua():
         proc.append("a=(F-f)/m = (" + r2(F) + "-" + rp(f) + ")/" + rp(mm) + " = " + r2(a))
         if a < 0:
             proc.append("F no vence la friccion: revisa si arranca")
-    elif mu > 0 and a is None:
-        a = -mu * G
-        proc.append("a=-mu*g = -(" + r2(mu) + ")(9.81) = " + r2(a))
+    fric = False
+    if F is None and mu > 0 and a is None:
+        fric = True                   # la friccion va CONTRA la velocidad
+        vref = v0 if v0 is not None and v0 != 0 else vf
+        if vref is not None and vref < 0:
+            a = mu * G
+            proc.append("a=+mu*g (va hacia -x) = (" + r2(mu) + ")(9.81) = " + r2(a))
+        else:
+            a = -mu * G
+            proc.append("a=-mu*g = -(" + r2(mu) + ")(9.81) = " + r2(a))
+    t_dato = t
+    if fric and v0 is not None and v0 != 0 and t is not None:
+        tpar = abs(v0) / (mu * G)
+        if t > tpar * (1 + 1e-9):     # la friccion no lo regresa
+            proc.append("se para en t=|v0|/(mu*g) = " + r2(tpar) + " s")
+            proc.append("despues queda quieto: vf = 0")
+            if vf is None:
+                vf = 0.0
+            if x is None:
+                x = v0 * tpar / 2
+                proc.append("x=v0*tpar/2 = " + r2(v0) + "(" + r2(tpar) + ")/2 = " + r2(x))
     try:
         for _ in range(3):
             if v0 is not None and a is not None and t is not None:
@@ -290,12 +308,27 @@ def mrua():
                 if v2 < 0:
                     print("Imposible: vf^2 negativo, revisa datos")
                     return
-                vf = sqrt(v2)
-                if t is None and a != 0 and (vf - v0) / a < 0:
-                    vf = -vf
+                rz = sqrt(v2)
+                vf, otro = rz, None
+                if a == 0:
+                    vf = v0                   # MRU: la v no cambia
+                elif t is not None:
+                    if abs(-rz - v0 - a * t) < abs(rz - v0 - a * t):
+                        vf = -rz
+                else:
+                    # dos raices: la del MENOR t >= 0 (1a vez que llega a x)
+                    tp, tm = (rz - v0) / a, (-rz - v0) / a
+                    if tm >= -1e-12 and (tp < -1e-12 or tm < tp):
+                        vf = -rz
+                        if tp >= -1e-12:
+                            otro = tp
+                    elif tp >= -1e-12 and tm >= -1e-12:
+                        otro = tm
                 proc.append("vf=raiz(v0^2+2ax) = raiz(" + rp(v0) + "^2+2(" + r2(a) + ")(" + r2(x) + ")) = " + r2(vf))
-                if vf < 0:
-                    proc.append("(vf negativa: con + saldria t < 0)")
+                if vf < 0 and a != 0:
+                    proc.append("(vf<0: da el menor t >= 0)")
+                if otro is not None and rz > 0 and not fric:
+                    proc.append("(pasa otra vez por x en t=" + r2(otro) + ")")
             if v0 is not None and t is not None and x is not None and t != 0:
                 if a is None:
                     a = 2 * (x - v0 * t) / (t * t)
@@ -314,12 +347,25 @@ def mrua():
                 if v2 < 0:
                     print("Imposible: v0^2 negativo, revisa datos")
                     return
-                v0 = sqrt(v2)
-                if t is None and a != 0 and (vf - v0) / a < 0:
-                    v0 = -v0
+                rz = sqrt(v2)
+                v0 = rz
+                if a == 0:
+                    v0 = vf                   # MRU: la v no cambia
+                elif t is not None:
+                    if abs(vf + rz - a * t) < abs(vf - rz - a * t):
+                        v0 = -rz
+                else:
+                    # primero el signo de vf (no se da la vuelta); t >= 0
+                    ops = [rz, -rz] if vf >= 0 else [-rz, rz]
+                    v0 = ops[0]
+                    for c in ops:
+                        if (vf - c) / a >= -1e-12:
+                            v0 = c
+                            break
                 proc.append("v0=raiz(vf^2-2ax) = " + r2(v0))
-                if v0 < 0:
-                    proc.append("(v0 negativa: con + saldria t < 0)")
+                if a != 0 and t is None and rz > 0 and not fric \
+                        and (vf + v0) / a >= -1e-12:
+                    proc.append("(tambien sirve v0 = " + r2(-v0) + ")")
     except ZeroDivisionError:
         print("Division entre cero: si a=0 es MRU, usa x=v*t")
         return
@@ -334,6 +380,10 @@ def mrua():
     if t < 0:
         print("OJO: t negativo = datos imposibles")
         print("revisa los signos de v0, vf y a")
+    elif fric and t_dato is None and v0 != 0 and \
+            t > abs(v0) / (mu * G) * (1 + 1e-9):
+        print("OJO: con friccion se para en")
+        print("t = " + r2(abs(v0) / (mu * G)) + " s: datos imposibles")
     print("v0 =", r2(v0, 3), "m/s (vel inicial)")
     print("vf =", r2(vf, 3), "m/s (vel final)")
     print("a  =", r2(a, 3), "m/s2 (aceleracion)")
@@ -710,7 +760,7 @@ def inclinado():
         print("N =", r2(G * cos(radians(ang)), 3), "* m  (N, con m en kg)")
     print("mu min para NO deslizar = tan(ang) =", r2(t, 3))
     if t <= mu:
-        print("tan(ang) <=", r2(mu), "-> NO desliza (estatico)")
+        print("tan(ang) <=", "%g" % mu, "-> NO desliza (estatico)")
     else:
         ab = G * (sin(radians(ang)) - mu * cos(radians(ang)))
         print("a bajando =", r2(ab, 3), "m/s2")
@@ -943,18 +993,18 @@ def conversiones():
         print("1) horas -> s   2) min -> s   3) s -> min y h")
         d = input("> ")
         if d == "1":
-            print("=", r6(v * 3600), "s")
+            print("=", "%.10g" % (v * 3600), "s")
         elif d == "2":
-            print("=", r6(v * 60), "s")
+            print("=", "%.10g" % (v * 60), "s")
         else:
-            print("=", r6(v / 60), "min =", r6(v / 3600), "h")
+            print("=", "%.10g" % (v / 60), "min =", "%.10g" % (v / 3600), "h")
     elif op == "6":
         tip("1 m3 = 1000 L; 1 L = 1000 mL; 1 mL = 1 cm3")
         v = num("valor (solo el numero): ")
         print("1) m3 -> L y mL   2) L -> m3 y mL   3) mL -> L y m3")
         d = input("> ")
         if d == "1":
-            print("=", r6(v * 1000), "L =", r6(v * 1e6), "mL")
+            print("=", "%.10g" % (v * 1000), "L =", "%.10g" % (v * 1e6), "mL")
         elif d == "2":
             print("=", "%g" % (v / 1000), "m3 =", "%g" % (v * 1000), "mL")
         else:
@@ -965,7 +1015,7 @@ def conversiones():
         print("1) g/cm3 -> kg/m3    2) kg/m3 -> g/cm3")
         d = input("> ")
         if d == "1":
-            print("=", r6(v * 1000), "kg/m3")
+            print("=", "%.10g" % (v * 1000), "kg/m3")
         else:
             print("=", "%g" % (v / 1000), "g/cm3")
     elif op == "9":
@@ -1141,7 +1191,7 @@ ops = [("Unidades", conversiones),
        ("Trabajo/Potencia", trabajo)]
 
 def fisica():
-    print(">>> FISICA v7.1")
+    print(">>> FISICA v7.2")
     while True:
         sep()
         print("FISICA - menu principal")
