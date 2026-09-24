@@ -505,7 +505,7 @@ for _op, _ent, _esp in _AP4:
 # ---------- FISICA: 4a ronda ----------
 
 caso("fisica mrua vf baja", E.mrua, ["0", "", "", "10", "", "-9.81", "", "-5"],
-     ["(vf negativa: con + saldria t < 0)", "vf = -14.075 m/s", "t  = 2.454 s"])
+     ["(vf<0: da el menor t >= 0)", "vf = -14.075 m/s", "t  = 2.454 s"])
 caso("fisica mrua t negativo", E.mrua, ["0", "", "", "10", "5", "2", "", ""],
      ["OJO: t negativo = datos imposibles", "t  = -2.5 s"])
 caso("fisica elevador a negativa", E.horizontal, ["2", "70", "-2", "2"],
@@ -517,6 +517,32 @@ caso("fisica inclinado mu", E.inclinado, ["10", "0.3", "0"],
      ["tan(ang) <= 0.3 -> NO desliza"])
 caso("fisica divisor negativo", E.mrua, ["0", "", "", "10", "0", "-2", "", ""],
      ["t=(vf-v0)/a = (0.0-10.0)/(-2.0) = 5.0"])
+
+# ---------- FISICA v7.2: raiz de MRUA, friccion, a = 0 ----------
+
+caso("fisica mrua 1a vez en x", E.mrua, ["0", "", "", "-10", "", "2", "", "-16"],
+     ["(vf<0: da el menor t >= 0)", "(pasa otra vez por x en t=8.0)",
+      "vf = -6.0 m/s", "t  = 2.0 s"])
+caso("fisica mrua espejo", E.mrua, ["0", "", "", "10", "", "-2", "", "16"],
+     ["vf = 6.0 m/s", "t  = 2.0 s"])
+caso("fisica mrua ambas t<0", E.mrua, ["0", "", "", "10", "", "2", "", "-16"],
+     ["OJO: t negativo = datos imposibles", "vf = 6.0 m/s"])
+caso("fisica friccion hacia -x", E.mrua, ["0.2", "", "", "-5", "0", "", "", ""],
+     ["a=+mu*g (va hacia -x)", "t  = 2.548 s", "x  = -6.371 m"])
+caso("fisica friccion -x con t", E.mrua, ["0.2", "", "", "-5", "", "", "1", ""],
+     ["vf = -3.038 m/s", "x  = -4.019 m"])
+caso("fisica friccion se para", E.mrua, ["0.2", "", "", "5", "", "", "5", ""],
+     ["se para en t=|v0|/(mu*g) = 2.548 s", "vf = 0.0 m/s", "x  = 6.371 m"])
+caso("fisica friccion imposible", E.mrua, ["0.2", "", "", "5", "-1", "", "", ""],
+     ["OJO: con friccion se para en", "t = 2.548 s: datos imposibles"])
+caso("fisica mru negativo", E.mrua, ["0", "", "", "-4", "", "0", "", "-8"],
+     ["vf = -4.0 m/s", "t  = 2.0 s"])
+caso("fisica mru negativo vf", E.mrua, ["0", "", "", "", "-4", "0", "", "-8"],
+     ["v0 = -4.0 m/s", "t  = 2.0 s"])
+caso("fisica v0 dos opciones", E.mrua, ["0", "", "", "", "-14.0748", "-9.81", "", "-5"],
+     ["(tambien sirve v0 = 10.0)", "v0 = -10.0 m/s", "t  = 0.415 s"])
+caso("fisica tiempo diminuto", E.conversiones, ["5", "3e-9", "3"],
+     ["= 5e-11 min = 8.333333333e-13 h"])
 
 # ---------- resultado ----------
 
