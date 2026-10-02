@@ -585,6 +585,25 @@ caso("fisica friccion reposo imposible", E.mrua, ["0.2", "", "", "0", "", "", ""
 caso("fisica friccion para en -x", E.mrua, ["0.2", "", "", "", "0", "", "", "-6.371"],
      ["a=+mu*g (va hacia -x)", "v0 = -5.0 m/s", "t  = 2.548 s"])
 
+# ---------- FISICA v7.3: tiro horizontal (Horizontal_Projectiles.pdf) ----------
+
+caso("fisica horizontal 1", E.proy_horizontal, ["7.6", "30", "", "1", "1.2", "0"],
+     ["t  = 2.473 s", "R  = 18.796 m", "vx = 7.6 m/s al llegar",
+      "hacia ABAJO: vy = -24.261 m/s", "vf = 25.424 m/s", "x = 9.12 m",
+      "y = -7.063 m", "altura sobre el piso = 22.937 m", "|v| = 14.012 m/s"])
+caso("fisica horizontal 2", E.proy_horizontal, ["1.5", "2", "", "3", "1/2", "0"],
+     ["t  = 0.639 s", "R  = 0.958 m", "vf = 6.441 m/s", "ax = 0", "x = 0.677 m"])
+caso("fisica horizontal 3", E.proy_horizontal,
+     ["7.6", "", "8.7", "3", "5/4", "3/4", "4", "5", "0"],
+     ["h  = 6.428 m", "vf = 13.56 m/s", "va de 0 a 1", "|v| = 12.343 m/s",
+      "altura sobre el piso = 4.305 m"])
+caso("fisica horizontal 4", E.proy_horizontal, ["12", "45", "", "0"],
+     ["t  = 3.029 s", "R  = 36.347 m", "vfy = 29.714 m/s", "vf = 32.045 m/s"])
+caso("fisica horizontal 5", E.proy_horizontal,
+     ["8", "28", "", "1", "0.5", "1", "1.5", "1", "3", "0"],
+     ["vy = -23.438 m/s", "|v| = 9.384 m/s", "y = -11.036 m", "|v| = 16.749 m/s",
+      "OJO: ya toco el piso en t = 2.389 s"])
+
 # ---------- resultado ----------
 
 if fallas:
