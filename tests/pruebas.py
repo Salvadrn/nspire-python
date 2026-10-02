@@ -592,7 +592,8 @@ caso("fisica horizontal 1", E.proy_horizontal, ["7.6", "30", "", "1", "1.2", "0"
       "downward: vy = -24.261 m/s", "vf = 25.424 m/s", "x = 9.12 m",
       "y = -7.063 m", "height above the ground = 22.937 m", "|v| = 14.012 m/s"])
 caso("fisica horizontal 2", E.proy_horizontal, ["1.5", "2", "", "3", "1/2", "0"],
-     ["t  = 0.639 s", "R  = 0.958 m", "vf = 6.441 m/s", "ax = 0", "x = 0.677 m"])
+     ["v0x = v0 = 1.5 m/s", "v0y = 0 m/s", "ax = 0 m/s2", "ay = -9.81 m/s2",
+      "t  = 0.639 s", "R  = 0.958 m", "vf = 6.441 m/s", "x = 0.677 m"])
 caso("fisica horizontal 3", E.proy_horizontal,
      ["7.6", "", "8.7", "3", "5/4", "3/4", "4", "5", "0"],
      ["h  = 6.428 m", "vf = 13.56 m/s", "va de 0 a 1", "|v| = 12.343 m/s",
