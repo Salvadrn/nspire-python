@@ -4406,9 +4406,10 @@ def proy_horizontal():
     vfy = G * t
     vf = sqrt(v0 * v0 + vfy * vfy)
     angc = degrees(atan2(vfy, v0))
+    proc.append("vx (final horizontal velocity) = v0 = " + r2(v0) + " m/s (no cambia: ax = 0)")
     proc.append("vfy=g*t = 9.81(" + r6(t) + ") = " + r2(vfy))
-    proc.append("vf=raiz(v0^2+vfy^2) = raiz(" + rp(v0) + "^2+" + r6(vfy) + "^2) = " + r2(vf))
-    proc.append("ang=atan(vfy/v0) = " + r2(angc, 2) + " grados")
+    proc.append("vf (resultant velocity upon impact) = raiz(vx^2+vfy^2) = raiz(" + rp(v0) + "^2+" + r6(vfy) + "^2) = " + r2(vf) + " m/s")
+    proc.append("ang (angle below the horizontal) = atan(vfy/vx) = " + r2(angc, 2) + " degrees")
     sep()
     proc_print(proc)
     sep()
@@ -4501,11 +4502,12 @@ def proy_mas(v0, h, tc):
         v = sqrt(v0 * v0 + vy * vy)
         ang = degrees(atan2(vy, v0))
         if op != "4":
-            proc.append("x=v0*t = " + r2(v0) + "(" + r6(t) + ") = " + r2(x))
+            proc.append("x (horizontal displacement) = v0*t = " + r2(v0) + "(" + r6(t) + ") = " + r2(x) + " m")
         if op in ("1", "4"):
             proc.append("bajo=.5gt^2 = 4.905(" + r6(t) + ")^2 = " + r2(dy))
+        proc.append("vx (horizontal velocity) = v0 = " + r2(v0) + " m/s (no cambia)")
         proc.append("vy=g*t = 9.81(" + r6(t) + ") = " + r2(vy))
-        proc.append("v=raiz(vx^2+vy^2) = raiz(" + rp(v0) + "^2+" + r6(vy) + "^2) = " + r2(v))
+        proc.append("v (resultant velocity) = raiz(vx^2+vy^2) = raiz(" + rp(v0) + "^2+" + r6(vy) + "^2) = " + r2(v) + " m/s")
         proc_print(proc)
         sep()
         if t > tc * (1 + 1e-9):
@@ -5024,7 +5026,7 @@ ops = [("Unidades", conversiones),
        ("Trabajo/Potencia", trabajo)]
 
 def fisica():
-    print(">>> FISICA v7.8")
+    print(">>> FISICA v7.9")
     while True:
         sep()
         print("FISICA - menu principal")
