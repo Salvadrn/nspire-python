@@ -42,10 +42,10 @@ fi
 echo "--- los 4 archivos sueltos, como se instalan ---"
 corre calculadora/ap.py '2\n-x^2+4*x\n0\n5\n\n0\n' "mas alto: y=4 en x=2"
 corre calculadora/ai.py '0\n' "IA: REGRESION LINEAL"
-corre calculadora/fisica.py '8\n7\n\n\n\n\n\n4\n1.5\n\n\n0\n\n0\n' \
+corre calculadora/fisica.py '8\n7\n\n\n\n\n\n\n\n\n4\n1.5\n\n\n\n\n0\n\n0\n' \
     ">>> FISICA v7" "t total = 1.616 s" "Saliste de FISICA"
 corre calculadora/general.py \
-    '1\n2\n-x^2+4*x\n0\n5\n\n0\n2\n0\n3\n8\n7\n\n\n\n\n\n2\n0.4\n\n\n\n0\n\n0\n0\n' \
+    '1\n2\n-x^2+4*x\n0\n5\n\n0\n2\n0\n3\n8\n7\n\n\n\n\n\n\n\n\n2\n0.4\n\n\n\n\n\n0\n\n0\n0\n' \
     "elige materia" "mas alto: y=4 en x=2" "IA: REGRESION LINEAL" \
     "subiendo: v = +2.801 m/s" "Para abrir otra vez: general()"
 if [ $MALOS = 0 ]; then echo "4 archivos sueltos: TODO OK"; fi
