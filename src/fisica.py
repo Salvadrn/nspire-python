@@ -542,10 +542,14 @@ def caida():
     sep()
     proc_print(proc)
     sep()
-    di("v0y =", r2(v0, 3), "m/s (initial velocity)")
-    di("vf  =", r2(vf, 3), "m/s (final velocity)")
-    di("t   =", r2(t, 3), "s (time in the air)")
-    di("h   =", r2(h, 3), "m (height fallen)")
+    print("Initial velocity (dropped = 0):")
+    di("v0y =", r2(v0, 3), "m/s")
+    print("Speed when it hits the ground:")
+    di("vf  =", r2(vf, 3), "m/s")
+    print("Time to fall:")
+    di("t   =", r2(t, 3), "s")
+    print("Distance fallen (height):")
+    di("h   =", r2(h, 3), "m")
     if v0 < 0:
         di("subio", r2(v0 * v0 / (2 * G), 3), "m antes de caer")
 
@@ -591,7 +595,29 @@ def vert_nivel(v0, y, proc):
 
 def vertical():
     tip("arriba es +; y=0 donde sale; en la cima v=0 pero a=g")
-    v0 = num("v0 initial velocity upward (m/s): ")
+    v0 = dato("v0 initial velocity upward (m/s, enter si no lo tienes): ")
+    pre = ""
+    if v0 is None:
+        print("Sin v0: que dato tienes?")
+        print("1) time to reach max height")
+        print("2) maximum height")
+        print("3) total time in the air")
+        o = input("> ").strip()
+        if o == "1":
+            q = num("tsub time to reach max height (s): ")
+            v0 = G * q
+            pre = "v0 (initial velocity) = g*tsub = 9.81(" + r6(q) + ") = " + r2(v0) + " m/s"
+        elif o == "2":
+            q = num("hmax maximum height (m): ")
+            v0 = sqrt(2 * G * q) if q > 0 else 0.0
+            pre = "v0 (initial velocity) = raiz(2g*hmax) = raiz(19.62(" + r6(q) + ")) = " + r2(v0) + " m/s"
+        elif o == "3":
+            q = num("total time in the air (s): ")
+            v0 = G * q / 2
+            pre = "v0 (initial velocity) = g*tvuelo/2 = 9.81(" + r6(q) + ")/2 = " + r2(v0) + " m/s"
+        else:
+            print("opcion no valida")
+            return
     if v0 <= 0:
         print("v0 debe ser > 0 (si solo se suelta: Caida libre)")
         return
@@ -599,6 +625,8 @@ def vertical():
     ts = v0 / G
     tv = 2 * v0 / G
     print("PROCEDIMIENTO:")
+    if pre:
+        di("  " + pre)
     di("  hmax=v0^2/2g = " + r6(v0) + "^2/19.62 = " + r2(hm))
     di("  tsub=v0/g = " + r6(v0) + "/9.81 = " + r2(ts))
     di("  tvuelo=2v0/g = 2(" + r6(v0) + ")/9.81 = " + r2(tv))
@@ -663,6 +691,7 @@ def vertical():
             if t == ts:
                 di("v = 0 m/s: esta en la CIMA (y = hmax)")
             else:
+                print("Velocity at t =", r6(t), "s:")
                 di("v =", r2(v), "m/s (velocity; - = going down)")
                 if v > 0:
                     print("  + : va SUBIENDO")
@@ -1405,7 +1434,7 @@ ops = [("Unidades", conversiones),
        ("Trabajo/Potencia", trabajo)]
 
 def fisica():
-    print(">>> FISICA v8.0")
+    print(">>> FISICA v8.1")
     while True:
         sep()
         print("FISICA - menu principal")
