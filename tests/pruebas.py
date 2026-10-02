@@ -605,6 +605,22 @@ caso("fisica horizontal 5", E.proy_horizontal,
      ["vy = -23.438 m/s", "|v| = 9.384 m/s", "y = -11.036 m", "|v| = 16.749 m/s",
       "OJO: ya toco el piso en t = 2.389 s"])
 
+# ---------- FISICA v8.1: caida libre y tiro vertical (8 problemas) ----------
+
+caso("caida 1 tiempo", E.caida, ["0", "", "", "22.7"], ["Time to fall:", "t   = 2.151 s"])
+caso("caida 2 tiempo", E.caida, ["0", "", "", "5.2"], ["t   = 1.03 s"])
+caso("caida 3 rapidez", E.caida, ["0", "", "", "25.7"],
+     ["Speed when it hits the ground:", "vf  = 22.455 m/s"])
+caso("caida 4 distancia", E.caida, ["0", "", "1.5", ""], ["h   = 11.036 m"])
+caso("vertical 5 posicion", E.vertical, ["14.1", "1", "0.6", "0"], ["y = 6.694 m"])
+caso("vertical 6 con tsub", E.vertical, ["", "1", "1.86", "0"],
+     ["v0 (initial velocity) = g*tsub = 9.81(1.86) = 18.247 m/s",
+      "Maximum height above the release point:", "h max = 16.969 m"])
+caso("vertical 6b con hmax", E.vertical, ["", "2", "16.969", "0"], ["t subida = 1.86 s"])
+caso("vertical 7 velocidad", E.vertical, ["24", "1", "2.97", "0"],
+     ["Velocity at t = 2.97 s:", "v = -5.136 m/s"])
+caso("vertical 8 velocidad", E.vertical, ["19.1", "1", "0.6", "0"], ["v = 13.214 m/s"])
+
 # ---------- resultado ----------
 
 if fallas:
