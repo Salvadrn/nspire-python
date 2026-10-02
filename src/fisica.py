@@ -781,14 +781,23 @@ def proy_horizontal():
     sep()
     proc_print(proc)
     sep()
+    print("WHEN IT LEAVES THE EDGE (t = 0):")
     print("Initial horizontal velocity:")
-    di("v0 =", r2(v0, 3), "m/s")
+    di("v0x = v0 =", r2(v0, 3), "m/s")
+    print("Initial vertical velocity:")
+    di("v0y = 0 m/s (sale horizontal)")
+    print("Horizontal acceleration:")
+    di("ax = 0 m/s2 (nada la empuja en x)")
+    print("Vertical acceleration:")
+    di("ay = -9.81 m/s2 (g, downward)")
+    print("FALL:")
     print("Height:")
     di("h  =", r2(h, 3), "m")
     print("Time to reach the ground:")
     di("t  =", r2(t, 3), "s")
     print("How far from the base it hits the ground:")
     di("R  =", r2(R, 3), "m")
+    print("AT IMPACT:")
     print("Final horizontal velocity:")
     di("vx =", r2(v0, 3), "m/s al llegar (no cambia)")
     print("Final vertical velocity:")
@@ -797,8 +806,8 @@ def proy_horizontal():
     print("Resultant velocity upon impact:")
     print("vf =", r2(vf, 3), "m/s")
     di("  at", r2(angc, 2), "degrees below the horizontal")
-    print("Horizontal acceleration:")
-    di("ax = 0 m/s2 (only g acts, downward)")
+    print("Acceleration (the whole time):")
+    di("ax = 0, ay = -9.81 m/s2")
     proy_mas(v0, h, t)
 
 def fraccion(msg):
@@ -891,6 +900,8 @@ def proy_mas(v0, h, tc):
         print("Velocity components:")
         print("vx =", r2(v0), "m/s (no cambia)")
         di("vy =", "-" + r2(vy), "m/s (downward)")
+        print("Acceleration:")
+        di("ax = 0, ay = -9.81 m/s2 (no cambia)")
         print("Resultant velocity:")
         print("|v| =", r2(v), "m/s")
         di("  at", r2(ang, 2), "degrees below the horizontal")
@@ -1394,7 +1405,7 @@ ops = [("Unidades", conversiones),
        ("Trabajo/Potencia", trabajo)]
 
 def fisica():
-    print(">>> FISICA v7.9")
+    print(">>> FISICA v8.0")
     while True:
         sep()
         print("FISICA - menu principal")
