@@ -4317,13 +4317,13 @@ def proy_horizontal():
     proc = []
     if h is not None and (v0 is not None or R is not None):
         t = sqrt(2 * h / G)
-        proc.append("t=raiz(2h/g) = raiz(2(" + r2(h) + ")/9.81) = " + r2(t))
+        proc.append("t=raiz(2h/g) = raiz(2(" + r6(h) + ")/9.81) = " + r2(t))
         if v0 is None:
             v0 = R / t
-            proc.append("v0=R/t = " + r2(R) + "/" + rp(t) + " = " + r2(v0))
+            proc.append("v0=R/t = " + r2(R) + "/" + r6(t) + " = " + r2(v0))
         if R is None:
             R = v0 * t
-            proc.append("R=v0*t = " + r2(v0) + "(" + r2(t) + ") = " + r2(R))
+            proc.append("R=v0*t = " + r2(v0) + "(" + r6(t) + ") = " + r2(R))
     elif v0 is not None and R is not None:
         if v0 == 0:
             print("v0=0 no es tiro horizontal (cae vertical)")
@@ -4331,15 +4331,16 @@ def proy_horizontal():
         t = R / v0
         proc.append("t=R/v0 = " + r2(R) + "/" + rp(v0) + " = " + r2(t))
         h = 0.5 * G * t * t
-        proc.append("h=.5gt^2 = 4.905(" + r2(t) + ")^2 = " + r2(h))
+        proc.append("h=.5gt^2 = 4.905(" + r6(t) + ")^2 = " + r2(h))
     else:
         print("Necesito 2 de los 3 datos (v0, h, R)")
         return
     vfy = G * t
     vf = sqrt(v0 * v0 + vfy * vfy)
     angc = degrees(atan2(vfy, v0))
-    proc.append("vfy=g*t = 9.81(" + r2(t) + ") = " + r2(vfy))
-    proc.append("vf=raiz(v0^2+vfy^2) = " + r2(vf))
+    proc.append("vfy=g*t = 9.81(" + r6(t) + ") = " + r2(vfy))
+    proc.append("vf=raiz(v0^2+vfy^2) = raiz(" + rp(v0) + "^2+" + r6(vfy) + "^2) = " + r2(vf))
+    proc.append("ang=atan(vfy/v0) = " + r2(angc, 2) + " grados")
     sep()
     proc_print(proc)
     sep()
@@ -4347,8 +4348,100 @@ def proy_horizontal():
     print("h  =", r2(h, 3), "m (altura de salida)")
     print("t  =", r2(t, 3), "s (tiempo de caida)")
     print("R  =", r2(R, 3), "m (alcance horizontal)")
+    print("vx =", r2(v0, 3), "m/s al llegar (no cambia)")
     print("vfy =", r2(vfy, 3), "m/s (vertical al llegar)")
+    print("  hacia ABAJO: vy = -" + r2(vfy, 3), "m/s")
     print("vf =", r2(vf, 3), "m/s a", r2(angc, 2), "grados bajo horizontal")
+    print("ax = 0 (en x no hay fuerza; ay = -g)")
+    proy_mas(v0, h, t)
+
+def fraccion(msg):
+    # 3/4, 1/2 o 0.75
+    while True:
+        s = input(msg).replace(" ", "")
+        try:
+            if "/" in s:
+                a, b = s.split("/", 1)
+                v = nval(a) / nval(b)
+            else:
+                v = nval(s)
+            if 0 <= v <= 1:
+                return v
+            print("va de 0 a 1 (1/2 = la mitad)")
+        except (ValueError, ZeroDivisionError):
+            print("no valido (vale: 3/4 o 0.75)")
+
+def proy_mas(v0, h, tc):
+    # el mismo tiro horizontal en un punto del camino
+    R = v0 * tc
+    while True:
+        sep()
+        print("MAS del mismo tiro (v0=" + r6(v0) + "):")
+        print("1) x, y, v en un tiempo t")
+        print("2) cuando ya BAJO d metros")
+        print("3) cuando ya bajo una FRACCION")
+        print("   de h (1/2, 3/4...)")
+        print("4) cuando ya AVANZO x metros")
+        print("0) listo")
+        op = input("> ").strip()
+        if op == "0":
+            return
+        if op not in ("1", "2", "3", "4"):
+            print("opcion no valida (0 = listo)")
+            continue
+        sep()
+        proc = []
+        if op == "1":
+            t = num("t (s): ")
+            if t < 0:
+                print("t debe ser >= 0 (cuenta desde que sale)")
+                continue
+        elif op in ("2", "3"):
+            if op == "2":
+                d = num("d que ya bajo (m): ")
+            else:
+                fr = fraccion("fraccion de h (3/4 o 0.75): ")
+                d = fr * h
+                proc.append("d=fraccion*h = " + r6(fr) + "(" + r2(h) + ") = " + r2(d))
+            if d < 0 or d > h * (1 + 1e-9):
+                print("d va de 0 a h =", r2(h), "m")
+                continue
+            t = sqrt(2 * d / G)
+            proc.append("d=.5gt^2 -> t=raiz(2d/g) = raiz(2(" + r6(d) + ")/9.81) = " + r2(t))
+        else:
+            if v0 == 0:
+                print("v0 = 0: no avanza (cae vertical)")
+                continue
+            xa = num("x avanzado (m): ")
+            if xa < 0:
+                print("x debe ser >= 0")
+                continue
+            t = xa / v0
+            proc.append("t=x/v0 = " + r2(xa) + "/" + rp(v0) + " = " + r2(t))
+        x = v0 * t
+        dy = 0.5 * G * t * t
+        vy = G * t
+        v = sqrt(v0 * v0 + vy * vy)
+        ang = degrees(atan2(vy, v0))
+        if op != "4":
+            proc.append("x=v0*t = " + r2(v0) + "(" + r6(t) + ") = " + r2(x))
+        if op in ("1", "4"):
+            proc.append("bajo=.5gt^2 = 4.905(" + r6(t) + ")^2 = " + r2(dy))
+        proc.append("vy=g*t = 9.81(" + r6(t) + ") = " + r2(vy))
+        proc.append("v=raiz(vx^2+vy^2) = raiz(" + rp(v0) + "^2+" + r6(vy) + "^2) = " + r2(v))
+        proc_print(proc)
+        sep()
+        if t > tc * (1 + 1e-9):
+            print("OJO: ya toco el piso en t =", r2(tc), "s")
+            print("  (estos numeros siguen la parabola)")
+        print("t =", r2(t), "s (desde que sale)")
+        print("x =", r2(x), "m (desde la base)")
+        print("y =", "-" + r2(dy), "m (desde donde salio)")
+        print("  altura sobre el piso =", r2(h - dy), "m")
+        print("vx =", r2(v0), "m/s (no cambia)")
+        print("vy =", "-" + r2(vy), "m/s (hacia abajo)")
+        print("|v| =", r2(v), "m/s a", r2(ang, 2), "grados")
+        print("  bajo la horizontal")
 
 # ---------- 7. PLANO HORIZONTAL ----------
 def horizontal():
@@ -4849,7 +4942,7 @@ ops = [("Unidades", conversiones),
        ("Trabajo/Potencia", trabajo)]
 
 def fisica():
-    print(">>> FISICA v7.2")
+    print(">>> FISICA v7.3")
     while True:
         sep()
         print("FISICA - menu principal")
