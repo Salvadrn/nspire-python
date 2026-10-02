@@ -194,9 +194,9 @@ def mru():
     print("2) encuentro de dos moviles")
     op = input("> ")
     if op == "1":
-        v = dato("v (m/s): ")
-        x = dato("x (m): ")
-        t = dato("t (s): ")
+        v = dato("v velocidad (m/s): ")
+        x = dato("x distancia (m): ")
+        t = dato("t tiempo (s): ")
         if v is None and x is not None and t is not None and t != 0:
             v = x / t
             print("PROCEDIMIENTO:  v=x/t = " + r2(x) + "/" + rp(t))
@@ -241,14 +241,14 @@ def mrua():
     tip("escribe lo que TENGAS; deja VACIO (solo enter) lo demas")
     tip("0 si el dato vale cero (reposo); necesito 3 datos")
     tip("si te dan FUERZA en N y masa, sale la a sola (Newton)")
-    mu = num("mu (sin unidad; 0 si no hay): ")
-    F = dato("F aplicada en N (enter si no hay): ")
+    mu = num("mu coef. de friccion (0 si no hay): ")
+    F = dato("F fuerza aplicada en N (enter si no hay): ")
     mm = dato("masa en kg (enter si no hay): ")
-    v0 = dato("v0 (m/s): ")
-    vf = dato("vf (m/s): ")
-    a = dato("a (m/s2, con signo): ")
-    t = dato("t (s): ")
-    x = dato("x (m): ")
+    v0 = dato("v0 velocidad inicial (m/s): ")
+    vf = dato("vf velocidad final (m/s): ")
+    a = dato("a aceleracion (m/s2, con signo): ")
+    t = dato("t tiempo (s): ")
+    x = dato("x distancia (m): ")
     proc = []
     if F is not None and mm is not None and mm > 0 and a is None:
         f = mu * mm * G
@@ -410,8 +410,8 @@ def mrua():
             t > abs(v0) / (mu * G) * (1 + 1e-9):
         print("OJO: con friccion se para en")
         print("t = " + r2(abs(v0) / (mu * G)) + " s: datos imposibles")
-    print("v0 =", r2(v0, 3), "m/s (vel inicial)")
-    print("vf =", r2(vf, 3), "m/s (vel final)")
+    print("v0 =", r2(v0, 3), "m/s (velocidad inicial)")
+    print("vf =", r2(vf, 3), "m/s (velocidad final)")
     print("a  =", r2(a, 3), "m/s2 (aceleracion)")
     print("t  =", r2(t, 3), "s (tiempo)")
     print("x  =", r2(x, 3), "m (distancia)")
@@ -423,15 +423,15 @@ def derrape():
     print("2) distancia de alto (v0, mu)")
     op = input("> ")
     if op == "1":
-        mu = num("mu (sin unidad): "); d = num("d huella (m): ")
+        mu = num("mu coef. de friccion: "); d = num("d largo de la huella de frenado (m): ")
         v0 = sqrt(2 * mu * G * d)
         print("PROCEDIMIENTO:")
         print("  a=mu*g = (" + r2(mu) + ")(9.81) = " + r2(mu * G))
         print("  v0=raiz(2*mu*g*d) = raiz(2(" + r2(mu) + ")(9.81)(" + r2(d) + "))")
-        print("a =", r2(mu * G, 3), "m/s2 (frenado por friccion)")
-        print("v0 (vel al iniciar el derrape) =", r2(v0, 3), "m/s =", r2(v0 * 3.6, 1), "km/h")
+        print("a =", r2(mu * G, 3), "m/s2 (aceleracion de frenado)")
+        print("v0 (velocidad al iniciar el derrape) =", r2(v0, 3), "m/s =", r2(v0 * 3.6, 1), "km/h")
     else:
-        v0 = num("v0 (m/s): "); mu = num("mu (sin unidad): ")
+        v0 = num("v0 velocidad inicial (m/s): "); mu = num("mu coef. de friccion: ")
         print("PROCEDIMIENTO:")
         print("  d=v0^2/(2*mu*g) = " + rp(v0) + "^2/(2(" + r2(mu) + ")(9.81))")
         print("  t=v0/(mu*g)")
@@ -442,10 +442,10 @@ def derrape():
 def caida():
     tip("abajo es +; se suelta: v0y=0; sube: v0y NEGATIVA")
     tip("escribe lo que tengas; VACIO lo demas (2 datos minimo)")
-    v0 = dato("v0y (m/s): ")
-    vf = dato("vf (m/s): ")
-    t = dato("t (s): ")
-    h = dato("h (m): ")
+    v0 = dato("v0y velocidad inicial vertical (m/s): ")
+    vf = dato("vf velocidad final (m/s): ")
+    t = dato("t tiempo (s): ")
+    h = dato("h altura que baja (m): ")
     proc = []
     for _ in range(3):
         if v0 is not None and t is not None:
@@ -489,8 +489,8 @@ def caida():
     sep()
     proc_print(proc)
     sep()
-    print("v0y =", r2(v0, 3), "m/s (vel inicial)")
-    print("vf  =", r2(vf, 3), "m/s (vel al llegar)")
+    print("v0y =", r2(v0, 3), "m/s (velocidad inicial)")
+    print("vf  =", r2(vf, 3), "m/s (velocidad al llegar)")
     print("t   =", r2(t, 3), "s (tiempo en el aire)")
     print("h   =", r2(h, 3), "m (altura/desplazamiento)")
     if v0 < 0:
@@ -527,14 +527,15 @@ def vert_nivel(v0, y, proc):
     sep()
     t1 = (v0 - v) / G
     t2 = (v0 + v) / G
+    print("v = velocidad, t = tiempo:")
     if y >= 0:
         print("subiendo: v = +" + rp(v), "m/s  (t =", r2(t1), "s)")
     print("bajando:  v = -" + rp(v), "m/s  (t =", r2(t2), "s)")
-    print("rapidez =", r2(v), "m/s (sin signo)")
+    print("rapidez =", r2(v), "m/s (velocidad sin signo)")
 
 def vertical():
     tip("arriba es +; y=0 donde sale; en la cima v=0 pero a=g")
-    v0 = num("v0 hacia arriba (m/s): ")
+    v0 = num("v0 velocidad inicial hacia arriba (m/s): ")
     if v0 <= 0:
         print("v0 debe ser > 0 (si solo se suelta: Caida libre)")
         return
@@ -569,10 +570,10 @@ def vertical():
             continue
         sep()
         if op == "1":
-            t = num("t (s): ")
+            t = num("t tiempo (s): ")
             while t < 0:
                 print("t debe ser >= 0 (cuenta desde que lo lanza)")
-                t = num("t (s): ")
+                t = num("t tiempo (s): ")
             # si teclea el t de subida o de vuelo que se mostro (recortado a
             # 3 decimales), se usa el exacto y el procedimiento lo dice
             tol = min(0.0005, 0.25 * ts)
@@ -599,7 +600,7 @@ def vertical():
             if t == ts:
                 print("v = 0 m/s: esta en la CIMA (y = hmax)")
             else:
-                print("v =", r2(v), "m/s")
+                print("v =", r2(v), "m/s (velocidad; - = bajando)")
                 if v > 0:
                     print("  + : va SUBIENDO")
                 else:
@@ -623,6 +624,7 @@ def vertical():
             print("  t=tsub -+ v/g = " + r6(ts) + " -+ " + r6(v) + "/9.81")
             sep()
             print("altura y = hmax-d =", r2(hm - d), "m")
+            print("v = velocidad, t = tiempo:")
             if d > hm + 0.0005:
                 print("  ojo: d > hmax: queda DEBAJO de la")
                 print("  salida; ahi nunca pasa subiendo")
@@ -630,7 +632,7 @@ def vertical():
                 print("subiendo: v = +" + rp(v), "m/s  (t =", r2(t1), "s)")
             print("bajando:  v = -" + rp(v), "m/s  (t =", r2(t2), "s)")
         elif op == "3":
-            y = num("y sobre la salida (m, - si abajo): ")
+            y = num("y altura sobre la salida (m, - si abajo): ")
             vert_nivel(v0, y, [])
         else:
             h = abs(num("cuantos m DEBAJO de la salida: "))
@@ -645,7 +647,7 @@ def vertical():
             print("t total =", r2(t), "s (desde que lo lanza)")
             extra = float(r2(t)) - float(r2(tv))
             print("  =", r2(tv), "s de vuelo +", r2(extra), "s de mas")
-            print("v al llegar = -" + rp(v), "m/s (hacia abajo)")
+            print("v al llegar = -" + rp(v), "m/s (velocidad, hacia abajo)")
             if h > 0:
                 tip("la otra raiz de t sale negativa: se descarta")
             else:
@@ -661,15 +663,15 @@ def proyectil():
         return
     tip("45 da alcance max; complementarios empatan")
     tip("R, H y t vuelo SOLO a misma altura")
-    v0 = num("v0 (m/s): ")
-    a = num("angulo en grados: ")
+    v0 = num("v0 velocidad inicial (m/s): ")
+    a = num("angulo de lanzamiento (grados): ")
     vx = v0 * cos(radians(a))
     vy = v0 * sin(radians(a))
     print("PROCEDIMIENTO:")
     print("  vx=v0cos(" + r2(a) + ")  v0y=v0sen(" + r2(a) + ")")
     print("  t=2v0y/g  R=vx*t  H=v0y^2/2g")
-    print("vx =", r2(vx, 3), "m/s (horizontal, cte)")
-    print("v0y =", r2(vy, 3), "m/s (vertical inicial)")
+    print("vx =", r2(vx, 3), "m/s (velocidad horizontal, cte)")
+    print("v0y =", r2(vy, 3), "m/s (velocidad vertical inicial)")
     t = 2 * vy / G
     print("t vuelo =", r2(t, 3), "s (tiempo en el aire)")
     print("R =", r2(vx * t, 3), "m (alcance horizontal)")
@@ -679,7 +681,7 @@ def proyectil():
 def proy_horizontal():
     tip("sale HORIZONTAL: v0y=0; el tiempo lo manda la altura")
     tip("dame 2 de: v0, h, R (vacio lo que no tengas)")
-    v0 = dato("v0 horizontal (m/s): ")
+    v0 = dato("v0 velocidad horizontal (m/s): ")
     h = dato("h altura (m): ")
     R = dato("R alcance (m): ")
     proc = []
@@ -712,15 +714,16 @@ def proy_horizontal():
     sep()
     proc_print(proc)
     sep()
-    print("v0 =", r2(v0, 3), "m/s (horizontal, cte)")
+    print("v0 =", r2(v0, 3), "m/s (velocidad inicial horizontal)")
     print("h  =", r2(h, 3), "m (altura de salida)")
     print("t  =", r2(t, 3), "s (tiempo de caida)")
     print("R  =", r2(R, 3), "m (alcance horizontal)")
-    print("vx =", r2(v0, 3), "m/s al llegar (no cambia)")
-    print("vfy =", r2(vfy, 3), "m/s (vertical al llegar)")
+    print("vx =", r2(v0, 3), "m/s al llegar (velocidad horizontal, no cambia)")
+    print("vfy =", r2(vfy, 3), "m/s (velocidad vertical al llegar)")
     print("  hacia ABAJO: vy = -" + r2(vfy, 3), "m/s")
-    print("vf =", r2(vf, 3), "m/s a", r2(angc, 2), "grados bajo horizontal")
-    print("ax = 0 (en x no hay fuerza; ay = -g)")
+    print("vf =", r2(vf, 3), "m/s (velocidad al llegar, total)")
+    print("  a", r2(angc, 2), "grados bajo la horizontal")
+    print("ax = 0 (aceleracion horizontal; solo g jala hacia abajo)")
     proy_mas(v0, h, t)
 
 def fraccion(msg):
@@ -760,13 +763,13 @@ def proy_mas(v0, h, tc):
         sep()
         proc = []
         if op == "1":
-            t = num("t (s): ")
+            t = num("t tiempo (s): ")
             if t < 0:
                 print("t debe ser >= 0 (cuenta desde que sale)")
                 continue
         elif op in ("2", "3"):
             if op == "2":
-                d = num("d que ya bajo (m): ")
+                d = num("d distancia que ya bajo (m): ")
             else:
                 fr = fraccion("fraccion de h (3/4 o 0.75): ")
                 d = fr * h
@@ -780,7 +783,7 @@ def proy_mas(v0, h, tc):
             if v0 == 0:
                 print("v0 = 0: no avanza (cae vertical)")
                 continue
-            xa = num("x avanzado (m): ")
+            xa = num("x distancia horizontal avanzada (m): ")
             if xa < 0:
                 print("x debe ser >= 0")
                 continue
@@ -802,14 +805,14 @@ def proy_mas(v0, h, tc):
         if t > tc * (1 + 1e-9):
             print("OJO: ya toco el piso en t =", r2(tc), "s")
             print("  (estos numeros siguen la parabola)")
-        print("t =", r2(t), "s (desde que sale)")
-        print("x =", r2(x), "m (desde la base)")
-        print("y =", "-" + r2(dy), "m (desde donde salio)")
+        print("t =", r2(t), "s (tiempo desde que sale)")
+        print("x =", r2(x), "m (distancia horizontal desde la base)")
+        print("y =", "-" + r2(dy), "m (posicion vertical: lo que ha bajado)")
         print("  altura sobre el piso =", r2(h - dy), "m")
-        print("vx =", r2(v0), "m/s (no cambia)")
-        print("vy =", "-" + r2(vy), "m/s (hacia abajo)")
-        print("|v| =", r2(v), "m/s a", r2(ang, 2), "grados")
-        print("  bajo la horizontal")
+        print("vx =", r2(v0), "m/s (velocidad horizontal, no cambia)")
+        print("vy =", "-" + r2(vy), "m/s (velocidad vertical, hacia abajo)")
+        print("|v| =", r2(v), "m/s (rapidez total)")
+        print("  a", r2(ang, 2), "grados bajo la horizontal")
 
 # ---------- 7. PLANO HORIZONTAL ----------
 def horizontal():
@@ -836,9 +839,9 @@ def horizontal():
             print("N<=0: caida libre, sensacion de ingravidez")
         return
     tip("N NO es mg cuando F tiene angulo")
-    m = num("masa (kg): "); F = num("F (N): ")
+    m = num("masa (kg): "); F = num("F fuerza (N): ")
     a = num("angulo de F en grados (0 si horizontal): ")
-    mu = num("mu k (sin unidad): ")
+    mu = num("mu k coef. de friccion cinetica: ")
     print("1) F jala hacia arriba   2) F empuja hacia abajo")
     d = input("> ")
     if d == "2":
@@ -864,7 +867,7 @@ def horizontal():
 def inclinado():
     tip("sen = a lo largo de la rampa; checa limite ang->0")
     ang = num("angulo rampa en grados: ")
-    mu = num("mu (sin unidad; 0 si no hay): ")
+    mu = num("mu coef. de friccion (0 si no hay): ")
     m = num("masa en kg (0 si no la dan): ")
     t = tan(radians(ang))
     print("PROCEDIMIENTO:")
@@ -882,9 +885,9 @@ def inclinado():
         print("tan(ang) <=", "%g" % mu, "-> NO desliza (estatico)")
     else:
         ab = G * (sin(radians(ang)) - mu * cos(radians(ang)))
-        print("a bajando =", r2(ab, 3), "m/s2")
+        print("a bajando =", r2(ab, 3), "m/s2 (aceleracion)")
     asu = G * (sin(radians(ang)) + mu * cos(radians(ang)))
-    print("a frenando al subir =", r2(asu, 3), "m/s2")
+    print("a frenando al subir =", r2(asu, 3), "m/s2 (aceleracion)")
     tip("h = d*sen(ang): altura vs largo de rampa")
 
 # ---------- 9. POLEAS ----------
@@ -893,20 +896,20 @@ def poleas():
     print("1) Atwood  2) mesa+polea  3) rampa+polea")
     op = input("> ")
     if op == "1":
-        m1 = num("m1 ligera (kg): "); m2 = num("m2 pesada (kg): ")
+        m1 = num("m1 masa ligera (kg): "); m2 = num("m2 masa pesada (kg): ")
         a = (m2 - m1) * G / (m1 + m2)
         T = 2 * m1 * m2 * G / (m1 + m2)
     elif op == "2":
-        m1 = num("m1 en mesa (kg): "); m2 = num("m2 colgando (kg): ")
-        mu = num("mu (sin unidad; 0 si no hay): ")
+        m1 = num("m1 masa en la mesa (kg): "); m2 = num("m2 masa colgando (kg): ")
+        mu = num("mu coef. de friccion (0 si no hay): ")
         if m2 * G <= mu * m1 * G:
-            print("No arranca (estatica). a=0, T =", r2(m2 * G, 2), "N")
+            print("No arranca (estatica). a=0, T =", r2(m2 * G, 2), "N (tension)")
             return
         a = (m2 - mu * m1) * G / (m1 + m2)
         T = m2 * (G - a)
     else:
-        m1 = num("m1 en rampa (kg): "); ang = num("angulo en grados: ")
-        m2 = num("m2 colgando (kg): ")
+        m1 = num("m1 masa en la rampa (kg): "); ang = num("angulo en grados: ")
+        m2 = num("m2 masa colgando (kg): ")
         a = (m2 * G - m1 * G * sin(radians(ang))) / (m1 + m2)
         T = m2 * (G - a)
         if a < 0:
@@ -928,18 +931,18 @@ def energia():
         h = num("h altura (m): ")
         print("PROCEDIMIENTO:  U=K -> mgh=.5mv^2")
         print("  v=raiz(2gh) = raiz(19.62(" + r2(h) + "))")
-        print("v =", r2(sqrt(2 * G * h), 3), "m/s")
+        print("v =", r2(sqrt(2 * G * h), 3), "m/s (velocidad abajo)")
     elif op == "2":
         tip("friccion cobra el LARGO de rampa, no la altura")
         m = num("masa (kg): "); h = num("altura (m): ")
-        f = num("F friccion (N): "); d = num("largo rampa (m): ")
+        f = num("F fuerza de friccion (N): "); d = num("largo rampa (m): ")
         e = m * G * h - f * d
         if e < 0:
             print("La friccion gana: no llega abajo")
         else:
-            print("v =", r2(sqrt(2 * e / m), 3), "m/s")
+            print("v =", r2(sqrt(2 * e / m), 3), "m/s (velocidad al final de la rampa)")
     else:
-        m = num("masa (kg): "); h = num("h inicial (m): "); v = num("v final (m/s): ")
+        m = num("masa (kg): "); h = num("h altura inicial (m): "); v = num("v velocidad final (m/s): ")
         e0 = m * G * h
         ef = 0.5 * m * v * v
         print("PROCEDIMIENTO:")
@@ -1173,12 +1176,12 @@ def graficas():
     ys = []
     if m == "1":
         et = "x"
-        un = " (m): "
+        un = " posicion (m): "
     else:
         et = "v"
-        un = " (m/s): "
+        un = " velocidad (m/s): "
     for i in range(n):
-        ts.append(num("t" + str(i + 1) + " (s): "))
+        ts.append(num("t" + str(i + 1) + " tiempo (s): "))
         ys.append(num(et + str(i + 1) + un))
     sep()
     dist = 0.0
@@ -1195,9 +1198,9 @@ def graficas():
             if v == 0:
                 print("  REPOSO (linea plana)")
             elif v > 0:
-                print("  MRU direccion + : v =", r2(v, 3), "m/s")
+                print("  MRU direccion + : v =", r2(v, 3), "m/s (velocidad)")
             else:
-                print("  MRU direccion - : v =", r2(v, 3), "m/s")
+                print("  MRU direccion - : v =", r2(v, 3), "m/s (velocidad)")
             print("  v=dx/dt = (" + r2(ys[i+1]) + "-" + rp(ys[i]) + ")/" + rp(dt))
             dist = dist + abs(dy)
         else:
@@ -1207,11 +1210,11 @@ def graficas():
             if v1 == 0 and v2 == 0:
                 print("  REPOSO")
             elif a == 0:
-                print("  v constante (MRU): v =", r2(v1, 3), "m/s")
+                print("  v constante (MRU): v =", r2(v1, 3), "m/s (velocidad)")
             elif v1 * a >= 0 and v2 * a >= 0:
-                print("  ACELERA: a =", r2(a, 3), "m/s2")
+                print("  ACELERA: a =", r2(a, 3), "m/s2 (aceleracion)")
             else:
-                print("  FRENA: a =", r2(a, 3), "m/s2")
+                print("  FRENA: a =", r2(a, 3), "m/s2 (aceleracion)")
             if v1 * v2 < 0:
                 tc = -v1 / a
                 a1 = 0.5 * v1 * tc
@@ -1222,7 +1225,7 @@ def graficas():
             else:
                 area = (v1 + v2) / 2 * dt
                 dist = dist + abs(area)
-            print("  area=(v1+v2)/2*dt =", r2(area, 3), "m")
+            print("  area=(v1+v2)/2*dt =", r2(area, 3), "m (desplazamiento)")
             despl = despl + area
     sep()
     if m == "1":
@@ -1231,7 +1234,7 @@ def graficas():
     print("distancia total =", r2(dist, 3), "m (todo lo recorrido)")
     print("desplazamiento =", r2(despl, 3), "m (final - inicial)")
     if T > 0:
-        print("vel media =", r2(despl / T, 3), "m/s (desplaz/t)")
+        print("velocidad media =", r2(despl / T, 3), "m/s (desplaz/t)")
         print("rapidez media =", r2(dist / T, 3), "m/s (dist/t)")
 
 # ---------- 13. TRABAJO Y POTENCIA ----------
@@ -1243,8 +1246,8 @@ def trabajo():
     print("4) potencia (W y t, o F y v)")
     op = input("> ")
     if op == "1":
-        F = num("F (N): ")
-        d = num("d (m): ")
+        F = num("F fuerza (N): ")
+        d = num("d distancia (m): ")
         ang = num("angulo F-d en grados (0 si van juntas): ")
         W = F * d * cos(radians(ang))
         print("PROCEDIMIENTO:")
@@ -1257,8 +1260,8 @@ def trabajo():
     elif op == "2":
         tip("W neto = cambio de energia cinetica")
         m = num("masa (kg): ")
-        v0 = num("v inicial (m/s): ")
-        vf = num("v final (m/s): ")
+        v0 = num("v velocidad inicial (m/s): ")
+        vf = num("v velocidad final (m/s): ")
         Ki = 0.5 * m * v0 * v0
         Kf = 0.5 * m * vf * vf
         print("PROCEDIMIENTO:")
@@ -1266,7 +1269,7 @@ def trabajo():
         print("  W neto = Kf - Ki")
         print("Ki =", r2(Ki, 3), "J (cinetica inicial)")
         print("Kf =", r2(Kf, 3), "J (cinetica final)")
-        print("W neto =", r2(Kf - Ki, 3), "J")
+        print("W neto =", r2(Kf - Ki, 3), "J (trabajo neto)")
     elif op == "3":
         m = num("masa (kg): ")
         h = num("altura (m): ")
@@ -1278,13 +1281,13 @@ def trabajo():
         print("  1) con trabajo y tiempo   2) con fuerza y velocidad")
         s = input("  > ")
         if s == "2":
-            F = num("F (N): ")
-            v = num("v (m/s): ")
+            F = num("F fuerza (N): ")
+            v = num("v velocidad (m/s): ")
             print("PROCEDIMIENTO:  P = F*v")
             print("P =", r2(F * v, 3), "W (potencia)")
         else:
-            W = num("W (J): ")
-            t = num("t (s): ")
+            W = num("W trabajo (J): ")
+            t = num("t tiempo (s): ")
             if t == 0:
                 print("t no puede ser 0")
                 return
@@ -1310,7 +1313,7 @@ ops = [("Unidades", conversiones),
        ("Trabajo/Potencia", trabajo)]
 
 def fisica():
-    print(">>> FISICA v7.3")
+    print(">>> FISICA v7.4")
     while True:
         sep()
         print("FISICA - menu principal")
