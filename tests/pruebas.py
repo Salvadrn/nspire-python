@@ -411,7 +411,7 @@ caso("fisica vertical", E.vertical,
       "regresa con 7 m/s hacia abajo",
       "y = 1.337 m", "v = -4.772 m/s", "va BAJANDO",
       "subiendo: v = +2.801 m/s  (t = 0.428 s)",
-      "v^2=v0^2-2gy = 7^2-19.62(-1.5) = 78.43",
+      "v^2 (velocity squared) = v0^2-2gy = 7^2-19.62(-1.5) = 78.43 m2/s2",
       "bajando:  v = -8.856 m/s  (t = 1.616 s)",
       "t total = 1.616 s", "v al llegar = -8.856 m/s"])
 caso("fisica vertical cima", E.vertical, ["7", "3", "2.497451580020387", "0"],
@@ -428,7 +428,7 @@ caso("fisica t en la cima", E.vertical, ["7", "1", "0.714", "0"],
 caso("fisica t negativo", E.vertical, ["7", "1", "-1", "1.2", "0"],
      ["t debe ser >= 0", "y = 1.337 m"])
 caso("fisica dato completo", E.vertical, ["7", "1", "0.7135", "0"],
-     ["(t = t subida exacto = 0.71355759)", "v=v0-gt = 7-9.81(0.71355759) = 0.0",
+     ["(t = t subida exacto = 0.71355759)", "v (velocity) = v0-gt = 7-9.81(0.71355759) = 0.0 m/s",
       "esta en la CIMA"])
 caso("fisica d > hmax", E.vertical, ["7", "2", "3", "0"],
      ["ojo: d > hmax", "bajando:  v = -7.672 m/s"])
@@ -447,7 +447,7 @@ caso("fisica t vuelo mostrado", E.vertical, ["10", "1", "2.039", "0"],
 caso("fisica d = hmax", E.vertical, ["0.5", "2", "0.013", "0"],
      ["subiendo: v = +0.5 m/s  (t = 0.0 s)"])
 caso("fisica paso opcion 2 cuadra", E.vertical, ["10", "2", "2", "0"],
-     ["t=tsub -+ v/g = 1.019368 -+ 6.2641839/9.81"])
+     ["t (time) = tsub -+ v/g = 1.019368 -+ 6.2641839/9.81"])
 caso("fisica nval sin mantisa", lambda: _buf.append(
          " ".join([_prueba_nval(t) for t in ("e2", "x10^2", ".", "-e5", "2e3")])),
      [], ["mal mal mal mal 2000.0"])
@@ -509,14 +509,14 @@ caso("fisica mrua vf baja", E.mrua, ["0", "", "", "10", "", "-9.81", "", "-5"],
 caso("fisica mrua t negativo", E.mrua, ["0", "", "", "10", "5", "2", "", ""],
      ["OJO: t negativo = datos imposibles", "t  = -2.5 s"])
 caso("fisica elevador a negativa", E.horizontal, ["2", "70", "-2", "2"],
-     ["N = m(g - a) = 70.0(9.81-(-2.0))"])
+     ["N (normal force) = m(g - a) = 70.0(9.81-(-2.0))"])
 caso("fisica tiempo sin colas", E.conversiones, ["5", "0.1", "1"], ["= 360 s"])
 caso("fisica volumen sin colas", E.conversiones, ["6", "0.3", "1"],
      ["= 300 L = 300000 mL"])
 caso("fisica inclinado mu", E.inclinado, ["10", "0.3", "0"],
      ["tan(ang) <= 0.3 -> NO desliza"])
 caso("fisica divisor negativo", E.mrua, ["0", "", "", "10", "0", "-2", "", ""],
-     ["t=(vf-v0)/a = (0.0-10.0)/(-2.0) = 5.0"])
+     ["t (time) = (vf-v0)/a = (0.0-10.0)/(-2.0) = 5.0 s"])
 
 # ---------- FISICA v7.2: raiz de MRUA, friccion, a = 0 ----------
 
@@ -528,7 +528,7 @@ caso("fisica mrua espejo", E.mrua, ["0", "", "", "10", "", "-2", "", "16"],
 caso("fisica mrua ambas t<0", E.mrua, ["0", "", "", "10", "", "2", "", "-16"],
      ["OJO: t negativo = datos imposibles", "vf = 6.0 m/s"])
 caso("fisica friccion hacia -x", E.mrua, ["0.2", "", "", "-5", "0", "", "", ""],
-     ["a=+mu*g (va hacia -x)", "t  = 2.548 s", "x  = -6.371 m"])
+     ["a (acceleration) = +mu*g (va hacia -x)", "t  = 2.548 s", "x  = -6.371 m"])
 caso("fisica friccion -x con t", E.mrua, ["0.2", "", "", "-5", "", "", "1", ""],
      ["vf = -3.038 m/s", "x  = -4.019 m"])
 caso("fisica friccion se para", E.mrua, ["0.2", "", "", "5", "", "", "5", ""],
@@ -575,7 +575,7 @@ if "inflex" in "\n".join(_buf):
     fallas.append("ap5 abs(sin(x)): inflexion falsa en la esquina")
 
 caso("fisica friccion x y t hacia -x", E.mrua, ["0.2", "", "", "", "", "", "1", "-4.019"],
-     ["a=+mu*g (va hacia -x)", "v0 = -5.0 m/s", "vf = -3.038 m/s"])
+     ["a (acceleration) = +mu*g (va hacia -x)", "v0 = -5.0 m/s", "vf = -3.038 m/s"])
 caso("fisica friccion x y t ya parado", E.mrua, ["0.25", "", "", "", "", "", "3", "3.262"],
      ["se paro antes de t", "v0 = 4.0 m/s", "vf = 0.0 m/s"])
 caso("fisica friccion en reposo", E.mrua, ["0.2", "", "", "0", "", "", "2", ""],
@@ -583,20 +583,20 @@ caso("fisica friccion en reposo", E.mrua, ["0.2", "", "", "0", "", "", "2", ""],
 caso("fisica friccion reposo imposible", E.mrua, ["0.2", "", "", "0", "", "", "", "-5"],
      ["datos imposibles"])
 caso("fisica friccion para en -x", E.mrua, ["0.2", "", "", "", "0", "", "", "-6.371"],
-     ["a=+mu*g (va hacia -x)", "v0 = -5.0 m/s", "t  = 2.548 s"])
+     ["a (acceleration) = +mu*g (va hacia -x)", "v0 = -5.0 m/s", "t  = 2.548 s"])
 
 # ---------- FISICA v7.3: tiro horizontal (Horizontal_Projectiles.pdf) ----------
 
 caso("fisica horizontal 1", E.proy_horizontal, ["7.6", "30", "", "1", "1.2", "0"],
      ["t  = 2.473 s", "R  = 18.796 m", "vx = 7.6 m/s al llegar",
-      "hacia ABAJO: vy = -24.261 m/s", "vf = 25.424 m/s", "x = 9.12 m",
-      "y = -7.063 m", "altura sobre el piso = 22.937 m", "|v| = 14.012 m/s"])
+      "downward: vy = -24.261 m/s", "vf = 25.424 m/s", "x = 9.12 m",
+      "y = -7.063 m", "height above the ground = 22.937 m", "|v| = 14.012 m/s"])
 caso("fisica horizontal 2", E.proy_horizontal, ["1.5", "2", "", "3", "1/2", "0"],
      ["t  = 0.639 s", "R  = 0.958 m", "vf = 6.441 m/s", "ax = 0", "x = 0.677 m"])
 caso("fisica horizontal 3", E.proy_horizontal,
      ["7.6", "", "8.7", "3", "5/4", "3/4", "4", "5", "0"],
      ["h  = 6.428 m", "vf = 13.56 m/s", "va de 0 a 1", "|v| = 12.343 m/s",
-      "altura sobre el piso = 4.305 m"])
+      "height above the ground = 4.305 m"])
 caso("fisica horizontal 4", E.proy_horizontal, ["12", "45", "", "0"],
      ["t  = 3.029 s", "R  = 36.347 m", "vfy = 29.714 m/s", "vf = 32.045 m/s"])
 caso("fisica horizontal 5", E.proy_horizontal,
