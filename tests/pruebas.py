@@ -621,6 +621,24 @@ caso("vertical 7 velocidad", E.vertical, ["24", "1", "2.97", "0"],
      ["Velocity at t = 2.97 s:", "v = -5.136 m/s"])
 caso("vertical 8 velocidad", E.vertical, ["19.1", "1", "0.6", "0"], ["v = 13.214 m/s"])
 
+# ---------- FISICA v8.2: FF_VL_Projectiles.pdf (worker, 25 m, golfer) ----------
+
+caso("deck worker", E.vertical,
+     ["11.2", "1", "2", "2", "1", "4", "5", "0"],
+     ["h max = 6.393 m", "t subida = 1.142 s", "t vuelo = 2.283 s",
+      "regresa con 11.2 m/s", "y = 2.78 m", "subiendo: v = +4.429 m/s",
+      "t total = 2.666 s"])
+caso("deck horizontal 25 m", E.proy_horizontal, ["8.25", "25", "", "1", "1.5", "0"],
+     ["t  = 2.258 s", "R  = 18.625 m", "vx = 8.25 m/s", "vy = -22.147 m/s",
+      "x = 12.375 m", "y = -11.036 m", "|v| = 16.87 m/s"])
+caso("deck golfer", E.proyectil, ["1", "30", "35", "", "1", "1.5", "1", "0.5", "0"],
+     ["v0x = 24.575 m/s", "v0y = 17.207 m/s", "hmax = 15.091 m", "t = 3.508 s",
+      "R = 86.21 m", "vfy = -17.207 m/s", "vf = 30.0 m/s", "at 35.0 degrees below",
+      "|v| = 24.701 m/s", "x = 12.287 m", "y = 7.377 m"])
+caso("proyectil desde altura", E.proyectil, ["1", "20", "30", "10", "0"],
+     ["t = 2.774 s", "R = 48.043 m", "vfy = -17.21 m/s", "vf = 24.417 m/s",
+      "above the ground"])
+
 # ---------- resultado ----------
 
 if fallas:
