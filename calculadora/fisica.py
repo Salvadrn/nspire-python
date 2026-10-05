@@ -748,28 +748,125 @@ def vertical():
 
 # ---------- 6. PROYECTILES ----------
 def proyectil():
-    print("1) con angulo (sale del piso)")
+    print("1) con angulo (del piso o de una altura)")
     print("2) horizontal (sale de una altura)")
     sub = input("> ")
     if sub == "2":
         proy_horizontal()
         return
     tip("45 da alcance max; complementarios empatan")
-    tip("R, H y t vuelo SOLO a misma altura")
+    tip("arriba es +; angulo negativo = lanzado hacia abajo")
     v0 = num("v0 initial velocity (m/s): ")
-    a = num("launch angle (degrees): ")
+    a = num("launch angle above the horizontal (degrees): ")
+    h = dato("h launch height above the ground (m, enter = 0): ")
+    if h is None:
+        h = 0.0
+    if v0 <= 0 or h < 0 or abs(a) >= 90:
+        print("v0 > 0, h >= 0 y angulo entre -90 y 90")
+        return
     vx = v0 * cos(radians(a))
     vy = v0 * sin(radians(a))
+    raiz_ = sqrt(vy * vy + 2 * G * h)
+    t = (vy + raiz_) / G
+    R = vx * t
+    vfy = vy - G * t
+    vf = sqrt(vx * vx + vfy * vfy)
+    angf = degrees(atan2(-vfy, vx))
     print("PROCEDIMIENTO:")
-    di("  vx=v0cos(" + r2(a) + ")  v0y=v0sen(" + r2(a) + ")")
-    di("  t=2v0y/g  R=vx*t  H=v0y^2/2g")
-    di("vx =", r2(vx, 3), "m/s (horizontal velocity, constant)")
-    di("v0y =", r2(vy, 3), "m/s (initial vertical velocity)")
-    t = 2 * vy / G
-    di("t vuelo =", r2(t, 3), "s (time in the air)")
-    di("R =", r2(vx * t, 3), "m (range)")
-    di("H max =", r2(vy * vy / (2 * G), 3), "m (maximum height)")
-    di("(cae a otra altura? -> menu 7 Caida con v0y=", r2(-vy, 2), ")")
+    di("  v0x (initial horizontal velocity) = v0*cos(" + r6(a) + ") = " + r6(v0) + "cos(" + r6(a) + ") = " + r2(vx) + " m/s")
+    di("  v0y (initial vertical velocity) = v0*sin(" + r6(a) + ") = " + r6(v0) + "sin(" + r6(a) + ") = " + r2(vy) + " m/s")
+    if vy > 0:
+        di("  tsub (time to reach max height) = v0y/g = " + r6(vy) + "/9.81 = " + r2(vy / G) + " s")
+        di("  hmax (maximum height) = v0y^2/2g = " + r6(vy) + "^2/19.62 = " + r2(vy * vy / (2 * G)) + " m")
+    if h == 0:
+        di("  t (time in the air) = 2v0y/g = 2(" + r6(vy) + ")/9.81 = " + r2(t) + " s")
+    else:
+        di("  t (time in the air) = (v0y+raiz(v0y^2+2gh))/g = (" + r6(vy) + "+raiz(" + rp(vy) + "^2+19.62(" + r6(h) + ")))/9.81 = " + r2(t) + " s")
+    di("  R (total horizontal distance) = v0x*t = " + r6(vx) + "(" + r6(t) + ") = " + r2(R) + " m")
+    di("  vfy (final vertical velocity) = v0y-g*t = " + r6(vy) + "-9.81(" + r6(t) + ") = " + r2(vfy) + " m/s")
+    di("  vf (resultant velocity at impact) = raiz(v0x^2+vfy^2) = raiz(" + r6(vx) + "^2+" + rp(vfy) + "^2) = " + r2(vf) + " m/s")
+    di("  ang (angle below the horizontal) = atan(|vfy|/v0x) = " + r2(angf, 2) + " degrees")
+    sep()
+    print("WHEN IT IS LAUNCHED (t = 0):")
+    print("Initial velocity in the horizontal axis:")
+    di("v0x =", r2(vx, 3), "m/s")
+    print("Initial velocity in the vertical axis:")
+    di("v0y =", r2(vy, 3), "m/s")
+    print("Maximum height reached by the ball:")
+    if vy > 0:
+        hm = vy * vy / (2 * G)
+        if h > 0:
+            print("hmax =", r2(hm, 3), "m above the launch point")
+            di("  =", r2(h + hm, 3), "m above the ground")
+        else:
+            di("hmax =", r2(hm, 3), "m")
+        print("Time to reach the maximum height:")
+        di("tsub =", r2(vy / G, 3), "s")
+    else:
+        di("hmax =", r2(h, 3), "m (sale bajando: lo mas alto es la salida)")
+    print("Time the ball is in the air:")
+    di("t =", r2(t, 3), "s")
+    print("Total horizontal distance traveled:")
+    di("R =", r2(R, 3), "m")
+    print("AT IMPACT:")
+    print("Final velocity in the horizontal axis:")
+    di("vx =", r2(vx, 3), "m/s (no cambia)")
+    print("Final velocity in the vertical axis:")
+    di("vfy =", r2(vfy, 3), "m/s (downward)")
+    print("Resultant velocity at the instant it")
+    print("strikes the ground:")
+    print("vf =", r2(vf, 3), "m/s")
+    di("  at", r2(angf, 2), "degrees below the horizontal")
+    print("Acceleration (the whole time):")
+    di("ax = 0, ay = -9.81 m/s2")
+    proy_ang_mas(vx, vy, h, t)
+
+def proy_ang_mas(vx, vy, h, tc):
+    # el mismo tiro con angulo en un tiempo t (arriba +, y=0 en la salida)
+    while True:
+        sep()
+        print("MAS del mismo tiro:")
+        print("1) x, y, v en un tiempo t")
+        print("0) listo")
+        op = input("> ").strip()
+        if op == "0":
+            return
+        if op != "1":
+            print("opcion no valida (0 = listo)")
+            continue
+        sep()
+        t = num("t time (s): ")
+        if t < 0:
+            print("t debe ser >= 0 (cuenta desde que sale)")
+            continue
+        x = vx * t
+        y = vy * t - 0.5 * G * t * t
+        vyt = vy - G * t
+        v = sqrt(vx * vx + vyt * vyt)
+        ang = degrees(atan2(abs(vyt), vx))
+        print("PROCEDIMIENTO:")
+        di("  x (horizontal position) = v0x*t = " + r6(vx) + "(" + r6(t) + ") = " + r2(x) + " m")
+        di("  y (vertical position) = v0y*t-.5gt^2 = " + r6(vy) + "(" + r6(t) + ")-4.905(" + r6(t) + ")^2 = " + r2(y) + " m")
+        di("  vx (horizontal velocity) = v0x = " + r2(vx) + " m/s (no cambia)")
+        di("  vy (vertical velocity) = v0y-g*t = " + r6(vy) + "-9.81(" + r6(t) + ") = " + r2(vyt) + " m/s")
+        di("  v (magnitude of the velocity) = raiz(vx^2+vy^2) = raiz(" + r6(vx) + "^2+" + rp(vyt) + "^2) = " + r2(v) + " m/s")
+        sep()
+        if t > tc * (1 + 1e-9):
+            print("OJO: ya toco el piso en t =", r2(tc), "s")
+            di("  (estos numeros siguen la parabola)")
+        print("Position at t =", r6(t), "s:")
+        print("x =", r2(x), "m (horizontal)")
+        if h > 0:
+            print("y =", r2(y), "m (from the launch point)")
+            di("  height above the ground =", r2(h + y), "m")
+        else:
+            di("y =", r2(y), "m (vertical)")
+        print("Velocity components:")
+        print("vx =", r2(vx), "m/s (no cambia)")
+        di("vy =", r2(vyt), "m/s", "(going up)" if vyt > 0 else "(going down)" if vyt < 0 else "(at the top)")
+        print("Magnitude of the velocity:")
+        print("|v| =", r2(v), "m/s")
+        di("  at", r2(ang, 2), "degrees", "above" if vyt > 0 else "below", "the horizontal")
 
 def proy_horizontal():
     tip("sale HORIZONTAL: v0y=0; el tiempo lo manda la altura")
@@ -1432,7 +1529,7 @@ ops = [("Unidades", conversiones),
        ("Trabajo/Potencia", trabajo)]
 
 def fisica():
-    print(">>> FISICA v8.1")
+    print(">>> FISICA v8.2")
     while True:
         sep()
         print("FISICA - menu principal")
