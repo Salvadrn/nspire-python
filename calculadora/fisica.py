@@ -197,42 +197,48 @@ def ang_rumbo(s):
     return None
 
 def pedir_angulo(msg):
-    print("  desde donde mides el angulo:")
-    print("  1)+x(E) arriba  2)+x(E) abajo")
-    print("  3)+y(N) hacia E 4)+y(N) hacia O")
-    print("  5)-x(O) abajo   6)-y(S) hacia E")
-    print("  7)rumbo N30E/NE 8)ya es estandar")
-    ref = input("  > ")
+    # direccion en palabras -> angulo estandar (desde +x, contra reloj)
+    print("  hacia donde apunta?")
+    print("  1)arriba-der    2)arriba-izq")
+    print("  3)abajo-izq     4)abajo-der")
+    print("  5)derecha       6)izquierda")
+    print("  7)arriba        8)abajo")
+    print("  9)rumbo N30E    0)ya es estandar")
+    d = input("  > ").strip()
+    if d in ("5", "6", "7", "8"):
+        r = {"5": 0.0, "6": 180.0, "7": 90.0, "8": 270.0}[d]
+        print("  =", r2(r, 2), "grados estandar")
+        return r
+    while d == "9":
+        s = input("  rumbo (N30E, NE, S...): ")
+        r = ang_rumbo(s)
+        if r is None:
+            print("  rumbo no valido")
+            continue
+        print("  ", s, "=", r2(r, 2), "grados estandar")
+        return r
+    ref = "1"
+    if d in ("1", "2", "3", "4"):
+        print("  el angulo se mide desde:")
+        print("  1) la horizontal  2) la vertical")
+        ref = input("  > ").strip()
     while True:
-        if ref == "7":
-            s = input("  rumbo (N30E, NE, S...): ")
-            r = ang_rumbo(s)
-            if r is None:
-                print("  rumbo no valido")
-                continue
-            print("  ", s, "=", r2(r, 2), "grados estandar")
-            return r
         try:
             a = nval(input(msg))
+            break
         except ValueError:
             print("  numero no valido")
-            continue
+    if d in ("1", "2", "3", "4"):
+        q = int(d) - 1
         if ref == "2":
-            r = -a
-        elif ref == "3":
-            r = 90.0 - a
-        elif ref == "4":
-            r = 90.0 + a
-        elif ref == "5":
-            r = 180.0 + a
-        elif ref == "6":
-            r = 270.0 - a
+            r = [90.0 - a, 90.0 + a, 270.0 - a, 270.0 + a][q]
         else:
-            r = a
-        r = r % 360
-        if ref != "1" and ref != "8":
-            print("  =", r2(r, 2), "grados estandar")
-        return r
+            r = [a, 180.0 - a, 180.0 + a, 360.0 - a][q]
+    else:
+        r = a
+    r = r % 360
+    print("  =", r2(r, 2), "grados estandar")
+    return r
 
 # ---------- 1. VECTORES CONCURRENTES ----------
 def vectores():
@@ -1214,12 +1220,13 @@ def eq_cuerda_horizontal():
     di("F =", r2(F, 3), "N")
 
 def eq_general():
-    tip("suma de fuerzas = 0; angulos ESTANDAR (desde +x)")
+    tip("suma de fuerzas = 0; A y B = las que NO conoces")
+    tip("direccion: arriba-izq, abajo... y su angulo")
     k = int(num("cuantas fuerzas CONOCIDAS (peso incluido)? "))
     Sx = 0.0
     Sy = 0.0
     for q in range(k):
-        print("Fuerza conocida", q + 1, "(peso = abajo, 270 estandar)")
+        print("Fuerza conocida", q + 1, "(el peso: 8 abajo)")
         m = num("  magnitude (N): ")
         g = pedir_angulo("  angle (degrees): ")
         Sx = Sx + m * cos(radians(g))
@@ -1699,7 +1706,7 @@ ops = [("Unidades", conversiones),
        ("Equilibrio", equilibrio)]
 
 def fisica():
-    print(">>> FISICA v8.4")
+    print(">>> FISICA v8.5")
     while True:
         sep()
         print("FISICA - menu principal")
