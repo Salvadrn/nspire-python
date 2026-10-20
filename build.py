@@ -20,7 +20,9 @@ import ast
 import builtins
 import math
 import os
+import shutil
 import subprocess
+import tempfile
 import sys
 
 AQUI = os.path.dirname(os.path.abspath(__file__))
@@ -192,15 +194,22 @@ def junta(nombre, piezas, fn, desc):
 
 
 def a_tns(py):
+    # Luna escribe primero en /tmp y luego se copia: en el Escritorio
+    # (iCloud, disco casi lleno) escribir directo a veces falla a medias
     tns = py[:-3] + ".tns"
-    r = subprocess.run([LUNA, py, tns], stdout=subprocess.DEVNULL)
-    if r.returncode != 0 or not os.path.exists(tns):
-        if os.path.exists(tns):
-            os.remove(tns)      # luna deja un .tns truncado si falla
+    tmp = os.path.join(tempfile.gettempdir(), "luna_" + os.path.basename(tns))
+    if os.path.exists(tmp):
+        os.remove(tmp)
+    r = subprocess.run([LUNA, py, tmp], stdout=subprocess.DEVNULL)
+    if r.returncode != 0 or not os.path.exists(tmp):
+        if os.path.exists(tmp):
+            os.remove(tmp)      # luna deja un .tns truncado si falla
         sys.exit("luna fallo con " + os.path.basename(py))
-    with open(tns, "rb") as f:
+    with open(tmp, "rb") as f:
         if f.read(10) != b"*TIMLP0500":
             sys.exit(os.path.basename(tns) + " no trae la cabecera de la Nspire")
+    shutil.copyfile(tmp, tns)
+    os.remove(tmp)
     return os.path.getsize(tns)
 
 
