@@ -644,14 +644,15 @@ caso("proyectil desde altura", E.proyectil, ["1", "20", "30", "10", "0"],
 caso("newton carrito empujado", E.horizontal, ["1", "25", "80", "20", "0.15", "2"],
      ["FREE-BODY DIAGRAM", "N = 272.612 N", "f = 40.892 N", "a = 1.371 m/s2"])
 caso("newton foco 2 cuerdas", E.equilibrio, ["1", "5", "1", "28", "37"],
-     ["Tension in rope A:", "TA = 4.406 N", "TB = 4.871 N"])
+     ["Tension in rope A:", "TA = 4.406 N", "TB = 4.871 N",
+      "(1) -0.88295 TA + 0.79864 TB = 0", "TA = 0.90451 TB", "1.0265 TB = 5"])
 caso("newton foco desde la vertical", E.equilibrio, ["1", "5", "2", "62", "53"],
      ["TA = 4.406 N", "TB = 4.871 N"])
 caso("newton esfera", E.equilibrio, ["2", "50", "1", "60"],
      ["T = 100.0 N", "F = 86.603 N"])
 caso("newton general esfera", E.equilibrio,
      ["3", "1", "50", "8", "2", "2", "60", "5"],
-     ["A = 100.0 N", "B = 86.603 N"])
+     ["A = 100.0 N", "B = 86.603 N", "(2) 0.5 A = 50", "= (0 + 0.86603(100))/1"])
 caso("newton general foco", E.equilibrio,
      ["3", "1", "5", "8", "2", "1", "28", "1", "1", "37"],
      ["A = 4.406 N", "B = 4.871 N"])
