@@ -1151,6 +1151,74 @@ def horizontal():
         print("Ojo: Fx < f: revisa si siquiera arranca (estatica)")
 
 # ---------- 15. EQUILIBRIO (Newton: suma de fuerzas = 0) ----------
+def nf(x):
+    return "%.5g" % x
+
+def termino(c, nom, primero):
+    # '0.5 A', ' - 0.866 B', 'B' (sin el 1)
+    v = abs(c)
+    t = nom if abs(v - 1) < 1e-12 else nf(v) + " " + nom
+    if primero:
+        return ("-" + t) if c < 0 else t
+    return (" - " if c < 0 else " + ") + t
+
+def lado(c1, n1, c2, n2):
+    # lado izquierdo sin los terminos con coeficiente 0
+    out = ""
+    for c, n in ((c1, n1), (c2, n2)):
+        if c != 0:
+            out = out + termino(c, n, out == "")
+    return out if out else "0"
+
+def expr(k1, k2, nom):
+    # 'k1 + k2 nom' sin el '0 +' cuando k1 = 0
+    if k1 == 0:
+        return termino(k2, nom, True)
+    return nf(k1) + termino(k2, nom, False)
+
+def sistema2(a11, a12, b1, a21, a22, b2, nA, nB, lA, lB, un):
+    # a11 A + a12 B = b1 ; a21 A + a22 B = b2  por SUSTITUCION, paso a
+    # paso como en el cuaderno. Devuelve (A, B) o None si no tiene solucion
+    esc = max(abs(a11), abs(a12), abs(a21), abs(a22), abs(b1), abs(b2))
+    def z(x):
+        return 0.0 if abs(x) < 1e-12 * esc else x
+    a11, a12, b1, a21, a22, b2 = z(a11), z(a12), z(b1), z(a21), z(a22), z(b2)
+    print("  Sistema de ecuaciones:")
+    di("  (1) " + lado(a11, nA, a12, nB) + " = " + nf(b1))
+    di("  (2) " + lado(a21, nA, a22, nB) + " = " + nf(b2))
+    # una ecuacion con una sola incognita: se despeja directo
+    for (p1, p2, q, e, c1, c2, r, o) in (
+            (a11, a12, b1, "(1)", a21, a22, b2, "(2)"),
+            (a21, a22, b2, "(2)", a11, a12, b1, "(1)")):
+        if p2 == 0 and p1 != 0 and c2 != 0:
+            A = q / p1
+            di("  De " + e + ": " + nA + " (" + lA + ") = " + nf(q) + "/" + nf(p1) + " = " + r2(A) + " " + un)
+            B = (r - c1 * A) / c2
+            di("  En " + o + ": " + nB + " (" + lB + ") = (" + nf(r) + termino(-c1, "(" + nf(A) + ")", False).replace(" (", "(") + ")/" + nf(c2) + " = " + r2(B) + " " + un)
+            return A, B
+        if p1 == 0 and p2 != 0 and c1 != 0:
+            B = q / p2
+            di("  De " + e + ": " + nB + " (" + lB + ") = " + nf(q) + "/" + nf(p2) + " = " + r2(B) + " " + un)
+            A = (r - c2 * B) / c1
+            di("  En " + o + ": " + nA + " (" + lA + ") = (" + nf(r) + termino(-c2, "(" + nf(B) + ")", False).replace(" (", "(") + ")/" + nf(c1) + " = " + r2(A) + " " + un)
+            return A, B
+    if a11 == 0:
+        return None
+    k1 = z(b1 / a11)
+    k2 = -a12 / a11
+    di("  De (1) despejo " + nA + ": " + nA + " = " + expr(k1, k2, nB))
+    ca = a21 * k2 + a22
+    cb = b2 - a21 * k1
+    if abs(ca) < 1e-12 * max(1.0, esc):
+        return None
+    di("  En (2): " + nf(a21) + "(" + expr(k1, k2, nB) + ")" + termino(a22, nB, False) + " = " + nf(b2))
+    di("  " + termino(ca, nB, True) + " = " + nf(cb))
+    B = cb / ca
+    A = k1 + k2 * B
+    di("  " + nB + " (" + lB + ") = " + nf(cb) + "/" + nf(ca) + " = " + r2(B) + " " + un)
+    di("  " + nA + " (" + lA + ") = " + expr(k1, k2, "(" + nf(B) + ")").replace(" (", "(") + " = " + r2(A) + " " + un)
+    return A, B
+
 def equilibrio():
     print("1) objeto colgado de 2 cuerdas")
     print("2) cuerda + fuerza horizontal")
@@ -1185,8 +1253,9 @@ def eq_dos_cuerdas():
     print("PROCEDIMIENTO:")
     di("  Sum Fx = 0: TB*cos(" + r6(b) + ") - TA*cos(" + r6(a) + ") = 0")
     di("  Sum Fy = 0: TA*sin(" + r6(a) + ") + TB*sin(" + r6(b) + ") - W = 0")
-    di("  TA (tension in rope A) = W*cos(" + r6(b) + ")/sin(" + r6(a) + "+" + r6(b) + ") = " + r6(W) + "cos(" + r6(b) + ")/sin(" + r6(a + b) + ") = " + r2(TA) + " N")
-    di("  TB (tension in rope B) = W*cos(" + r6(a) + ")/sin(" + r6(a + b) + ") = " + r6(W) + "cos(" + r6(a) + ")/sin(" + r6(a + b) + ") = " + r2(TB) + " N")
+    sistema2(-cos(radians(a)), cos(radians(b)), 0.0,
+             sin(radians(a)), sin(radians(b)), W,
+             "TA", "TB", "tension in rope A", "tension in rope B", "N")
     sep()
     print("Tension in rope A:")
     di("TA =", r2(TA, 3), "N")
@@ -1245,7 +1314,9 @@ def eq_general():
     di("  Sum Fx (known) = " + r2(Sx) + " N, Sum Fy (known) = " + r2(Sy) + " N")
     di("  Sum Fx = 0: A*cos(" + r6(da) + ") + B*cos(" + r6(db) + ") + " + rp(Sx) + " = 0")
     di("  Sum Fy = 0: A*sin(" + r6(da) + ") + B*sin(" + r6(db) + ") + " + rp(Sy) + " = 0")
-    di("  (dos ecuaciones, dos incognitas: A y B)")
+    sistema2(cos(radians(da)), cos(radians(db)), -Sx,
+             sin(radians(da)), sin(radians(db)), -Sy,
+             "A", "B", "force A", "force B", "N")
     sep()
     print("Magnitude of force A:")
     di("A =", r2(A, 3), "N")
@@ -1706,7 +1777,7 @@ ops = [("Unidades", conversiones),
        ("Equilibrio", equilibrio)]
 
 def fisica():
-    print(">>> FISICA v8.5")
+    print(">>> FISICA v8.6")
     while True:
         sep()
         print("FISICA - menu principal")
