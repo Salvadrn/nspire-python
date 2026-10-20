@@ -193,23 +193,29 @@ def junta(nombre, piezas, fn, desc):
     return todo
 
 
-def a_tns(py):
-    # Luna escribe primero en /tmp y luego se copia: en el Escritorio
-    # (iCloud, disco casi lleno) escribir directo a veces falla a medias
+def a_tns(py, todo):
+    # Luna trabaja en /tmp (fuente y .tns) y el .tns se copia al final: en
+    # el Escritorio (iCloud, disco casi lleno) leer el .py recien escrito o
+    # escribir el .tns ahi fallaba a ratos ("luna fallo con ap.py")
     tns = py[:-3] + ".tns"
-    tmp = os.path.join(tempfile.gettempdir(), "luna_" + os.path.basename(tns))
-    if os.path.exists(tmp):
-        os.remove(tmp)
-    r = subprocess.run([LUNA, py, tmp], stdout=subprocess.DEVNULL)
-    if r.returncode != 0 or not os.path.exists(tmp):
-        if os.path.exists(tmp):
-            os.remove(tmp)      # luna deja un .tns truncado si falla
+    tmpdir = os.path.join(tempfile.gettempdir(), "nspire_build")
+    os.makedirs(tmpdir, exist_ok=True)
+    src = os.path.join(tmpdir, os.path.basename(py))
+    out = src[:-3] + ".tns"
+    with open(src, "w", encoding="utf-8") as f:
+        f.write(todo)
+    for _ in range(3):
+        if os.path.exists(out):
+            os.remove(out)      # luna deja un .tns truncado si falla
+        r = subprocess.run([LUNA, src, out], stdout=subprocess.DEVNULL)
+        if r.returncode == 0 and os.path.exists(out):
+            break
+    else:
         sys.exit("luna fallo con " + os.path.basename(py))
-    with open(tmp, "rb") as f:
+    with open(out, "rb") as f:
         if f.read(10) != b"*TIMLP0500":
             sys.exit(os.path.basename(tns) + " no trae la cabecera de la Nspire")
-    shutil.copyfile(tmp, tns)
-    os.remove(tmp)
+    shutil.copyfile(out, tns)
     return os.path.getsize(tns)
 
 
@@ -224,7 +230,7 @@ def main():
         linea = "calculadora/{}.py: {} lineas, {:.0f} KB".format(
             nombre, todo.count("\n"), len(todo) / 1024)
         if hay_luna:
-            linea += " | .tns {:.0f} KB".format(a_tns(py) / 1024)
+            linea += " | .tns {:.0f} KB".format(a_tns(py, todo) / 1024)
         print(linea)
     if not hay_luna:
         print("sin Luna en .tools/: solo .py (pegalos en una pagina Python"
