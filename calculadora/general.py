@@ -3754,12 +3754,42 @@ def nombra(s):
         pass
     return s
 
+def partes(s):
+    # 'a = b = c' -> ['a', 'b', 'c'] sin cortar dentro de parentesis
+    out = []
+    prof = 0
+    ini = 0
+    i = 0
+    while i < len(s):
+        ch = s[i]
+        if ch == "(":
+            prof += 1
+        elif ch == ")":
+            prof -= 1
+        elif prof == 0 and s[i:i + 3] == " = ":
+            out.append(s[ini:i])
+            ini = i + 3
+            i += 3
+            continue
+        i += 1
+    out.append(s[ini:])
+    return out
+
 def di(*a):
     # un dato a la vez: lo muestra y espera enter (la pantalla es chica);
-    # un paso de procedimiento sale con el nombre de su simbolo
+    # un paso de procedimiento sale con el nombre de su simbolo y cada
+    # '=' en su renglon, como en el cuaderno
     if len(a) == 1 and type(a[0]) is str:
         if a[0][:2] == "  ":
-            a = ("  " + nombra(a[0][2:]),)
+            t = nombra(a[0][2:])
+            ps = partes(t)
+            if len(ps) > 2 and " (" in ps[0]:
+                print("  " + ps[0])
+                for q in ps[1:-1]:
+                    print("    = " + q)
+                a = ("    = " + ps[-1],)
+            else:
+                a = ("  " + t,)
         elif a[0][:15] == "PROCEDIMIENTO: ":
             a = ("PROCEDIMIENTO:  " + nombra(a[0][15:]),)
     print(*a, end=" ")
@@ -4702,29 +4732,40 @@ def horizontal():
     N = W + Fy if empuja else W - Fy
     f = mu * N
     ac = (Fx - f) / m
-    print("FREE-BODY DIAGRAM (forces on it):")
-    print("            N (up)")
+    print("FREE-BODY DIAGRAM:")
+    print("            N")
     print("            ^")
-    print("  f <---- [ m ] ----> Fx")
+    if empuja:
+        print("       F \\  |")
+        print("          \\ |")
+        print("  f <----- [m]")
+    else:
+        print("            |   / F")
+        print("            |  /")
+        print("  f <----- [m]")
     print("            |")
-    print("            v  W (down)" + ("  + Fy (down)" if empuja else ""))
-    if not empuja and a != 0:
-        print("            Fy (up) pulls it up")
-    print("  W = mg =", r2(W), "N, down (weight)")
-    print("  N =", r2(N), "N, up (normal force)")
-    print("  F =", r2(F), "N at", r2(a), "degrees", "below" if empuja else "above", "the horizontal")
-    print("    Fx =", r2(Fx), "N forward, Fy =", r2(Fy), "N", "down" if empuja else "up")
-    di("  f = mu*N =", r2(f), "N, backward (friction)")
+    print("            v")
+    di("            W")
+    print("Forces on the object:")
+    print("W (weight) =", r2(W), "N, down")
+    print("N (normal force) =", r2(N), "N, up")
+    print("F (applied force) =", r2(F), "N,")
+    print("  " + r2(a) + " degrees", "below" if empuja else "above", "the horizontal")
+    print("f (friction) =", r2(f), "N,")
+    di("  backward (against the motion)")
     print("PROCEDIMIENTO:")
     di("  Fx (horizontal component of F) = F*cos(" + r6(a) + ") = " + r6(F) + "cos(" + r6(a) + ") = " + r2(Fx) + " N")
     di("  Fy (vertical component of F) = F*sin(" + r6(a) + ") = " + r6(F) + "sin(" + r6(a) + ") = " + r2(Fy) + " N")
     di("  W (weight) = mg = " + r6(m) + "(9.81) = " + r2(W) + " N")
     if empuja:
-        di("  Sum Fy = 0: N - W - Fy = 0 -> N (normal force) = W + Fy = " + r6(W) + "+" + r6(Fy) + " = " + r2(N) + " N")
+        print("  Sum Fy = 0:  N - W - Fy = 0")
+        di("  N (normal force) = W + Fy = " + r6(W) + "+" + r6(Fy) + " = " + r2(N) + " N")
     else:
-        di("  Sum Fy = 0: N + Fy - W = 0 -> N (normal force) = W - Fy = " + r6(W) + "-" + r6(Fy) + " = " + r2(N) + " N")
+        print("  Sum Fy = 0:  N + Fy - W = 0")
+        di("  N (normal force) = W - Fy = " + r6(W) + "-" + r6(Fy) + " = " + r2(N) + " N")
     di("  f (friction force) = mu*N = " + r6(mu) + "(" + r6(N) + ") = " + r2(f) + " N")
-    di("  Sum Fx = ma: Fx - f = ma -> a (acceleration) = (Fx-f)/m = (" + r6(Fx) + "-" + r6(f) + ")/" + r6(m) + " = " + r2(ac) + " m/s2")
+    print("  Sum Fx = ma:  Fx - f = ma")
+    di("  a (acceleration) = (Fx-f)/m = (" + r6(Fx) + "-" + r6(f) + ")/" + r6(m) + " = " + r2(ac) + " m/s2")
     sep()
     print("Normal force:")
     di("N =", r2(N, 3), "N")
@@ -5284,7 +5325,7 @@ ops = [("Unidades", conversiones),
        ("Caida libre", caida),
        ("Lanz vert", vertical),
        ("Proyectil", proyectil),
-       ("Horizontal", horizontal),
+       ("Fuerzas piso", horizontal),
        ("Inclinado", inclinado),
        ("Poleas", poleas),
        ("Energia", energia),
@@ -5292,7 +5333,7 @@ ops = [("Unidades", conversiones),
        ("Equilibrio", equilibrio)]
 
 def fisica():
-    print(">>> FISICA v8.3")
+    print(">>> FISICA v8.4")
     while True:
         sep()
         print("FISICA - menu principal")
