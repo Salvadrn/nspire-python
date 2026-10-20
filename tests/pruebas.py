@@ -650,11 +650,16 @@ caso("newton foco desde la vertical", E.equilibrio, ["1", "5", "2", "62", "53"],
 caso("newton esfera", E.equilibrio, ["2", "50", "1", "60"],
      ["T = 100.0 N", "F = 86.603 N"])
 caso("newton general esfera", E.equilibrio,
-     ["3", "1", "50", "8", "270", "8", "150", "8", "0"],
+     ["3", "1", "50", "8", "2", "2", "60", "5"],
      ["A = 100.0 N", "B = 86.603 N"])
 caso("newton general foco", E.equilibrio,
-     ["3", "1", "5", "8", "270", "8", "152", "8", "37"],
+     ["3", "1", "5", "8", "2", "1", "28", "1", "1", "37"],
      ["A = 4.406 N", "B = 4.871 N"])
+
+caso("direcciones en palabras", lambda: _buf.append(" ".join(
+         ["%g" % E.pedir_angulo("a: ") for _ in range(6)])),
+     ["2", "1", "28", "4", "2", "30", "3", "1", "10", "1", "2", "60", "6", "9", "N30E"],
+     ["152 300 190 30 180 60"])
 
 # ---------- resultado ----------
 
