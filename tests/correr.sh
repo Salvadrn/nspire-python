@@ -32,9 +32,9 @@ printf '0\n0\n' | python3 tests/pruebas.py | tail -n 12
 if [ -x "$MP" ]; then
     # la bateria carga general + sat + todos los casos a la vez: necesita
     # mas heap que un archivo solo. Los 4 archivos sueltos (abajo) van a
-    # 1M; general solo necesita ~800K y la Nspire tiene ~2 MB.
-    echo "--- bateria en MicroPython 1.11, heap 1200K (la Nspire tiene ~2 MB) ---"
-    printf '0\n0\n' | "$MP" -X heapsize=1200K tests/pruebas.py | tail -n 12
+    # 1M; general solo necesita ~900K y la Nspire tiene ~2 MB.
+    echo "--- bateria en MicroPython 1.11, heap 1400K (la Nspire tiene ~2 MB) ---"
+    printf '0\n0\n' | "$MP" -X heapsize=1400K tests/pruebas.py | tail -n 12
 else
     echo "(sin MicroPython 1.11 en .tools/: solo se probo en CPython)"
 fi
