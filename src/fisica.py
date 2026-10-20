@@ -1058,28 +1058,156 @@ def horizontal():
         return
     tip("N NO es mg cuando F tiene angulo")
     m = num("m mass (kg): "); F = num("F force (N): ")
-    a = num("angle of F (degrees, 0 si horizontal): ")
+    a = num("angle of F with the horizontal (degrees, 0 si horizontal): ")
     mu = num("mu k kinetic friction coefficient: ")
-    print("1) F jala hacia arriba   2) F empuja hacia abajo")
-    d = input("> ")
-    if d == "2":
-        N = m * G + F * sin(radians(a))
-    else:
-        N = m * G - F * sin(radians(a))
+    print("1) F jala (angulo ARRIBA de la horizontal)")
+    print("2) F empuja (angulo ABAJO de la horizontal)")
+    d = input("> ").strip()
+    empuja = d == "2" or d == "e"
+    W = m * G
+    Fx = F * cos(radians(a))
+    Fy = F * sin(radians(a))
+    N = W + Fy if empuja else W - Fy
     f = mu * N
-    ac = (F * cos(radians(a)) - f) / m
+    ac = (Fx - f) / m
+    print("FREE-BODY DIAGRAM (forces on it):")
+    print("            N (up)")
+    print("            ^")
+    print("  f <---- [ m ] ----> Fx")
+    print("            |")
+    print("            v  W (down)" + ("  + Fy (down)" if empuja else ""))
+    if not empuja and a != 0:
+        print("            Fy (up) pulls it up")
+    print("  W = mg =", r2(W), "N, down (weight)")
+    print("  N =", r2(N), "N, up (normal force)")
+    print("  F =", r2(F), "N at", r2(a), "degrees", "below" if empuja else "above", "the horizontal")
+    print("    Fx =", r2(Fx), "N forward, Fy =", r2(Fy), "N", "down" if empuja else "up")
+    di("  f = mu*N =", r2(f), "N, backward (friction)")
     print("PROCEDIMIENTO:")
-    if d == "2" or d == "e":
-        di("  N=mg+Fsen(" + r2(a) + ") (empuja: aprieta)")
+    di("  Fx (horizontal component of F) = F*cos(" + r6(a) + ") = " + r6(F) + "cos(" + r6(a) + ") = " + r2(Fx) + " N")
+    di("  Fy (vertical component of F) = F*sin(" + r6(a) + ") = " + r6(F) + "sin(" + r6(a) + ") = " + r2(Fy) + " N")
+    di("  W (weight) = mg = " + r6(m) + "(9.81) = " + r2(W) + " N")
+    if empuja:
+        di("  Sum Fy = 0: N - W - Fy = 0 -> N (normal force) = W + Fy = " + r6(W) + "+" + r6(Fy) + " = " + r2(N) + " N")
     else:
-        di("  N=mg-Fsen(" + r2(a) + ") (jala: alivia)")
-    di("  f=mu*N = (" + r2(mu) + ")(" + r2(N) + ")")
-    di("  a=(Fcos(" + r2(a) + ")-f)/m")
-    di("N =", r2(N, 3), "N (normal force)")
-    di("f =", r2(f, 3), "N (friction force)")
-    di("a =", r2(ac, 3), "m/s2 (acceleration)")
-    if ac < 0:
-        print("Ojo: revisa si siquiera arranca (estatica)")
+        di("  Sum Fy = 0: N + Fy - W = 0 -> N (normal force) = W - Fy = " + r6(W) + "-" + r6(Fy) + " = " + r2(N) + " N")
+    di("  f (friction force) = mu*N = " + r6(mu) + "(" + r6(N) + ") = " + r2(f) + " N")
+    di("  Sum Fx = ma: Fx - f = ma -> a (acceleration) = (Fx-f)/m = (" + r6(Fx) + "-" + r6(f) + ")/" + r6(m) + " = " + r2(ac) + " m/s2")
+    sep()
+    print("Normal force:")
+    di("N =", r2(N, 3), "N")
+    print("Friction force:")
+    di("f =", r2(f, 3), "N")
+    print("Acceleration:")
+    di("a =", r2(ac, 3), "m/s2")
+    if N <= 0:
+        print("Ojo: N <= 0: F lo levanta del piso")
+    elif ac < 0:
+        print("Ojo: Fx < f: revisa si siquiera arranca (estatica)")
+
+# ---------- 15. EQUILIBRIO (Newton: suma de fuerzas = 0) ----------
+def equilibrio():
+    print("1) objeto colgado de 2 cuerdas")
+    print("2) cuerda + fuerza horizontal")
+    print("3) general: 2 fuerzas desconocidas")
+    s = input("> ").strip()
+    if s == "1":
+        eq_dos_cuerdas()
+    elif s == "2":
+        eq_cuerda_horizontal()
+    elif s == "3":
+        eq_general()
+    else:
+        print("opcion no valida")
+
+def eq_dos_cuerdas():
+    tip("cuerda A a la izquierda, B a la derecha")
+    W = num("W weight of the object (N): ")
+    print("angulos medidos desde:")
+    print("1) el techo (horizontal)  2) la vertical")
+    r = input("> ").strip()
+    a = num("angle of rope A (left) (degrees): ")
+    b = num("angle of rope B (right) (degrees): ")
+    if r == "2":
+        a, b = 90 - a, 90 - b
+        print("  con el techo: A =", r2(a, 2), "y B =", r2(b, 2), "grados")
+    den = sin(radians(a + b))
+    if abs(den) < 1e-12:
+        print("cuerdas horizontales: no pueden sostenerlo")
+        return
+    TA = W * cos(radians(b)) / den
+    TB = W * cos(radians(a)) / den
+    print("PROCEDIMIENTO:")
+    di("  Sum Fx = 0: TB*cos(" + r6(b) + ") - TA*cos(" + r6(a) + ") = 0")
+    di("  Sum Fy = 0: TA*sin(" + r6(a) + ") + TB*sin(" + r6(b) + ") - W = 0")
+    di("  TA (tension in rope A) = W*cos(" + r6(b) + ")/sin(" + r6(a) + "+" + r6(b) + ") = " + r6(W) + "cos(" + r6(b) + ")/sin(" + r6(a + b) + ") = " + r2(TA) + " N")
+    di("  TB (tension in rope B) = W*cos(" + r6(a) + ")/sin(" + r6(a + b) + ") = " + r6(W) + "cos(" + r6(a) + ")/sin(" + r6(a + b) + ") = " + r2(TB) + " N")
+    sep()
+    print("Tension in rope A:")
+    di("TA =", r2(TA, 3), "N")
+    print("Tension in rope B:")
+    di("TB =", r2(TB, 3), "N")
+
+def eq_cuerda_horizontal():
+    tip("la cuerda lo sostiene; F lo jala de lado (horizontal)")
+    W = num("W weight of the object (N): ")
+    print("angulo de la cuerda medido desde:")
+    print("1) la vertical (el poste)  2) la horizontal")
+    r = input("> ").strip()
+    th = num("angle of the rope (degrees): ")
+    if r == "2":
+        th = 90 - th
+        print("  desde la vertical:", r2(th, 2), "grados")
+    if cos(radians(th)) <= 1e-12:
+        print("cuerda horizontal: no puede sostenerlo")
+        return
+    T = W / cos(radians(th))
+    F = T * sin(radians(th))
+    print("PROCEDIMIENTO:")
+    di("  Sum Fy = 0: T*cos(" + r6(th) + ") - W = 0")
+    di("  T (tension in the rope) = W/cos(" + r6(th) + ") = " + r6(W) + "/cos(" + r6(th) + ") = " + r2(T) + " N")
+    di("  Sum Fx = 0: F - T*sin(" + r6(th) + ") = 0")
+    di("  F (horizontal force) = T*sin(" + r6(th) + ") = " + r6(T) + "sin(" + r6(th) + ") = " + r2(F) + " N")
+    sep()
+    print("Magnitude of the tension T in the rope:")
+    di("T =", r2(T, 3), "N")
+    print("Magnitude of F:")
+    di("F =", r2(F, 3), "N")
+
+def eq_general():
+    tip("suma de fuerzas = 0; angulos ESTANDAR (desde +x)")
+    k = int(num("cuantas fuerzas CONOCIDAS (peso incluido)? "))
+    Sx = 0.0
+    Sy = 0.0
+    for q in range(k):
+        print("Fuerza conocida", q + 1, "(peso = abajo, 270 estandar)")
+        m = num("  magnitude (N): ")
+        g = pedir_angulo("  angle (degrees): ")
+        Sx = Sx + m * cos(radians(g))
+        Sy = Sy + m * sin(radians(g))
+    print("Direccion de la fuerza desconocida A:")
+    da = pedir_angulo("  angle (degrees): ")
+    print("Direccion de la fuerza desconocida B:")
+    db = pedir_angulo("  angle (degrees): ")
+    det = sin(radians(db - da))
+    if abs(det) < 1e-9:
+        print("A y B son paralelas: no se puede despejar")
+        return
+    A = (-Sx * sin(radians(db)) + Sy * cos(radians(db))) / det
+    B = (-Sy * cos(radians(da)) + Sx * sin(radians(da))) / det
+    print("PROCEDIMIENTO:")
+    di("  Sum Fx (known) = " + r2(Sx) + " N, Sum Fy (known) = " + r2(Sy) + " N")
+    di("  Sum Fx = 0: A*cos(" + r6(da) + ") + B*cos(" + r6(db) + ") + " + rp(Sx) + " = 0")
+    di("  Sum Fy = 0: A*sin(" + r6(da) + ") + B*sin(" + r6(db) + ") + " + rp(Sy) + " = 0")
+    di("  (dos ecuaciones, dos incognitas: A y B)")
+    sep()
+    print("Magnitude of force A:")
+    di("A =", r2(A, 3), "N")
+    print("Magnitude of force B:")
+    di("B =", r2(B, 3), "N")
+    if A < 0 or B < 0:
+        print("Ojo: negativo = esa fuerza apunta al")
+        print("reves (una cuerda no puede empujar)")
 
 # ---------- 8. PLANO INCLINADO ----------
 def inclinado():
@@ -1528,10 +1656,11 @@ ops = [("Unidades", conversiones),
        ("Inclinado", inclinado),
        ("Poleas", poleas),
        ("Energia", energia),
-       ("Trabajo/Potencia", trabajo)]
+       ("Trabajo/Potencia", trabajo),
+       ("Equilibrio", equilibrio)]
 
 def fisica():
-    print(">>> FISICA v8.2")
+    print(">>> FISICA v8.3")
     while True:
         sep()
         print("FISICA - menu principal")
