@@ -639,6 +639,23 @@ caso("proyectil desde altura", E.proyectil, ["1", "20", "30", "10", "0"],
      ["t = 2.774 s", "R = 48.043 m", "vfy = -17.21 m/s", "vf = 24.417 m/s",
       "above the ground"])
 
+# ---------- FISICA v8.3: HW_2.4_Newton.pdf ----------
+
+caso("newton carrito empujado", E.horizontal, ["1", "25", "80", "20", "0.15", "2"],
+     ["FREE-BODY DIAGRAM", "N = 272.612 N", "f = 40.892 N", "a = 1.371 m/s2"])
+caso("newton foco 2 cuerdas", E.equilibrio, ["1", "5", "1", "28", "37"],
+     ["Tension in rope A:", "TA = 4.406 N", "TB = 4.871 N"])
+caso("newton foco desde la vertical", E.equilibrio, ["1", "5", "2", "62", "53"],
+     ["TA = 4.406 N", "TB = 4.871 N"])
+caso("newton esfera", E.equilibrio, ["2", "50", "1", "60"],
+     ["T = 100.0 N", "F = 86.603 N"])
+caso("newton general esfera", E.equilibrio,
+     ["3", "1", "50", "8", "270", "8", "150", "8", "0"],
+     ["A = 100.0 N", "B = 86.603 N"])
+caso("newton general foco", E.equilibrio,
+     ["3", "1", "5", "8", "270", "8", "152", "8", "37"],
+     ["A = 4.406 N", "B = 4.871 N"])
+
 # ---------- resultado ----------
 
 if fallas:
