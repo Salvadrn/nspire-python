@@ -662,6 +662,21 @@ caso("direcciones en palabras", lambda: _buf.append(" ".join(
      ["2", "1", "28", "4", "2", "30", "3", "1", "10", "1", "2", "60", "6", "9", "N30E"],
      ["152 300 190 30 180 60"])
 
+# ---------- FISICA v8.7: numeros como se teclean en la Nspire y q = menu ----------
+
+caso("nval grados, menos, coma y cuentas", lambda: _buf.append(" ".join(
+         ["%g" % E.nval(x) for x in ("20\u00b0", "\u221220", "20,5", "180-20",
+                                     "3/4", "2^3", "20 grados")])),
+     [], ["20 -20 20.5 160 0.75 8 20"])
+caso("nval rechaza basura", lambda: _buf.append(" ".join(
+         [_prueba_nval(x) for x in ("abc", "import os", "2e", "__import__")])),
+     [], ["mal mal mal mal"])
+caso("q regresa al menu", E.fisica, ["10", "1", "25", "80", "abc", "q", "", "0"],
+     ["numero no valido", "q = regresar al menu", "(regresaste al menu)",
+      "Saliste de FISICA"])
+caso("angulo con simbolo de grados", E.horizontal,
+     ["1", "25", "80", "20\u00b0", "0.15", "2"], ["a = 1.371 m/s2"])
+
 # ---------- resultado ----------
 
 if fallas:
