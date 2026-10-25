@@ -16,10 +16,31 @@ import sys
 
 G = 9.81
 
+class AlMenu(Exception):
+    # 'q' en cualquier dato: regresa al menu principal
+    pass
+
+def cuenta(s):
+    # cuentas sencillas: 180-20, 2*pi, 3/4, 2^3 (solo numeros y + - * / ( ))
+    s = s.replace("^", "**")
+    t = s.replace("pi", "")
+    for ch in t:
+        if ch not in "0123456789.+-*/()eE":
+            raise ValueError("no es numero")
+    try:
+        return float(eval(s, {"pi": pi}))
+    except Exception:
+        raise ValueError("no es numero")
+
 def nval(s):
-    # acepta 3e-5, 3x10^-5, 4*10^8, 10^-3
+    # acepta 3e-5, 3x10^-5, 4*10^8, 10^-3, 20 grados (con el simbolo de
+    # grados), -20 con la tecla (-), 20,5 con coma y cuentas (180-20)
     # (la tecla ^ de la Nspire escribe ** dentro de Python)
-    s = s.replace(" ", "")
+    for a, b in (("\u2212", "-"), ("\u2013", "-"), ("\u2014", "-"),
+                 ("\u207b", "-"), ("\u00b0", ""), ("\u00ba", ""),
+                 ("grados", ""), ("deg", ""), (",", "."),
+                 ("\u03c0", "pi"), (" ", "")):
+        s = s.replace(a, b)
     for tk in ("x10**", "X10**", "*10**", "x10^", "X10^", "*10^"):
         s = s.replace(tk, "e")
     for pre in ("10**", "10^"):
@@ -31,27 +52,40 @@ def nval(s):
     m = s.lstrip("+-").split("e")[0].split("E")[0]
     if m.replace(".", "") == "":
         raise ValueError("falta el numero")
-    v = float(s)
+    try:
+        v = float(s)
+    except ValueError:
+        v = cuenta(s)
     if v != v or abs(v) == float("inf"):
         raise ValueError("nan o inf")
     return v
 
+def es_salir(s):
+    return s.strip().lower() in ("q", "salir", "menu")
+
 def num(msg):
     while True:
+        s = input(msg)
+        if es_salir(s):
+            raise AlMenu()
         try:
-            return nval(input(msg))
+            return nval(s)
         except ValueError:
-            print("numero no valido (vale: 3e-5 o 3x10^-5)")
+            print("numero no valido (vale: 20, -3.5, 3e-5)")
+            print("q = regresar al menu")
 
 def dato(msg):
     while True:
         s = input(msg)
         if s == "":
             return None
+        if es_salir(s):
+            raise AlMenu()
         try:
             return nval(s)
         except ValueError:
-            print("numero no valido (vale: 3e-5 o 3x10^-5)")
+            print("numero no valido (vale: 20, -3.5, 3e-5)")
+            print("q = regresar al menu")
 
 def sep():
     print("-" * 26)
@@ -211,6 +245,8 @@ def pedir_angulo(msg):
         return r
     while d == "9":
         s = input("  rumbo (N30E, NE, S...): ")
+        if es_salir(s):
+            raise AlMenu()
         r = ang_rumbo(s)
         if r is None:
             print("  rumbo no valido")
@@ -222,12 +258,7 @@ def pedir_angulo(msg):
         print("  el angulo se mide desde:")
         print("  1) la horizontal  2) la vertical")
         ref = input("  > ").strip()
-    while True:
-        try:
-            a = nval(input(msg))
-            break
-        except ValueError:
-            print("  numero no valido")
+    a = num(msg)
     if d in ("1", "2", "3", "4"):
         q = int(d) - 1
         if ref == "2":
@@ -974,6 +1005,8 @@ def fraccion(msg):
     # 3/4, 1/2 o 0.75
     while True:
         s = input(msg).replace(" ", "")
+        if es_salir(s):
+            raise AlMenu()
         try:
             if "/" in s:
                 a, b = s.split("/", 1)
@@ -1777,7 +1810,7 @@ ops = [("Unidades", conversiones),
        ("Equilibrio", equilibrio)]
 
 def fisica():
-    print(">>> FISICA v8.6")
+    print(">>> FISICA v8.7")
     while True:
         sep()
         print("FISICA - menu principal")
@@ -1805,6 +1838,8 @@ def fisica():
         sep()
         try:
             ops[k][1]()
+        except AlMenu:
+            print("(regresaste al menu)")
         except Exception as err:
             print("Error con esos datos:", err)
             print("(revisa ceros, negativos o datos que faltan)")
