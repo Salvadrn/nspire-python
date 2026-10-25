@@ -513,8 +513,8 @@ caso("fisica elevador a negativa", E.horizontal, ["2", "70", "-2", "2"],
 caso("fisica tiempo sin colas", E.conversiones, ["5", "0.1", "1"], ["= 360 s"])
 caso("fisica volumen sin colas", E.conversiones, ["6", "0.3", "1"],
      ["= 300 L = 300000 mL"])
-caso("fisica inclinado mu", E.inclinado, ["10", "0.3", "0"],
-     ["tan(ang) <= 0.3 -> NO desliza"])
+caso("fisica inclinado mu", E.inclinado, ["10", "1", "5", "1", "1", "0.3"],
+     ["NO desliza", "tan(ang) = 0.1763 <= mu = 0.3"])
 caso("fisica divisor negativo", E.mrua, ["0", "", "", "10", "0", "-2", "", ""],
      ["t (time)\n    = (vf-v0)/a\n    = (0.0-10.0)/(-2.0)\n    = 5.0 s"])
 
@@ -641,14 +641,14 @@ caso("proyectil desde altura", E.proyectil, ["1", "20", "30", "10", "0"],
 
 # ---------- FISICA v8.3: HW_2.4_Newton.pdf ----------
 
-caso("newton carrito empujado", E.horizontal, ["1", "25", "80", "20", "0.15", "2"],
+caso("newton carrito empujado", E.horizontal, ["1", "1", "1", "25", "2", "20", "80", "0.15"],
      ["FREE-BODY DIAGRAM", "N = 272.612 N", "f = 40.892 N", "a = 1.371 m/s2"])
-caso("newton foco 2 cuerdas", E.equilibrio, ["1", "5", "1", "28", "37"],
+caso("newton foco 2 cuerdas", E.equilibrio, ["1", "1", "5", "28", "1", "37", "1"],
      ["Tension in rope A:", "TA = 4.406 N", "TB = 4.871 N",
       "(1) -0.88295 TA + 0.79864 TB = 0", "TA = 0.90451 TB", "1.0265 TB = 5"])
-caso("newton foco desde la vertical", E.equilibrio, ["1", "5", "2", "62", "53"],
+caso("newton foco desde la vertical", E.equilibrio, ["1", "1", "5", "62", "2", "53", "2"],
      ["TA = 4.406 N", "TB = 4.871 N"])
-caso("newton esfera", E.equilibrio, ["2", "50", "1", "60"],
+caso("newton esfera", E.equilibrio, ["2", "1", "1", "50", "1", "60"],
      ["T = 100.0 N", "F = 86.603 N"])
 caso("newton general esfera", E.equilibrio,
      ["3", "1", "50", "8", "2", "2", "60", "5"],
@@ -671,11 +671,40 @@ caso("nval grados, menos, coma y cuentas", lambda: _buf.append(" ".join(
 caso("nval rechaza basura", lambda: _buf.append(" ".join(
          [_prueba_nval(x) for x in ("abc", "import os", "2e", "__import__")])),
      [], ["mal mal mal mal"])
-caso("q regresa al menu", E.fisica, ["10", "1", "25", "80", "abc", "q", "", "0"],
+caso("q regresa al menu", E.fisica, ["10", "1", "1", "1", "25", "1", "abc", "q", "", "0"],
      ["numero no valido", "q = regresar al menu", "(regresaste al menu)",
       "Saliste de FISICA"])
 caso("angulo con simbolo de grados", E.horizontal,
-     ["1", "25", "80", "20\u00b0", "0.15", "2"], ["a = 1.371 m/s2"])
+     ["1", "1", "1", "25", "2", "20\u00b0", "80", "0.15"], ["a = 1.371 m/s2"])
+
+# ---------- FISICA v8.8: Newton.pdf (piso, tension, plano inclinado) ----------
+
+_NW = [
+    ("piso ej1 a", E.piso_caja, ["1", "1", "20", "1", "30", "100", "0.2"], ["N = 146.2 N", "a = 2.868 m/s2"]),
+    ("piso ej2 mu", E.piso_caja, ["2", "1", "50", "1", "30", "250", "0"], ["N = 365.5 N", "mu = 0.5924"]),
+    ("piso practica a", E.piso_caja, ["1", "1", "10", "1", "40", "60", "0.25"], ["a = 3.108 m/s2"]),
+    ("piso practica F", E.piso_caja, ["3", "1", "500", "1", "30", "0.4", "0"], ["F = 1840.481 N"]),
+    ("piso maleta angulo", E.piso_caja, ["4", "1", "20", "1", "35", "20", "0"], ["ang = 55.15 degrees", "N = 167.477 N"]),
+    ("tension ej1 masa", E.eq_cuerda_horizontal, ["1", "2", "10", "2", "40"], ["T = 152.617 N", "F = 116.911 N"]),
+    ("tension ej2 foco", E.eq_dos_cuerdas, ["1", "10", "30", "1", "45", "1"], ["TA = 7.321 N", "TB = 8.966 N"]),
+    ("tension letrero", E.eq_cuerda_horizontal, ["2", "82", "2", "50"], ["T = 127.569 N", "m = 9.962 kg"]),
+    ("tension 490 N", E.eq_dos_cuerdas, ["1", "490", "40", "1", "50", "1"], ["TA = 314.966 N", "TB = 375.362 N"]),
+    ("tension nina", E.eq_dos_cuerdas, ["1", "200", "30", "1", "60", "1"], ["TA = 100.0 N", "TB = 173.205 N"]),
+    ("tension semaforo", E.eq_dos_cuerdas, ["2", "35", "60", "1", "60", "2"], ["TA = 297.35 N", "TB = 171.675 N"]),
+    ("rampa ej1 carro", E.inclinado, ["20", "1", "1500", "1", "1", "0.10", "", "80", ""],
+     ["N = 13827.577 N", "a = 2.433 m/s2", "vf = 19.732 m/s", "t = 8.109 s", "d = 198.441 m"]),
+    ("rampa tarea carro", E.inclinado, ["25", "1", "1200", "1", "1", "0.15", "", "50", ""],
+     ["a = 2.812 m/s2", "vf = 16.77 m/s", "t = 5.963 s", "d = 95.557 m"]),
+    ("rampa f dada", E.inclinado, ["30", "1", "3", "1", "2", "1", "", "", ""], ["a = 4.572 m/s2"]),
+    ("rampa 70 grados", E.inclinado, ["70", "1", "15", "1", "1", "0.12", "25", "", "3"],
+     ["N = 50.328 N", "a = 8.816 m/s2", "v = 51.447 m/s"]),
+    ("rampa reposo", E.inclinado, ["30", "2", "100", "3"], ["Fwy = 86.603 N", "N = 86.603 N", "Fwx = 50.0 N", "fs = 50.0 N"]),
+    ("rampa empujar F", E.inclinado, ["30", "1", "2", "2", "1", "0", "1", "2", "2", "1", "0.18", "", "", ""], ["F = 16.868 N"]),
+    ("rampa tarea 125 N", E.inclinado, ["40", "1", "10", "2", "1", "30", "1", "1", "1", "125", "1", "0.20", "", "", ""],
+     ["N = 12.649 N", "a = 4.267 m/s2"]),
+]
+for _n, _f, _e, _x in _NW:
+    caso("newton " + _n, _f, _e, _x)
 
 # ---------- resultado ----------
 
