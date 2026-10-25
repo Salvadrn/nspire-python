@@ -1125,24 +1125,26 @@ def horizontal():
         elif N <= 0:
             print("N<=0: caida libre, sensacion de ingravidez")
         return
-    tip("N NO es mg cuando F tiene angulo")
-    m = num("m mass (kg): "); F = num("F force (N): ")
-    a = num("angle of F with the horizontal (degrees, 0 si horizontal): ")
-    mu = num("mu k kinetic friction coefficient: ")
-    print("1) F jala (angulo ARRIBA de la horizontal)")
-    print("2) F empuja (angulo ABAJO de la horizontal)")
-    d = input("> ").strip()
-    empuja = d == "2" or d == "e"
-    W = m * G
-    Fx = F * cos(radians(a))
-    Fy = F * sin(radians(a))
-    N = W + Fy if empuja else W - Fy
-    f = mu * N
-    ac = (Fx - f) / m
+    piso_caja()
+
+def pedir_masa():
+    # la masa, o el peso en N (m = W/g)
+    print("te dan: 1) la masa (kg)  2) el peso (N)")
+    r = input("> ").strip()
+    if r == "2":
+        W = num("W weight (N): ")
+        m = W / G
+        print("  m = W/g = " + r6(W) + "/9.81 = " + r2(m) + " kg")
+        return m
+    return num("m mass (kg): ")
+
+def dcl_piso(empuja, conF):
     print("FREE-BODY DIAGRAM:")
     print("            N")
     print("            ^")
-    if empuja:
+    if not conF:
+        print("  f <----- [m]")
+    elif empuja:
         print("       F \\  |")
         print("          \\ |")
         print("  f <----- [m]")
@@ -1153,37 +1155,119 @@ def horizontal():
     print("            |")
     print("            v")
     di("            W")
-    print("Forces on the object:")
-    print("W (weight) =", r2(W), "N, down")
-    print("N (normal force) =", r2(N), "N, up")
-    print("F (applied force) =", r2(F), "N,")
-    print("  " + r2(a) + " degrees", "below" if empuja else "above", "the horizontal")
-    print("f (friction) =", r2(f), "N,")
-    di("  backward (against the motion)")
+
+def piso_caja():
+    tip("N NO es mg cuando F tiene angulo")
+    print("Que te piden?")
+    print("1) la aceleracion a")
+    print("2) el coeficiente de friccion mu")
+    print("3) la fuerza F que hace falta")
+    print("4) el angulo de F (te dan F y f)")
+    q = input("> ").strip()
+    if q not in ("1", "2", "3", "4"):
+        print("opcion no valida")
+        return
+    m = pedir_masa()
+    W = m * G
+    print("1) F jala (angulo ARRIBA de la horizontal)")
+    print("2) F empuja (angulo ABAJO de la horizontal)")
+    d = input("> ").strip()
+    empuja = d == "2" or d == "e"
+    sg = 1.0 if empuja else -1.0       # N = W + sg*Fy
+    signo = "+" if empuja else "-"
+    if q != "4":
+        a_ = num("angle of F with the horizontal (degrees, 0 si horizontal): ")
+    if q == "1":
+        F = num("F applied force (N): ")
+        mu = num("mu k kinetic friction coefficient: ")
+    elif q == "2":
+        F = num("F applied force (N): ")
+        ac = num("a acceleration (m/s2, 0 si velocidad constante): ")
+    elif q == "3":
+        mu = num("mu k kinetic friction coefficient: ")
+        ac = num("a acceleration (m/s2, 0 si velocidad constante): ")
+    else:
+        F = num("F applied force (N): ")
+        f = num("f friction force (N): ")
+        ac = num("a acceleration (m/s2, 0 si velocidad constante): ")
+    dcl_piso(empuja, True)
     print("PROCEDIMIENTO:")
-    di("  Fx (horizontal component of F) = F*cos(" + r6(a) + ") = " + r6(F) + "cos(" + r6(a) + ") = " + r2(Fx) + " N")
-    di("  Fy (vertical component of F) = F*sin(" + r6(a) + ") = " + r6(F) + "sin(" + r6(a) + ") = " + r2(Fy) + " N")
     di("  W (weight) = mg = " + r6(m) + "(9.81) = " + r2(W) + " N")
+    if q == "3":
+        den = cos(radians(a_)) - sg * mu * sin(radians(a_))
+        if den <= 0:
+            print("con ese angulo y mu ninguna F lo mueve")
+            return
+        F = (m * ac + mu * W) / den
+        print("  Sum Fy = 0:  N = W " + signo + " F*sin(" + r6(a_) + ")")
+        print("  Sum Fx = ma:  F*cos(" + r6(a_) + ") - mu*N = ma")
+        print("  F*cos(" + r6(a_) + ") - mu(W " + signo + " F*sin(" + r6(a_) + ")) = ma")
+        di("  F (applied force) = (ma + mu*W)/(cos(" + r6(a_) + ") " + ("-" if empuja else "+") + " mu*sin(" + r6(a_) + ")) = (" + r6(m * ac) + "+" + r6(mu * W) + ")/" + r6(den) + " = " + r2(F) + " N")
+    if q == "4":
+        c = (m * ac + f) / F
+        if c > 1:
+            print("Imposible: F no alcanza para mover")
+            print("la caja con esa friccion")
+            return
+        a_ = degrees(acos(c))
+        print("  Sum Fx = ma:  F*cos(ang) - f = ma")
+        di("  cos(ang) = (ma + f)/F = (" + r6(m * ac) + "+" + r6(f) + ")/" + r6(F) + " = " + r6(c))
+        di("  ang (angle of F with the horizontal) = acos(" + r6(c) + ") = " + r2(a_, 2) + " degrees")
+    Fx = F * cos(radians(a_))
+    Fy = F * sin(radians(a_))
+    N = W + sg * Fy
+    di("  Fx (horizontal component of F) = F*cos(" + r6(a_) + ") = " + r6(F) + "cos(" + r6(a_) + ") = " + r2(Fx) + " N")
+    di("  Fy (vertical component of F) = F*sin(" + r6(a_) + ") = " + r6(F) + "sin(" + r6(a_) + ") = " + r2(Fy) + " N")
     if empuja:
         print("  Sum Fy = 0:  N - W - Fy = 0")
         di("  N (normal force) = W + Fy = " + r6(W) + "+" + r6(Fy) + " = " + r2(N) + " N")
     else:
         print("  Sum Fy = 0:  N + Fy - W = 0")
         di("  N (normal force) = W - Fy = " + r6(W) + "-" + r6(Fy) + " = " + r2(N) + " N")
-    di("  f (friction force) = mu*N = " + r6(mu) + "(" + r6(N) + ") = " + r2(f) + " N")
-    print("  Sum Fx = ma:  Fx - f = ma")
-    di("  a (acceleration) = (Fx-f)/m = (" + r6(Fx) + "-" + r6(f) + ")/" + r6(m) + " = " + r2(ac) + " m/s2")
-    sep()
-    print("Normal force:")
-    di("N =", r2(N, 3), "N")
-    print("Friction force:")
-    di("f =", r2(f, 3), "N")
-    print("Acceleration:")
-    di("a =", r2(ac, 3), "m/s2")
     if N <= 0:
         print("Ojo: N <= 0: F lo levanta del piso")
-    elif ac < 0:
-        print("Ojo: Fx < f: revisa si siquiera arranca (estatica)")
+        return
+    if q in ("1", "3"):
+        f = mu * N
+        di("  f (friction force) = mu*N = " + r6(mu) + "(" + r6(N) + ") = " + r2(f) + " N")
+    if q == "1":
+        ac = (Fx - f) / m
+        print("  Sum Fx = ma:  Fx - f = ma")
+        di("  a (acceleration) = (Fx-f)/m = (" + r6(Fx) + "-" + r6(f) + ")/" + r6(m) + " = " + r2(ac) + " m/s2")
+    if q == "2":
+        f = Fx - m * ac
+        print("  Sum Fx = ma:  Fx - f = ma")
+        di("  f (friction force) = Fx - ma = " + r6(Fx) + "-" + r6(m * ac) + " = " + r2(f) + " N")
+        mu = f / N
+        di("  mu (kinetic friction coefficient) = f/N = " + r6(f) + "/" + r6(N) + " = " + r2(mu, 4))
+    if q == "4":
+        mu = f / N
+        di("  mu (kinetic friction coefficient) = f/N = " + r6(f) + "/" + r6(N) + " = " + r2(mu, 4))
+    sep()
+    print("Forces on the object:")
+    print("W (weight) =", r2(W), "N, down")
+    print("N (normal force) =", r2(N), "N, up")
+    print("F (applied force) =", r2(F), "N,")
+    print("  " + r2(a_, 2) + " degrees", "below" if empuja else "above", "the horizontal")
+    di("f (friction) =", r2(f), "N, backward")
+    if q == "4":
+        print("Angle of F with the horizontal:")
+        di("ang =", r2(a_, 2), "degrees")
+    print("Normal force:")
+    di("N =", r2(N, 3), "N")
+    if q == "3":
+        print("Force F needed:")
+        di("F =", r2(F, 3), "N")
+    if q in ("2", "4"):
+        print("Kinetic friction coefficient:")
+        di("mu =", r2(mu, 4))
+    if q == "1":
+        print("Friction force:")
+        di("f =", r2(f, 3), "N")
+        print("Acceleration:")
+        di("a =", r2(ac, 3), "m/s2")
+        if ac < 0:
+            print("Ojo: Fx < f: revisa si siquiera arranca (estatica)")
 
 # ---------- 15. EQUILIBRIO (Newton: suma de fuerzas = 0) ----------
 def nf(x):
@@ -1268,17 +1352,33 @@ def equilibrio():
     else:
         print("opcion no valida")
 
+def ang_techo(nombre):
+    # angulo de una cuerda con el techo (horizontal)
+    a = num("angle of " + nombre + " (degrees): ")
+    print("  medido desde: 1) el techo/horizontal")
+    print("                2) la vertical/el poste")
+    r = input("  > ").strip()
+    if r == "2":
+        a = 90 - a
+        print("  con la horizontal:", r2(a, 2), "grados")
+    return a
+
+def pedir_peso():
+    # el peso en N, o la masa (W = mg)
+    print("te dan: 1) el peso (N)  2) la masa (kg)")
+    r = input("> ").strip()
+    if r == "2":
+        m = num("m mass (kg): ")
+        W = m * G
+        print("  W = mg = " + r6(m) + "(9.81) = " + r2(W) + " N")
+        return W
+    return num("W weight of the object (N): ")
+
 def eq_dos_cuerdas():
     tip("cuerda A a la izquierda, B a la derecha")
-    W = num("W weight of the object (N): ")
-    print("angulos medidos desde:")
-    print("1) el techo (horizontal)  2) la vertical")
-    r = input("> ").strip()
-    a = num("angle of rope A (left) (degrees): ")
-    b = num("angle of rope B (right) (degrees): ")
-    if r == "2":
-        a, b = 90 - a, 90 - b
-        print("  con el techo: A =", r2(a, 2), "y B =", r2(b, 2), "grados")
+    W = pedir_peso()
+    a = ang_techo("rope A (left)")
+    b = ang_techo("rope B (right)")
     den = sin(radians(a + b))
     if abs(den) < 1e-12:
         print("cuerdas horizontales: no pueden sostenerlo")
@@ -1296,10 +1396,19 @@ def eq_dos_cuerdas():
     di("TA =", r2(TA, 3), "N")
     print("Tension in rope B:")
     di("TB =", r2(TB, 3), "N")
+    if abs(TA - TB) > 1e-9 * max(TA, TB):
+        print("La mayor es", "A" if TA > TB else "B", "(la mas parada")
+        print("carga mas peso)")
 
 def eq_cuerda_horizontal():
     tip("la cuerda lo sostiene; F lo jala de lado (horizontal)")
-    W = num("W weight of the object (N): ")
+    print("que dato te dan?")
+    print("1) el peso o la masa  2) la fuerza F")
+    k = input("> ").strip()
+    if k == "2":
+        F = num("F horizontal force (N): ")
+    else:
+        W = pedir_peso()
     print("angulo de la cuerda medido desde:")
     print("1) la vertical (el poste)  2) la horizontal")
     r = input("> ").strip()
@@ -1307,21 +1416,34 @@ def eq_cuerda_horizontal():
     if r == "2":
         th = 90 - th
         print("  desde la vertical:", r2(th, 2), "grados")
-    if cos(radians(th)) <= 1e-12:
-        print("cuerda horizontal: no puede sostenerlo")
+    if cos(radians(th)) <= 1e-12 or sin(radians(th)) <= 1e-12:
+        print("con ese angulo no se puede (cuerda")
+        print("horizontal o vertical)")
         return
-    T = W / cos(radians(th))
-    F = T * sin(radians(th))
     print("PROCEDIMIENTO:")
-    di("  Sum Fy = 0: T*cos(" + r6(th) + ") - W = 0")
-    di("  T (tension in the rope) = W/cos(" + r6(th) + ") = " + r6(W) + "/cos(" + r6(th) + ") = " + r2(T) + " N")
-    di("  Sum Fx = 0: F - T*sin(" + r6(th) + ") = 0")
-    di("  F (horizontal force) = T*sin(" + r6(th) + ") = " + r6(T) + "sin(" + r6(th) + ") = " + r2(F) + " N")
+    if k == "2":
+        T = F / sin(radians(th))
+        W = T * cos(radians(th))
+        di("  Sum Fx = 0: F - T*sin(" + r6(th) + ") = 0")
+        di("  T (tension in the rope) = F/sin(" + r6(th) + ") = " + r6(F) + "/sin(" + r6(th) + ") = " + r2(T) + " N")
+        di("  Sum Fy = 0: T*cos(" + r6(th) + ") - W = 0")
+        di("  W (weight) = T*cos(" + r6(th) + ") = " + r6(T) + "cos(" + r6(th) + ") = " + r2(W) + " N")
+        di("  m (mass) = W/g = " + r6(W) + "/9.81 = " + r2(W / G) + " kg")
+    else:
+        T = W / cos(radians(th))
+        F = T * sin(radians(th))
+        di("  Sum Fy = 0: T*cos(" + r6(th) + ") - W = 0")
+        di("  T (tension in the rope) = W/cos(" + r6(th) + ") = " + r6(W) + "/cos(" + r6(th) + ") = " + r2(T) + " N")
+        di("  Sum Fx = 0: F - T*sin(" + r6(th) + ") = 0")
+        di("  F (horizontal force) = T*sin(" + r6(th) + ") = " + r6(T) + "sin(" + r6(th) + ") = " + r2(F) + " N")
     sep()
     print("Magnitude of the tension T in the rope:")
     di("T =", r2(T, 3), "N")
     print("Magnitude of F:")
     di("F =", r2(F, 3), "N")
+    if k == "2":
+        print("Weight and mass:")
+        di("W =", r2(W, 3), "N,  m =", r2(W / G, 3), "kg")
 
 def eq_general():
     tip("suma de fuerzas = 0; A y B = las que NO conoces")
@@ -1362,31 +1484,212 @@ def eq_general():
         print("reves (una cuerda no puede empujar)")
 
 # ---------- 8. PLANO INCLINADO ----------
-def inclinado():
-    tip("sen = a lo largo de la rampa; checa limite ang->0")
-    ang = num("ramp angle (degrees): ")
-    mu = num("mu friction coefficient (0 si no hay): ")
-    m = num("m mass in kg (0 si no la dan): ")
-    t = tan(radians(ang))
+def dcl_rampa(conF, sube):
+    print("FREE-BODY DIAGRAM (x = along the ramp):")
+    print("        N (perpendicular a la rampa)")
+    print("        ^")
+    if conF:
+        print("  F --->|  (F jala " + ("hacia arriba" if sube else "hacia abajo") + ")")
+    print("  f: contra el movimiento")
+    print("       [m]")
+    print("        |  Fwx = mg sin(ang): rampa abajo")
+    di("        v  W = mg  (Fwy = mg cos(ang))")
+
+def pasos_peso(m, W, th, Fwx, Fwy):
     print("PROCEDIMIENTO:")
-    di("  N=mg*cos(" + r2(ang) + ")  f=mu*N")
-    di("  a=g(sen(" + r2(ang) + ")-mu*cos(" + r2(ang) + "))")
-    if m > 0:
-        N = m * G * cos(radians(ang))
-        di("N =", r2(N, 3), "N (normal force)")
-        di("f = mu*N =", r2(mu * N, 3), "N (friction force)")
-        di("mg sen =", r2(m * G * sin(radians(ang)), 3), "N (pulls it down the ramp)")
+    di("  W (weight) = mg = " + r6(m) + "(9.81) = " + r2(W) + " N")
+    di("  Fwx (weight along the ramp) = W*sin(" + r6(th) + ") = " + r6(W) + "sin(" + r6(th) + ") = " + r2(Fwx) + " N")
+    di("  Fwy (weight into the ramp) = W*cos(" + r6(th) + ") = " + r6(W) + "cos(" + r6(th) + ") = " + r2(Fwy) + " N")
+
+def inclinado():
+    tip("x a lo largo de la rampa; + = hacia donde se mueve")
+    th = num("ramp angle with the horizontal (degrees): ")
+    m = pedir_masa()
+    W = m * G
+    Fwx = W * sin(radians(th))
+    Fwy = W * cos(radians(th))
+    print("Que pasa?")
+    print("1) baja solo (sin fuerza aplicada)")
+    print("2) lo jalan/empujan con una F")
+    print("3) esta en reposo (quieto)")
+    caso = input("> ").strip()
+    if caso == "3":
+        pasos_peso(m, W, th, Fwx, Fwy)
+        print("  Sum Fy = 0:  N - Fwy = 0")
+        di("  N (normal force) = Fwy = " + r2(Fwy) + " N")
+        print("  Sum Fx = 0:  fs - Fwx = 0")
+        di("  fs (static friction force) = Fwx = " + r2(Fwx) + " N")
+        sep()
+        print("Fwy component:")
+        di("Fwy =", r2(Fwy, 3), "N")
+        print("Normal force:")
+        di("N =", r2(Fwy, 3), "N")
+        print("Fwx component:")
+        di("Fwx =", r2(Fwx, 3), "N")
+        print("Static friction force:")
+        di("fs =", r2(Fwx, 3), "N (holds it, up the ramp)")
+        print("mu s minimo para que no resbale:")
+        di("mu s = tan(ang) =", r2(tan(radians(th)), 4))
+        return
+    F = 0.0
+    phi = 0.0
+    sF = 1.0      # +1: F apunta rampa arriba
+    sN = 1.0      # +1: F se separa de la rampa (alivia N)
+    dirm = -1.0   # -1: baja, +1: sube
+    q = "1"
+    if caso == "2":
+        print("F apunta: 1) rampa ARRIBA  2) rampa ABAJO")
+        sF = -1.0 if input("> ").strip() == "2" else 1.0
+        phi = num("angle of F with the ramp (degrees, 0 si paralela): ")
+        if phi != 0:
+            print("F: 1) se separa de la rampa (jala)")
+            print("   2) aprieta contra la rampa (empuja)")
+            sN = -1.0 if input("> ").strip() == "2" else 1.0
+        print("el cuerpo: 1) sube  2) baja")
+        dirm = -1.0 if input("> ").strip() == "2" else 1.0
+        print("Que te piden?")
+        print("1) la aceleracion (te dan F)")
+        print("2) la F que hace falta (te dan a)")
+        q = input("> ").strip()
+        if q == "2":
+            ac = num("a acceleration (m/s2, 0 si velocidad constante): ")
+        else:
+            F = num("F applied force (N): ")
+    print("friccion: 1) me dan mu  2) me dan la fuerza f")
+    print("          3) no hay friccion")
+    fk = input("> ").strip()
+    mu = 0.0
+    fdada = None
+    if fk == "1":
+        mu = num("mu k kinetic friction coefficient: ")
+    elif fk == "2":
+        fdada = num("f friction force (N): ")
+    sube = dirm > 0
+    pasos_peso(m, W, th, Fwx, Fwy)
+    if q == "2":
+        # dir*(sF*F*cos(phi) - Fwx) - f = m*a, f = mu*(Fwy - sN*F*sin(phi))
+        if fdada is None:
+            den = sF * cos(radians(phi)) + dirm * mu * sN * sin(radians(phi))
+            num_ = dirm * m * ac + Fwx + dirm * mu * Fwy
+        else:
+            den = sF * cos(radians(phi))
+            num_ = dirm * m * ac + Fwx + dirm * fdada
+        if abs(den) < 1e-12:
+            print("con ese angulo F no sirve para moverlo")
+            return
+        F = num_ / den
+    Fpar = F * cos(radians(phi))
+    Fper = F * sin(radians(phi))
+    if caso == "2":
+        di("  Fpar (F along the ramp) = F*cos(" + r6(phi) + ") = " + r6(F) + "cos(" + r6(phi) + ") = " + r2(Fpar) + " N")
+        if phi != 0:
+            di("  Fper (F perpendicular) = F*sin(" + r6(phi) + ") = " + r6(F) + "sin(" + r6(phi) + ") = " + r2(Fper) + " N")
+    N = Fwy - sN * Fper
+    if caso == "2" and phi != 0:
+        print("  Sum Fy = 0:  N " + ("+" if sN > 0 else "-") + " Fper - Fwy = 0")
+        di("  N (normal force) = Fwy " + ("-" if sN > 0 else "+") + " Fper = " + r6(Fwy) + ("-" if sN > 0 else "+") + r6(Fper) + " = " + r2(N) + " N")
     else:
-        di("N =", r2(G * cos(radians(ang)), 3), "* m  (N, con m en kg)")
-    di("mu min para NO deslizar = tan(ang) =", r2(t, 3))
-    if t <= mu:
-        di("tan(ang) <=", "%g" % mu, "-> NO desliza (estatico)")
+        print("  Sum Fy = 0:  N - Fwy = 0")
+        di("  N (normal force) = Fwy = " + r2(N) + " N")
+    if N < 0:
+        print("Ojo: N < 0: F lo despega de la rampa")
+        return
+    if fdada is None:
+        f = mu * N
+        if fk == "1":
+            di("  f (friction force) = mu*N = " + r6(mu) + "(" + r6(N) + ") = " + r2(f) + " N")
     else:
-        ab = G * (sin(radians(ang)) - mu * cos(radians(ang)))
-        di("a (sliding down) =", r2(ab, 3), "m/s2 (acceleration)")
-    asu = G * (sin(radians(ang)) + mu * cos(radians(ang)))
-    di("a (sliding up, slowing) =", r2(asu, 3), "m/s2 (acceleration)")
-    tip("h = d*sen(ang): altura vs largo de rampa")
+        f = fdada
+    dcl_rampa(caso == "2", sube)
+    eje = "rampa arriba" if sube else "rampa abajo"
+    if caso == "2":
+        if sube:
+            ec = ("Fpar" if sF > 0 else "-Fpar") + " - Fwx"
+        else:
+            ec = "Fwx" + (" - Fpar" if sF > 0 else " + Fpar")
+    else:
+        ec = "Fwx"
+    print("  Sum Fx = ma (x+ = " + eje + "):")
+    di("    " + ec + " - f = ma")
+    if q == "2":
+        di("  F (applied force) = " + r2(F) + " N")
+        a = ac
+    else:
+        a = (dirm * (sF * Fpar - Fwx) - f) / m
+        if caso == "2":
+            if sube:
+                sus = ("" if sF > 0 else "-") + r6(Fpar) + "-" + r6(Fwx)
+            else:
+                sus = r6(Fwx) + ("-" if sF > 0 else "+") + r6(Fpar)
+            di("  a (acceleration) = (" + ec + " - f)/m = (" + sus + "-" + r6(f) + ")/" + r6(m) + " = " + r2(a) + " m/s2")
+        else:
+            di("  a (acceleration) = (Fwx - f)/m = (" + r6(Fwx) + "-" + r6(f) + ")/" + r6(m) + " = " + r2(a) + " m/s2")
+    sep()
+    print("Normal force:")
+    di("N =", r2(N, 3), "N")
+    if fk != "3":
+        print("Friction force:")
+        di("f =", r2(f, 3), "N (contra el movimiento)")
+    if q == "2":
+        print("Force needed:")
+        di("F =", r2(F, 3), "N")
+        if F < 0:
+            print("Ojo: F negativa = tendria que apuntar")
+            print("al reves")
+    print("Acceleration (" + ("up" if sube else "down") + " the ramp):")
+    di("a =", r2(a, 3), "m/s2")
+    if a < 0:
+        if caso != "2":
+            print("NO desliza: la friccion lo detiene")
+            print("tan(ang) = " + r2(tan(radians(th)), 4) + " <= mu = " + r2(mu, 4) if fk == "1" else "(f >= Fwx)")
+            return
+        print("Ojo: a negativa: con esos datos no se")
+        print("mueve hacia donde dijiste (frena o")
+        print("ni arranca: revisa friccion estatica)")
+        return
+    rampa_mov(a, mu if fk == "1" else None)
+
+def rampa_mov(a, mu):
+    # velocidades y tiempos con la a de la rampa (MRUA)
+    print("Velocidad/tiempo? (enter = no)")
+    v0 = dato("v0 initial velocity (m/s, enter = 0): ")
+    if v0 is None:
+        v0 = 0.0
+    L = dato("L length of the ramp (m, enter si no): ")
+    t = dato("t time (s, enter si no): ")
+    if L is None and t is None:
+        return
+    print("PROCEDIMIENTO:")
+    if L is not None:
+        vf = sqrt(v0 * v0 + 2 * a * L)
+        di("  vf (final velocity) = raiz(v0^2+2aL) = raiz(" + rp(v0) + "^2+2(" + r6(a) + ")(" + r6(L) + ")) = " + r2(vf) + " m/s")
+        if a > 0:
+            tt = (vf - v0) / a
+            di("  t (time) = (vf-v0)/a = (" + r6(vf) + "-" + rp(v0) + ")/" + r6(a) + " = " + r2(tt) + " s")
+        sep()
+        print("Final velocity at the bottom:")
+        di("vf =", r2(vf, 3), "m/s")
+        if a > 0:
+            print("Time to reach the bottom:")
+            di("t =", r2(tt, 3), "s")
+        if mu is not None and mu > 0:
+            d = vf * vf / (2 * mu * G)
+            print("PROCEDIMIENTO (sigue en piso, mismo mu):")
+            di("  a (acceleration) = -mu*g = -" + r6(mu) + "(9.81) = " + r2(-mu * G) + " m/s2")
+            di("  d (distance) = vf^2/(2*mu*g) = " + r6(vf) + "^2/(2(" + r6(mu) + ")(9.81)) = " + r2(d) + " m")
+            print("Distance on the floor before stopping:")
+            di("d =", r2(d, 3), "m")
+    if t is not None:
+        vt = v0 + a * t
+        xt = v0 * t + 0.5 * a * t * t
+        print("PROCEDIMIENTO:")
+        di("  v (velocity) = v0 + a*t = " + r6(v0) + "+" + r6(a) + "(" + r6(t) + ") = " + r2(vt) + " m/s")
+        di("  x (distance) = v0*t + .5at^2 = " + r6(v0) + "(" + r6(t) + ")+.5(" + r6(a) + ")(" + r6(t) + ")^2 = " + r2(xt) + " m")
+        sep()
+        print("Final velocity after t =", r6(t), "s:")
+        di("v =", r2(vt, 3), "m/s")
+        print("Distance traveled:")
+        di("x =", r2(xt, 3), "m")
 
 # ---------- 9. POLEAS ----------
 def poleas():
@@ -1812,7 +2115,7 @@ ops = [("Unidades", conversiones),
        ("Equilibrio", equilibrio)]
 
 def fisica():
-    print(">>> FISICA v8.7")
+    print(">>> FISICA v8.8")
     while True:
         sep()
         print("FISICA - menu principal")
