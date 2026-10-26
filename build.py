@@ -146,6 +146,38 @@ def nombres_top(src):
     return ns
 
 
+# en la Nspire, si la pregunta de input() no cabe en el renglon, la calc
+# regresa tambien el pedazo de la pregunta ("paralela): 90" -> numero no
+# valido). Las preguntas largas pasan por estas funciones, que las ponen
+# en su propio renglon; cualquier otro input() lleva texto corto y fijo.
+LARGO_INPUT = 28
+ENTRADAS = ("pide", "_ap_entrada", "_ai_entrada")
+
+
+def revisa_input(nombre, src):
+    errores = []
+
+    def visita(nodo, fn):
+        for h in ast.iter_child_nodes(nodo):
+            f2 = h.name if isinstance(h, (ast.FunctionDef, ast.AsyncFunctionDef)) else fn
+            if isinstance(h, ast.Call) and isinstance(h.func, ast.Name) \
+                    and h.func.id == "input" and fn not in ENTRADAS:
+                arg = h.args[0] if h.args else None
+                if arg is not None and not (isinstance(arg, ast.Constant)
+                                            and isinstance(arg.value, str)):
+                    errores.append("{}: input() con pregunta armada en linea {}"
+                                   " (usa {})".format(nombre, h.lineno, "/".join(ENTRADAS)))
+                elif arg is not None and len(arg.value) > LARGO_INPUT:
+                    errores.append("{}: input() con pregunta de {} caracteres en"
+                                   " linea {} (max {}; usa {})".format(
+                                       nombre, len(arg.value), h.lineno,
+                                       LARGO_INPUT, "/".join(ENTRADAS)))
+            visita(h, f2)
+
+    visita(ast.parse(src), None)
+    return errores
+
+
 def revisa_micropython(nombre, src):
     """Lo que truena en MicroPython 1.11 y CPython no avisa."""
     errores = []
@@ -154,6 +186,7 @@ def revisa_micropython(nombre, src):
             errores.append("{}: f-string en linea {}".format(nombre, n.lineno))
         if isinstance(n, ast.NamedExpr):
             errores.append("{}: := en linea {}".format(nombre, n.lineno))
+    errores += revisa_input(nombre, src)
     for i, ln in enumerate(src.split("\n")):
         if not ln.isascii() and not ln.lstrip().startswith("#"):
             errores.append("{}: no ASCII fuera de comentario, linea {}"
