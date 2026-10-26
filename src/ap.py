@@ -24,10 +24,20 @@ _ap_ns = {"sin": sin, "cos": cos, "tan": tan, "asin": asin, "acos": acos,
           "sen": sin, "cbrt": _ap_cbrt, "__builtins__": {}}
 
 
+def _ap_entrada(prompt):
+    """input() seguro en la Nspire: si la pregunta no cabe en el renglon
+    va en el suyo y se escribe despues de '> ' (si no, la calc regresa
+    tambien el pedazo de la pregunta junto con la respuesta)."""
+    if len(prompt) > 28:
+        print(prompt.rstrip())
+        return input("> ")
+    return input(prompt)
+
+
 def _ap_txt(prompt):
     """Texto tecleado listo para eval: sin espacios a los lados (el eval
     de MicroPython 1.11 truena con espacio inicial) y ^ como potencia."""
-    return input(prompt).strip().replace("^", "**")
+    return _ap_entrada(prompt).strip().replace("^", "**")
 
 
 _ap_ult = [""]    # ultimo texto de funcion tecleado
