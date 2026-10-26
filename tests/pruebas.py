@@ -706,6 +706,12 @@ _NW = [
 for _n, _f, _e, _x in _NW:
     caso("newton " + _n, _f, _e, _x)
 
+caso("respuesta con pedazo de la pregunta (Nspire)", lambda: _buf.append(" ".join(
+         ["%g" % E.nval_calc(x) for x in ("paralela): 90", "(degrees, 0 si paralela): 0", "> 30", " 12.5 ")])),
+     [], ["90 0 30 12.5"])
+caso("dato vacio tras la pregunta", lambda: _buf.append(str(E.dato("t time (s, enter si no): "))),
+     ["si no): "], ["None"])
+
 # ---------- resultado ----------
 
 if fallas:
