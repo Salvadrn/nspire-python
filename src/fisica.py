@@ -62,12 +62,21 @@ def nval(s):
         raise ValueError("nan o inf")
     return v
 
+def pide(msg):
+    # en la Nspire una pregunta larga en input() se ve mal (el renglon se
+    # corta y no se ve lo que escribes): la pregunta va en su renglon y se
+    # escribe despues de '> '
+    if len(msg) > 28:
+        print(msg.rstrip())
+        return input("> ")
+    return input(msg)
+
 def es_salir(s):
     return s.strip().lower() in ("q", "salir", "menu")
 
 def num(msg):
     while True:
-        s = input(msg)
+        s = pide(msg)
         if es_salir(s):
             raise AlMenu()
         try:
@@ -78,7 +87,7 @@ def num(msg):
 
 def dato(msg):
     while True:
-        s = input(msg)
+        s = pide(msg)
         if s == "":
             return None
         if es_salir(s):
@@ -1006,7 +1015,7 @@ def proy_horizontal():
 def fraccion(msg):
     # 3/4, 1/2 o 0.75
     while True:
-        s = input(msg).replace(" ", "")
+        s = pide(msg).replace(" ", "")
         if es_salir(s):
             raise AlMenu()
         try:
@@ -1842,7 +1851,7 @@ def pedir_prefijo(msg):
     menu_pref()
     print("(numero, o letras tipo km, pico)")
     while True:
-        p = input(msg)
+        p = pide(msg)
         if p == "":
             return 1.0
         f = parse_pref(p)
@@ -1875,7 +1884,7 @@ def conversiones():
                 uni = LU[int(u) - 1]
             elif u in UNOM:
                 uni = u
-        d = input("destino (ENTER = tabla con TODOS): ")
+        d = pide("destino (ENTER = tabla con TODOS): ")
         if d == "":
             tabla_completa(v, a, uni)
         else:
@@ -2115,7 +2124,7 @@ ops = [("Unidades", conversiones),
        ("Equilibrio", equilibrio)]
 
 def fisica():
-    print(">>> FISICA v8.8")
+    print(">>> FISICA v8.9")
     while True:
         sep()
         print("FISICA - menu principal")
