@@ -2134,7 +2134,7 @@ ops = [("Unidades", conversiones),
        ("Equilibrio", equilibrio)]
 
 def fisica():
-    print(">>> FISICA v9.0")
+    print(">>> FISICA v9.1")
     while True:
         sep()
         print("FISICA - menu principal")

@@ -1957,10 +1957,20 @@ _ap_ns = {"sin": sin, "cos": cos, "tan": tan, "asin": asin, "acos": acos,
           "sen": sin, "cbrt": _ap_cbrt, "__builtins__": {}}
 
 
+def _ap_entrada(prompt):
+    """input() seguro en la Nspire: si la pregunta no cabe en el renglon
+    va en el suyo y se escribe despues de '> ' (si no, la calc regresa
+    tambien el pedazo de la pregunta junto con la respuesta)."""
+    if len(prompt) > 28:
+        print(prompt.rstrip())
+        return input("> ")
+    return input(prompt)
+
+
 def _ap_txt(prompt):
     """Texto tecleado listo para eval: sin espacios a los lados (el eval
     de MicroPython 1.11 truena con espacio inicial) y ^ como potencia."""
-    return input(prompt).strip().replace("^", "**")
+    return _ap_entrada(prompt).strip().replace("^", "**")
 
 
 _ap_ult = [""]    # ultimo texto de funcion tecleado
@@ -2704,7 +2714,7 @@ def _out(*lineas):
 def _pausa():
     global _lin, _sigue
     if _lin > 0:
-        input(_SIGUE)
+        input("-- enter para seguir --")
         _sigue = _abierto is not None
     _lin = 0
 
@@ -3026,11 +3036,21 @@ def _estimar(t0, t1, x, num):
 
 # ---------- preguntas ----------
 
+def _ai_entrada(prompt):
+    """input() seguro en la Nspire: si la pregunta no cabe en el renglon
+    va en el suyo y se escribe despues de '> ' (si no, la calc regresa
+    tambien el pedazo de la pregunta junto con la respuesta)."""
+    if len(prompt) > 28:
+        print(prompt.rstrip())
+        return input("> ")
+    return input(prompt)
+
+
 def _pregunta(texto, previo):
     """Hace la pregunta; si hay dato anterior lo muestra en [ ]."""
     if previo is None:
-        return input(texto + ": ").strip()
-    return input("{} [{}]: ".format(texto, previo)).strip()
+        return _ai_entrada(texto + ": ").strip()
+    return _ai_entrada("{} [{}]: ".format(texto, previo)).strip()
 
 
 def _lee(t):
@@ -3100,7 +3120,7 @@ def _si(texto):
 
 def _respuesta(texto):
     """'si' (enter, s, si), 'no' (n, no) u 'otro' con lo tecleado."""
-    s = input(texto).strip().lower()
+    s = _ai_entrada(texto).strip().lower()
     if s in ("", "s", "si", "s\xed"):
         return "si", s
     if s in ("n", "no"):
@@ -3177,7 +3197,7 @@ def _confirma(claves, titulo):
             if r == "otro":
                 print("Escribe solo enter (si) o n (no).")
                 continue
-            s = input("Cual es distinta? (1 a {}): ".format(len(claves)))
+            s = _ai_entrada("Cual es distinta? (1 a {}): ".format(len(claves)))
             try:
                 i = int(s.strip())
             except ValueError:
@@ -3211,7 +3231,7 @@ def _edita(k):
     print("Ej: " + ej)
     nombre = "theta :=" if k == "act" else _LADO[k] + " ="
     while True:
-        s = input("{} [{}]: ".format(nombre, _FT[k])).strip()
+        s = _ai_entrada("{} [{}]: ".format(nombre, _FT[k])).strip()
         if s == "":
             return
         try:
@@ -3235,7 +3255,7 @@ def _formulas():
         for i in range(len(claves)):
             print("{} {}".format(i + 1, _ftxt(claves[i])))
         print("0 volver a las del curso")
-        s = input("Numero a cambiar (enter=menu): ").strip()
+        s = _ai_entrada("Numero a cambiar (enter=menu): ").strip()
         if s == "":
             return
         if s == "0":
@@ -3288,7 +3308,7 @@ def _transferencia(t0, t1, titulo, confirmar_modelo, num):
         _pausa()
         otra = None
         while True:
-            s = input("Otra x? (escribela o enter=no): ").strip()
+            s = _ai_entrada("Otra x? (escribela o enter=no): ").strip()
             if s == "":
                 break
             try:
@@ -3582,7 +3602,7 @@ def _conceptos():
                 s += " | {} {}".format(i + mitad + 1,
                                        _CONCEPTOS[i + mitad][0])
             print(s)
-        s = input("Numero de tema (enter=menu): ").strip()
+        s = _ai_entrada("Numero de tema (enter=menu): ").strip()
         if s == "0" or s == "":
             return
         try:
@@ -3613,7 +3633,7 @@ def ia():
             print("4 Ver o cambiar formulas")
             print("5 Instrucciones")
             print("0 Salir")
-            op = input("Escribe el numero y enter: ").strip()
+            op = _ai_entrada("Escribe el numero y enter: ").strip()
             if op == "0":
                 break
             try:
@@ -5768,7 +5788,7 @@ ops = [("Unidades", conversiones),
        ("Equilibrio", equilibrio)]
 
 def fisica():
-    print(">>> FISICA v9.0")
+    print(">>> FISICA v9.1")
     while True:
         sep()
         print("FISICA - menu principal")
