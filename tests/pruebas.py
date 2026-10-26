@@ -712,6 +712,13 @@ caso("respuesta con pedazo de la pregunta (Nspire)", lambda: _buf.append(" ".joi
 caso("dato vacio tras la pregunta", lambda: _buf.append(str(E.dato("t time (s, enter si no): "))),
      ["si no): "], ["None"])
 
+caso("pregunta larga en su renglon (fisica)", lambda: _buf.append("v=%g" % E.num("angle of F with the ramp (degrees, 0 si paralela): ")),
+     ["30"], ["angle of F with the ramp (degrees, 0 si paralela):", "v=30"])
+caso("pregunta larga en su renglon (ap)", lambda: _buf.append("t=" + E._ap_entrada("x" * 40 + ": ")),
+     ["abc"], ["x" * 40 + ":", "t=abc"])
+caso("pregunta larga en su renglon (ai)", lambda: _buf.append("t=" + E._ai_entrada("Otra x? (escribela o enter=no): ")),
+     ["5"], ["Otra x? (escribela o enter=no):", "t=5"])
+
 # ---------- resultado ----------
 
 if fallas:
