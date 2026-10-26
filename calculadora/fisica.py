@@ -72,13 +72,25 @@ def pide(msg):
 def es_salir(s):
     return s.strip().lower() in ("q", "salir", "menu")
 
+def nval_calc(s):
+    # en la Nspire, con una pregunta larga input() puede regresar tambien
+    # el pedazo de la pregunta que se paso de renglon ('paralela): 90'):
+    # si no se lee, se toma lo que va despues del ultimo ':' o '>'
+    try:
+        return nval(s)
+    except ValueError:
+        for c in (":", ">"):
+            if c in s:
+                return nval(s.rsplit(c, 1)[1])
+        raise
+
 def num(msg):
     while True:
         s = pide(msg)
-        if es_salir(s):
+        if es_salir(s.rsplit(":", 1)[-1]):
             raise AlMenu()
         try:
-            return nval(s)
+            return nval_calc(s)
         except ValueError:
             print("numero no valido (vale: 20, -3.5, 3e-5)")
             print("q = regresar al menu")
@@ -86,12 +98,12 @@ def num(msg):
 def dato(msg):
     while True:
         s = pide(msg)
-        if s == "":
+        if s.rsplit(":", 1)[-1].strip() == "":
             return None
-        if es_salir(s):
+        if es_salir(s.rsplit(":", 1)[-1]):
             raise AlMenu()
         try:
-            return nval(s)
+            return nval_calc(s)
         except ValueError:
             print("numero no valido (vale: 20, -3.5, 3e-5)")
             print("q = regresar al menu")
@@ -2122,7 +2134,7 @@ ops = [("Unidades", conversiones),
        ("Equilibrio", equilibrio)]
 
 def fisica():
-    print(">>> FISICA v8.9")
+    print(">>> FISICA v9.0")
     while True:
         sep()
         print("FISICA - menu principal")
