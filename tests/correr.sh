@@ -16,7 +16,9 @@ corre() {
             out=$(printf "$ent" | python3 "$arch" 2>&1)
         else
             [ -x "$MP" ] || continue
-            out=$(printf "$ent" | "$MP" -X heapsize=1M "$arch" 2>&1)
+            heap=1M
+            [ "$arch" = calculadora/general.py ] && heap=1300K
+            out=$(printf "$ent" | "$MP" -X heapsize=$heap "$arch" 2>&1)
         fi
         for e in "$@"; do
             case "$out" in
@@ -32,9 +34,9 @@ printf '0\n0\n' | python3 tests/pruebas.py | tail -n 12
 if [ -x "$MP" ]; then
     # la bateria carga general + sat + todos los casos a la vez: necesita
     # mas heap que un archivo solo. Los 4 archivos sueltos (abajo) van a
-    # 1M; general solo necesita ~900K y la Nspire tiene ~2 MB.
-    echo "--- bateria en MicroPython 1.11, heap 1400K (la Nspire tiene ~2 MB) ---"
-    printf '0\n0\n' | "$MP" -X heapsize=1400K tests/pruebas.py | tail -n 12
+    # 1M (general, con SAT, a 1300K: necesita ~1.2 MB; la Nspire tiene ~2 MB).
+    echo "--- bateria en MicroPython 1.11, heap 1700K (la Nspire tiene ~2 MB) ---"
+    printf '0\n0\n' | "$MP" -X heapsize=1700K tests/pruebas.py | tail -n 12
 else
     echo "(sin MicroPython 1.11 en .tools/: solo se probo en CPython)"
 fi
@@ -48,4 +50,5 @@ corre calculadora/general.py \
     '1\n2\n-x^2+4*x\n0\n5\n\n0\n2\n0\n3\n8\n7\n\n\n\n\n\n\n\n\n2\n0.4\n\n\n\n\n\n0\n\n0\n0\n' \
     "elige materia" "mas alto: y=4 en x=2" "IA: REGRESION LINEAL" \
     "subiendo: v = +2.801 m/s" "Para abrir otra vez: general()"
-if [ $MALOS = 0 ]; then echo "4 archivos sueltos: TODO OK"; fi
+corre calculadora/sat.py '6\n2\n2\n1\n1\n9\n\n0\n' "SAT MATH" "k = +-6"
+if [ $MALOS = 0 ]; then echo "5 archivos sueltos: TODO OK"; fi
