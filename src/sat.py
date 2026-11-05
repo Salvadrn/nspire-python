@@ -523,9 +523,19 @@ def _s_lee(t):
     return _s_lee_dec(t)
 
 
+def _sat_entrada(prompt):
+    """input() seguro en la Nspire: si la pregunta no cabe en el renglon
+    va en el suyo y se escribe despues de '> ' (si no, la calc regresa
+    tambien el pedazo de la pregunta junto con la respuesta)."""
+    if len(prompt) > 28:
+        print(prompt.rstrip())
+        return input("> ")
+    return input(prompt)
+
+
 def _s_pide(texto, default=None):
     while True:
-        s = input(texto).strip()
+        s = _sat_entrada(texto).strip()
         if s == "" and default is not None:
             return default
         try:
@@ -536,7 +546,7 @@ def _s_pide(texto, default=None):
 
 def _s_pide_lista(texto):
     while True:
-        s = input(texto).strip().replace(",", " ")
+        s = _sat_entrada(texto).strip().replace(",", " ")
         try:
             vals = [_s_lee(p) for p in s.split()]
             if vals:
@@ -1037,6 +1047,340 @@ def _s_triang():
     _s_out(out)
 
 
+# ---------- discriminante con k / recta y parabola ----------
+
+def _s_neg(a):
+    return (-a[0], a[1])
+
+
+def _s_cmp0(a):
+    return (a[0] > 0) - (a[0] < 0)
+
+
+def _s_raices_txt(A, B, C):
+    """Lineas con las soluciones reales de A x^2 + B x + C = 0."""
+    out = []
+    D = _s_sub(_s_mul(B, B), _s_mul((4, 1), _s_mul(A, C)))
+    dos_a = _s_mul((2, 1), A)
+    if D[0] < 0:
+        return D, [], out
+    rp = _s_isqrt(D[0])
+    rq = _s_isqrt(D[1])
+    if rp * rp == D[0] and rq * rq == D[1]:
+        r = _s_fr(rp, rq)
+        xs = [_s_div(_s_sub(_s_neg(B), r), dos_a),
+              _s_div(_s_add(_s_neg(B), r), dos_a)]
+        if D[0] == 0:
+            xs = xs[:1]
+        return D, xs, out
+    sq = sqrt(_s_float(D))
+    fa = _s_float(dos_a)
+    fb = _s_float(B)
+    out.append("x = (-b +- sqrt(D))/(2a)")
+    out.append("  = (" + _s_sh(_s_neg(B)) + " +- "
+               + _s_raiz_txt(D).split(" = ")[0] + ")/" + _s_sh(dos_a))
+    return D, [(-fb - sq) / fa, (-fb + sq) / fa], out
+
+
+def _s_num_txt(v):
+    if isinstance(v, tuple):
+        return _s_txt(v)
+    return _s_g(v)
+
+
+def _s_discr_k():
+    print("a*x^2 + b*x + c = 0")
+    print("con una letra k que no sabes")
+    print("donde esta k? 1) a  2) b  3) c")
+    pos = input("? ").strip()
+    if pos not in ("1", "2", "3"):
+        print("opcion no valida")
+        return
+    print("cuantas soluciones reales?")
+    print("1) exactamente una (D = 0)")
+    print("2) ninguna (D < 0)")
+    print("3) dos (D > 0)")
+    cond = input("? ").strip()
+    if cond not in ("1", "2", "3"):
+        print("opcion no valida")
+        return
+    uno = (1, 1)
+    if pos != "1":
+        a = _s_pide("a = ")
+    if pos != "2":
+        b = _s_pide("b = ")
+    if pos != "3":
+        c = _s_pide("c = ")
+    signo = {"1": "= 0", "2": "< 0", "3": "> 0"}[cond]
+    out = ["discriminante D = b^2 - 4ac",
+           "condicion: D " + signo]
+    if pos == "2":
+        P = _s_mul((4, 1), _s_mul(a, c))
+        out.append("D = k^2 - 4(" + _s_sh(a) + ")(" + _s_sh(c) + ")")
+        out.append("  = k^2 - " + _s_sh(P))
+        out.append("k^2 " + signo.replace("0", _s_sh(P)))
+        rz = _s_raiz_txt(P).split(" = ")[0] if P[0] > 0 else "0"
+        if cond == "1":
+            if P[0] < 0:
+                out.append("k^2 no puede ser negativo:")
+                out.append("NINGUN k (nunca una sola)")
+            elif P[0] == 0:
+                out.append("k = 0")
+            else:
+                out.append("k = +-" + rz)
+                if "sqrt" in rz:
+                    out.append("k = " + _s_raiz_txt(P) + " o su negativo")
+        elif cond == "2":
+            if P[0] <= 0:
+                out.append("k^2 >= 0 siempre: NINGUN k")
+                out.append("(siempre hay solucion real)")
+            else:
+                out.append("-" + rz + " < k < " + rz)
+                out.append("decimal: |k| < " + _s_g(sqrt(_s_float(P))))
+        else:
+            if P[0] < 0:
+                out.append("cualquier k sirve")
+            elif P[0] == 0:
+                out.append("cualquier k distinto de 0")
+            else:
+                out.append("k < -" + rz + "  o  k > " + rz)
+                out.append("decimal: |k| > " + _s_g(sqrt(_s_float(P))))
+    elif pos == "3":
+        if a[0] == 0:
+            print("a = 0: no es cuadratica")
+            return
+        Q = _s_div(_s_mul(b, b), _s_mul((4, 1), a))
+        out.append("D = (" + _s_sh(b) + ")^2 - 4(" + _s_sh(a) + ")k")
+        out.append("  = " + _s_sh(_s_mul(b, b)) + " - "
+                   + _s_sh(_s_mul((4, 1), a)) + "k")
+        out.append("D = 0 cuando k = b^2/(4a) = " + _s_txt(Q))
+        if cond == "1":
+            out.append("k = " + _s_txt(Q))
+        elif (cond == "2") == (a[0] > 0):
+            out.append("k > " + _s_txt(Q))
+        else:
+            out.append("k < " + _s_txt(Q))
+    else:
+        if c[0] == 0:
+            if b[0] == 0:
+                out.append("b = c = 0: D = 0 para todo k")
+            else:
+                out.append("c = 0: D = b^2 > 0 siempre:")
+                out.append("dos soluciones con todo k != 0")
+            _s_out(out)
+            return
+        Q = _s_div(_s_mul(b, b), _s_mul((4, 1), c))
+        out.append("D = (" + _s_sh(b) + ")^2 - 4k(" + _s_sh(c) + ")")
+        out.append("D = 0 cuando k = b^2/(4c) = " + _s_txt(Q))
+        if cond == "1":
+            if Q[0] == 0:
+                out.append("k = 0 no vale (no seria")
+                out.append("cuadratica): NINGUN k")
+            else:
+                out.append("k = " + _s_txt(Q))
+        elif (cond == "2") == (c[0] > 0):
+            out.append("k > " + _s_txt(Q))
+        else:
+            out.append("k < " + _s_txt(Q) + "  (y k != 0)")
+    _s_out(out)
+
+
+def _s_recta_parab():
+    print("parabola y = a*x^2 + b*x + c")
+    print("recta    y = m*x + n")
+    a = _s_pide("a = ")
+    b = _s_pide("b = ")
+    c = _s_pide("c = ")
+    m = _s_pide("m = ")
+    n = _s_pide("n = ")
+    A = a
+    B = _s_sub(b, m)
+    C = _s_sub(c, n)
+    ec = _s_coef(A, "x^2") if A[0] != 0 else ""
+    if B[0] != 0:
+        ec = (ec + _s_signo(B)[:3] + _s_coef((abs(B[0]), B[1]), "x")) if ec else _s_coef(B, "x")
+    if C[0] != 0 or not ec:
+        ec = (ec + _s_signo(C)) if ec else _s_sh(C)
+    out = ["igualo: a x^2 + bx + c = mx + n", ec + " = 0"]
+    if A[0] == 0:
+        if B[0] == 0:
+            out.append("misma pendiente y sin x^2:")
+            out.append("infinitos cruces" if C[0] == 0 else "NO se cruzan")
+        else:
+            x = _s_div(_s_neg(C), B)
+            out.append("1 cruce: x = " + _s_txt(x))
+            out.append("y = " + _s_txt(_s_add(_s_mul(m, x), n)))
+        _s_out(out)
+        return
+    D, xs, extra = _s_raices_txt(A, B, C)
+    out.append("D = b^2 - 4ac = " + _s_txt(D))
+    if D[0] < 0:
+        out.append("D < 0: NO se cruzan")
+    elif D[0] == 0:
+        out.append("D = 0: se tocan en 1 punto")
+        out.append("(la recta es tangente)")
+    else:
+        out.append("D > 0: se cruzan en 2 puntos")
+    out += extra
+    for x in xs:
+        if isinstance(x, tuple):
+            y = _s_add(_s_mul(m, x), n)
+            out.append("({}, {})".format(_s_sh(x), _s_sh(y)))
+        else:
+            y = _s_float(m) * x + _s_float(n)
+            out.append("({}, {})".format(_s_g(x), _s_g(y)))
+    _s_out(out)
+
+
+def _s_discr():
+    print("1 cuantas soluciones (a,b,c)")
+    print("2 hallar k para 1, 0 o 2")
+    print("3 recta y parabola: cruces")
+    op = input("? ").strip()
+    if op == "1":
+        _s_cuad()
+    elif op == "2":
+        _s_discr_k()
+    elif op == "3":
+        _s_recta_parab()
+    else:
+        print("opcion no valida")
+
+
+# ---------- sistema 2x2 con una k ----------
+
+def _s_det3(co):
+    a1, b1, c1, a2, b2, c2 = co
+    det = _s_sub(_s_mul(a1, b2), _s_mul(a2, b1))
+    dx = _s_sub(_s_mul(c1, b2), _s_mul(c2, b1))
+    dy = _s_sub(_s_mul(a1, c2), _s_mul(a2, c1))
+    return det, dx, dy
+
+
+def _s_sistema_k():
+    print("a1*x + b1*y = c1")
+    print("a2*x + b2*y = c2")
+    print("donde esta la k?")
+    print("1)a1 2)b1 3)c1 4)a2 5)b2 6)c2")
+    pos = input("? ").strip()
+    if pos not in ("1", "2", "3", "4", "5", "6"):
+        print("opcion no valida")
+        return
+    nombres = ["a1", "b1", "c1", "a2", "b2", "c2"]
+    ip = int(pos) - 1
+    co = []
+    for i in range(6):
+        if i == ip:
+            co.append(None)
+        else:
+            co.append(_s_pide(nombres[i] + " = "))
+    c0 = list(co)
+    c0[ip] = (0, 1)
+    c1_ = list(co)
+    c1_[ip] = (1, 1)
+    e0 = _s_det3(c0)
+    e1 = _s_det3(c1_)
+    # cada cosa es lineal en k: v(k) = v0 + (v1 - v0) k
+    lin = [(e0[i], _s_sub(e1[i], e0[i])) for i in range(3)]
+    det0, detk = lin[0]
+    out = ["det = a1*b2 - a2*b1"]
+    if detk[0] != 0:
+        ec = _s_coef(detk, "k") + (_s_signo(det0) if det0[0] != 0 else "")
+        out.append("det(k) = " + ec)
+    else:
+        out.append("det = " + _s_sh(det0) + " (no depende de k)")
+
+    def raiz_lin(v0, vk):
+        return _s_div(_s_neg(v0), vk)
+
+    if detk[0] == 0:
+        if det0[0] != 0:
+            out.append("det != 0: SIEMPRE 1 solucion")
+            out.append("(ningun k da 0 o infinitas)")
+            _s_out(out)
+            return
+        out.append("det = 0 siempre: rectas paralelas")
+        dx0, dxk = lin[1]
+        dy0, dyk = lin[2]
+        ks = []
+        for v0, vk in ((dx0, dxk), (dy0, dyk)):
+            if vk[0] != 0:
+                ks.append(raiz_lin(v0, vk))
+        if ks and all(_s_det3([co[i] if i != ip else ks[0] for i in range(6)])[j][0] == 0
+                      for j in (1, 2)):
+            out.append("INFINITAS si k = " + _s_txt(ks[0]))
+            out.append("(misma recta)")
+            out.append("NINGUNA si k != " + _s_sh(ks[0]))
+        else:
+            out.append("NINGUNA solucion con todo k")
+        _s_out(out)
+        return
+    k0 = raiz_lin(det0, detk)
+    out.append("det = 0  ->  k = " + _s_txt(k0))
+    cok = [co[i] if i != ip else k0 for i in range(6)]
+    det, dx, dy = _s_det3(cok)
+    if dx[0] == 0 and dy[0] == 0:
+        out.append("con k = " + _s_sh(k0) + ": INFINITAS")
+        out.append("(misma recta, 'infinitely many')")
+    else:
+        out.append("con k = " + _s_sh(k0) + ": NINGUNA")
+        out.append("(paralelas, 'no solution')")
+    out.append("con k != " + _s_sh(k0) + ": 1 solucion")
+    out.append("TIP: no solution <-> mismas")
+    out.append("pendientes, distinto corte")
+    _s_out(out)
+
+
+# ---------- valor absoluto ----------
+
+def _s_absoluto():
+    print("|a*x + b| = c")
+    a = _s_pide("a = ")
+    if a[0] == 0:
+        print("a = 0: no hay x")
+        return
+    b = _s_pide("b = ")
+    c = _s_pide("c = ")
+    out = []
+    if c[0] < 0:
+        out.append("c < 0: NINGUNA solucion")
+        out.append("(un valor absoluto nunca")
+        out.append("es negativo)")
+    elif c[0] == 0:
+        out.append("c = 0: una solucion")
+        out.append("ax + b = 0 -> x = " + _s_txt(_s_div(_s_neg(b), a)))
+    else:
+        x1 = _s_div(_s_sub(c, b), a)
+        x2 = _s_div(_s_sub(_s_neg(c), b), a)
+        out.append("ax + b = c   o   ax + b = -c")
+        out.append("x = " + _s_txt(x1))
+        out.append("x = " + _s_txt(x2))
+        out.append("suma = " + _s_txt(_s_add(x1, x2)))
+    _s_out(out)
+
+
+# ---------- exponencial por 2 puntos ----------
+
+def _s_expo_2p():
+    print("y = a*b^x por (x1,y1) y (x2,y2)")
+    x1 = _s_float(_s_pide("x1 = "))
+    y1 = _s_float(_s_pide("y1 = "))
+    x2 = _s_float(_s_pide("x2 = "))
+    y2 = _s_float(_s_pide("y2 = "))
+    if x1 == x2 or y1 <= 0 or y2 <= 0:
+        print("necesito x distintas y y > 0")
+        return
+    bb = (y2 / y1) ** (1 / (x2 - x1))
+    aa = y1 / bb ** x1
+    pc = (bb - 1) * 100
+    _s_out(["b = (y2/y1)^(1/(x2-x1))",
+            "b = " + _s_g(bb),
+            "a = y1/b^x1 = " + _s_g(aa),
+            "y = " + _s_g(aa) + "*(" + _s_g(bb) + ")^x",
+            ("crece " if pc > 0 else "decae ") + _s_g(abs(pc))
+            + "% por unidad de x"])
+
+
 # ---------- menu ----------
 
 def sat():
@@ -1046,41 +1390,35 @@ def sat():
     while True:
         print("")
         print("== SAT MATH (estudio) ==")
-        print("1 formulas y tips por dominio")
-        print("2 recta por 2 puntos")
-        print("3 sistema 2x2")
-        print("4 cuadratica")
-        print("5 porcentajes")
-        print("6 estadistica de una lista")
-        print("7 circulo / arco y sector")
-        print("8 exponencial (crece o decae)")
-        print("9 triangulo rectangulo y trig")
-        print("0 salir")
+        print(" 1 formulas y tips por dominio")
+        print(" 2 recta por 2 puntos")
+        print(" 3 sistema 2x2")
+        print(" 4 sistema con k (0/infinitas)")
+        print(" 5 cuadratica (D, vertice)")
+        print(" 6 discriminante: k, recta-parab")
+        print(" 7 porcentajes")
+        print(" 8 estadistica de una lista")
+        print(" 9 circulo / arco y sector")
+        print("10 exponencial (crece o decae)")
+        print("11 exponencial por 2 puntos")
+        print("12 triangulo rectangulo y trig")
+        print("13 valor absoluto |ax+b| = c")
+        print(" 0 salir")
         op = input("? ").strip()
-        if op == "0" or op == "":
+        if op == "0" or op == "" or op == "q":
             return
+        fns = {"2": _s_recta, "3": _s_sistema, "4": _s_sistema_k,
+               "5": _s_cuad, "6": _s_discr, "7": _s_porc,
+               "8": _s_estad, "9": _s_circulo, "10": _s_expo,
+               "11": _s_expo_2p, "12": _s_triang, "13": _s_absoluto}
         try:
             if op == "1":
                 _s_hojas()
                 continue
-            elif op == "2":
-                _s_recta()
-            elif op == "3":
-                _s_sistema()
-            elif op == "4":
-                _s_cuad()
-            elif op == "5":
-                _s_porc()
-            elif op == "6":
-                _s_estad()
-            elif op == "7":
-                _s_circulo()
-            elif op == "8":
-                _s_expo()
-            elif op == "9":
-                _s_triang()
+            elif op in fns:
+                fns[op]()
             else:
-                print("escribe un numero del 0 al 9")
+                print("escribe un numero del 0 al 13")
                 continue
         except Exception as err:
             print("Algo fallo: " + str(err))
