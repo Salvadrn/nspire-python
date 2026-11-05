@@ -38,8 +38,9 @@ OBJETIVOS = [
     ("ap", ["calcpy", "formulas", "ap"], "ap", "Calculo AP"),
     ("ai", ["ai"], "ia", "IA: regresion lineal"),
     ("fisica", ["fisica"], "fisica", "Fisica"),
-    ("general", ["calcpy", "formulas", "ap", "ai", "fisica"], "general",
-     "Calculo AP + IA + Fisica"),
+    ("sat", ["sat"], "sat", "SAT Math (estudio)"),
+    ("general", ["calcpy", "formulas", "ap", "ai", "fisica", "sat"], "general",
+     "Calculo AP + IA + Fisica + SAT"),
 ]
 
 CABEZA = '''\
@@ -64,6 +65,7 @@ def general():
             print("1 Calculo AP")
             print("2 IA: regresion lineal")
             print("3 Fisica")
+            print("4 SAT Math (estudio)")
             print("0 salir")
             op = input("? ").strip()
             if op == "0":
@@ -75,8 +77,10 @@ def general():
                     ia()
                 elif op == "3":
                     fisica()
+                elif op == "4":
+                    sat()
                 elif op != "":
-                    print("escribe 1, 2, 3 o 0")
+                    print("escribe 1, 2, 3, 4 o 0")
             except KeyboardInterrupt:
                 print("(interrumpido: de vuelta al menu general)")
             except Exception as err:
@@ -151,7 +155,7 @@ def nombres_top(src):
 # valido). Las preguntas largas pasan por estas funciones, que las ponen
 # en su propio renglon; cualquier otro input() lleva texto corto y fijo.
 LARGO_INPUT = 28
-ENTRADAS = ("pide", "_ap_entrada", "_ai_entrada")
+ENTRADAS = ("pide", "_ap_entrada", "_ai_entrada", "_sat_entrada")
 
 
 def revisa_input(nombre, src):
