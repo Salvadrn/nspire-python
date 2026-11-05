@@ -719,6 +719,31 @@ caso("pregunta larga en su renglon (ap)", lambda: _buf.append("t=" + E._ap_entra
 caso("pregunta larga en su renglon (ai)", lambda: _buf.append("t=" + E._ai_entrada("Otra x? (escribela o enter=no): ")),
      ["5"], ["Otra x? (escribela o enter=no):", "t=5"])
 
+# ---------- SAT: discriminante con k, recta-parabola, sistema con k ----------
+
+_SATN = [
+    ("disc k en b una", S._s_discr_k, ["2", "1", "1", "9"], ["k = +-6"]),
+    ("disc k en c ninguna", S._s_discr_k, ["3", "2", "2", "-8"], ["D = 0 cuando k = b^2/(4a) = 8", "k > 8"]),
+    ("disc k en a una", S._s_discr_k, ["1", "1", "6", "3"], ["k = 3"]),
+    ("disc k en b dos", S._s_discr_k, ["2", "3", "1", "4"], ["k < -4  o  k > 4"]),
+    ("disc k en b ninguna irracional", S._s_discr_k, ["2", "2", "1", "5"], ["-2*sqrt(5) < k < 2*sqrt(5)"]),
+    ("recta parabola tangente", S._s_recta_parab, ["1", "-4", "5", "2", "-4"],
+     ["x^2 - 6x + 9 = 0", "D = 0: se tocan en 1 punto", "(3, 2)"]),
+    ("recta parabola dos", S._s_recta_parab, ["1", "0", "0", "1", "2"], ["(-1, 1)", "(2, 4)"]),
+    ("recta parabola irracional", S._s_recta_parab, ["1", "0", "0", "1", "1"],
+     ["= (1 +- sqrt(5))/2", "(1.61803, 2.61803)"]),
+    ("sistema k ninguna", S._s_sistema_k, ["1", "3", "6", "2", "1", "5"],
+     ["det(k) = k - 6", "con k = 6: NINGUNA", "con k != 6: 1 solucion"]),
+    ("sistema k infinitas", S._s_sistema_k, ["2", "3", "12", "1", "2", "4"], ["con k = 6: INFINITAS"]),
+    ("sistema k en c", S._s_sistema_k, ["3", "2", "4", "1", "2", "3"], ["INFINITAS si k = 6", "NINGUNA si k != 6"]),
+    ("sistema k siempre una", S._s_sistema_k, ["3", "1", "1", "1", "-1", "1"], ["det != 0: SIEMPRE 1 solucion"]),
+    ("valor absoluto", S._s_absoluto, ["2", "-3", "5"], ["x = 4", "x = -1", "suma = 3"]),
+    ("valor absoluto negativo", S._s_absoluto, ["1", "2", "-3"], ["NINGUNA solucion"]),
+    ("expo 2 puntos", S._s_expo_2p, ["0", "100", "2", "121"], ["y = 100*(1.1)^x", "crece 10% por unidad de x"]),
+]
+for _n, _f, _e, _x in _SATN:
+    caso("sat " + _n, _f, _e, _x)
+
 # ---------- resultado ----------
 
 if fallas:
