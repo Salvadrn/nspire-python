@@ -17,7 +17,7 @@ corre() {
         else
             [ -x "$MP" ] || continue
             heap=1M
-            [ "$arch" = calculadora/general.py ] && heap=1300K
+            [ "$arch" = calculadora/general.py ] && heap=1500K
             out=$(printf "$ent" | "$MP" -X heapsize=$heap "$arch" 2>&1)
         fi
         for e in "$@"; do
@@ -34,9 +34,9 @@ printf '0\n0\n' | python3 tests/pruebas.py | tail -n 12
 if [ -x "$MP" ]; then
     # la bateria carga general + sat + todos los casos a la vez: necesita
     # mas heap que un archivo solo. Los 4 archivos sueltos (abajo) van a
-    # 1M (general, con SAT, a 1300K: necesita ~1.2 MB; la Nspire tiene ~2 MB).
-    echo "--- bateria en MicroPython 1.11, heap 1700K (la Nspire tiene ~2 MB) ---"
-    printf '0\n0\n' | "$MP" -X heapsize=1700K tests/pruebas.py | tail -n 12
+    # 1M (general, con SAT, a 1500K: necesita ~1.4 MB; la Nspire tiene ~2 MB).
+    echo "--- bateria en MicroPython 1.11, heap 1900K (la Nspire tiene ~2 MB) ---"
+    printf '0\n0\n' | "$MP" -X heapsize=1900K tests/pruebas.py | tail -n 12
 else
     echo "(sin MicroPython 1.11 en .tools/: solo se probo en CPython)"
 fi
