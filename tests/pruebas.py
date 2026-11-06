@@ -348,7 +348,7 @@ def _hojas_sat():
 
 
 caso("hojas AP", _hojas_ap, [], ["renglones=431"])
-caso("hojas SAT", _hojas_sat, [], ["renglones=422"])
+caso("hojas SAT", _hojas_sat, [], ["renglones=443"])
 
 # ---------- IA: el examen de Adrian de punta a punta ----------
 
@@ -793,6 +793,11 @@ caso("sat formulario altura", lambda: _buf.append("\n".join(
          [l for tema in S.SAT_TEMAS for l in tema[1]])), [],
      ["1) altura = cateto1*cateto2/hip", "2) altura = sqrt(x*y), con x=AD,",
       "altura = 2*Area/base  (2A/b)"])
+caso("sat formulario area superficial", lambda: _buf.append("\n".join(
+         [l for tema in S.SAT_TEMAS for l in tema[1]])), [],
+     ["Cilindro: 2*pi*r*h + 2*pi*r^2", "Esfera: 4*pi*r^2",
+      "Cono: pi*r*(r + sqrt(h^2+r^2))", "  l*w + l*sqrt((w/2)^2+h^2)",
+      "      + w*sqrt((l/2)^2+h^2)"])
 
 # ---------- resultado ----------
 
