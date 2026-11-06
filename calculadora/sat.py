@@ -439,20 +439,8 @@ SAT_TEMAS = [
         'esta en toda la seccion: practicalo',
         '',
         '-- Desmos --',
-        'TIP: grafica y=lado izq, y=lado der',
-        'y lee la interseccion: x = solucion',
-        'TIP: sistema: teclea las 2 ecs.;',
-        'el cruce (x,y) es la solucion',
-        'TIP: clic en la curva marca ceros,',
-        'vertice (max/min) e intersecciones',
-        'TIP: regresion: tabla + y1~mx1+b',
-        'cuadratica: y1~ax1^2+bx1+c',
-        'exponencial: y1~a*b^x1',
-        'TIP: slider para hallar constante',
-        'TIP: teclea directo el circulo o',
-        'desigualdad: x^2+y^2=25, y<=2x+1',
-        'TIP: lista L=[3,5,8]; luego',
-        'mean(L), median(L)',
+        'Los comandos estan en la seccion',
+        '6 (comandos de Desmos).',
         '',
         '-- estrategias --',
         "'Plugging in': numeros sencillos",
@@ -476,6 +464,105 @@ SAT_TEMAS = [
         'TIP: SI trae areas, volumenes,',
         'Pitagoras, 30-60-90 y 45-45-90,',
         'circulo = 360 grados = 2pi rad',
+    ]),
+    ('SAT: comandos de Desmos', [
+        '-- como se teclea --',
+        'pi -> escribe pi',
+        'sqrt(x) -> escribe sqrt',
+        'cbrt(x) raiz cubica',
+        'nthroot -> raiz n-esima',
+        'x^2 potencia; / arma la fraccion',
+        'abs(x) o |x|  valor absoluto',
+        'ln(x)   log(x) es base 10',
+        'log_2(8) = 3  (base con _)',
+        'e^x  (e ya vale 2.718...)',
+        '5!   nCr(5,2)=10   nPr(5,2)=20',
+        'gcd(12,18)=6  lcm(4,6)=12',
+        'mod(17,5)=2   round(x)',
+        'x1 -> se vuelve subindice x_1',
+        'TIP: junto al resultado sale un',
+        'boton a/b: lo pasa a fraccion.',
+        '',
+        '-- graficar y leer --',
+        'y=2x+3   recta',
+        'f(x)=x^2-4x+3   luego f(5)',
+        'clic en la curva: puntos grises',
+        '= ceros, vertice, cruces',
+        'y=x^2 {x>0}  dominio limitado',
+        'y<2x+1  sombrea la region',
+        '(x-2)^2+(y+1)^2=9   circulo',
+        '(2,3)  punto',
+        'f(x)=10? grafica y=f(x) y y=10;',
+        'clic en el cruce',
+        '',
+        '-- resolver --',
+        '1 variable: teclea 3x+5=2x-1',
+        'tal cual: sale la linea vertical',
+        'x=-6 (la x es la solucion).',
+        'o y=lado izq, y=lado der: la x',
+        'del cruce = solucion',
+        'sistema: teclea las 2 ecs.;',
+        'clic en el cruce = (x,y)',
+        'paralelas: 0 sol.',
+        'misma linea: infinitas',
+        '',
+        '-- constantes (slider) --',
+        'y=kx^2 -> clic en "add slider"',
+        'muevelo hasta que cumpla',
+        'k=3  fija la constante',
+        'OJO: x, y, r, e, t ya estan',
+        'tomadas: usa a, b, k, p, h...',
+        '(r=3 dibuja un circulo polar)',
+        '',
+        '-- formulas con letras --',
+        'define a=3 y h=5 (renglones)',
+        'luego teclea la formula:',
+        '2pi a h+2pi a^2  -> 150.8',
+        'cambias a o h y se recalcula.',
+        'ej cono: pi a(a+sqrt(h^2+a^2))',
+        '',
+        '-- tabla y regresion ~ --',
+        '+ -> table: columnas x1, y1',
+        'y1~mx1+b   lineal (da m, b, r)',
+        'y1~ax1^2+bx1+c   cuadratica',
+        'y1~ab^x1   exponencial',
+        '~ = que se parezca: da las',
+        'letras y R^2 (1 = exacto)',
+        '',
+        '-- identidad con ~ (menu 15) --',
+        'X=[1...10]+0.5',
+        'luego: izq(X) ~ der(X)',
+        'ej: (3X+7)/((X-5)(X+4))',
+        '   ~ a/(X-5)+b/(X+4)',
+        'Desmos da a=2.444 (=22/9) y',
+        'b=0.5556 (=5/9)',
+        '(+0.5 evita dividir entre 0)',
+        '',
+        '-- estadistica --',
+        'L=[3,5,8,8,10]',
+        'mean(L)   median(L)',
+        'stdev(L)   (de muestra)',
+        'stdevp(L)  (de poblacion)',
+        'min(L) max(L); rango: max-min',
+        'quartile(L,1)  quartile(L,3)',
+        'length(L) cuantos; total(L) suma',
+        'sort(L) ordena (moda: a ojo)',
+        'tabla de frecuencias:',
+        'V=[valores]  C=[cuantas veces]',
+        'media = total(V*C)/total(C)',
+        'boxplot(L)   histogram(L)',
+        '',
+        '-- geometria y trig --',
+        'llave inglesa -> Degrees',
+        'sin(30)  cos  tan  arcsin(0.5)',
+        'distance((1,2),(4,6)) = 5',
+        'midpoint((1,2),(4,6))',
+        '',
+        '-- ver mejor --',
+        'clic al circulo de color: ocultar',
+        'casa = vista normal; +/- = zoom',
+        'no ves la curva? llave inglesa',
+        'y cambia los ejes',
     ]),
 ]
 # <<FIN SAT_TEMAS>>
@@ -572,37 +659,60 @@ def _s_lee(t):
     return _s_lee_dec(t)
 
 
-def _sat_entrada(prompt):
+class _SMenu(Exception):
+    # 'q' en cualquier dato: regresa al menu del SAT (sin esto, un dato
+    # que no se lee deja la pregunta en ciclo y hay que apagar la calc)
+    pass
+
+
+def _sat_entrada(prompt, q_ok=False):
     """input() seguro en la Nspire: si la pregunta no cabe en el renglon
     va en el suyo y se escribe despues de '> ' (si no, la calc regresa
-    tambien el pedazo de la pregunta junto con la respuesta)."""
+    tambien el pedazo de la pregunta junto con la respuesta).
+    'q' o 'menu' regresan al menu; q_ok=True cuando q es una letra."""
     if len(prompt) > 28:
         print(prompt.rstrip())
-        return input("> ")
-    return input(prompt)
+        r = input("> ")
+    else:
+        r = input(prompt)
+    t = r.strip().lower()
+    if t == "menu" or t == "salir" or (t == "q" and not q_ok):
+        raise _SMenu()
+    return r
+
+
+def _s_cola(s):
+    # si la calc regresa tambien el pedazo de la pregunta ('AC): 90'),
+    # queda lo que va despues del ultimo ':' o '>' (un numero no los usa)
+    for c in ":>":
+        i = s.rfind(c)
+        if i >= 0:
+            s = s[i + 1:]
+    return s.strip()
 
 
 def _s_pide(texto, default=None):
     while True:
-        s = _sat_entrada(texto).strip()
+        s = _s_cola(_sat_entrada(texto))
         if s == "" and default is not None:
             return default
         try:
             return _s_lee(s)
         except Exception:
             print("no entendi. ej: 3, -2.5, 7/3")
+            print("(q = regresar al menu)")
 
 
 def _s_pide_lista(texto):
     while True:
-        s = _sat_entrada(texto).strip().replace(",", " ")
+        s = _s_cola(_sat_entrada(texto)).replace(",", " ")
         try:
             vals = [_s_lee(p) for p in s.split()]
             if vals:
                 return vals
         except Exception:
             pass
-        print("ej: 3 5 8.5 7/2")
+        print("ej: 3 5 8.5 7/2  (q = menu)")
 
 
 # ---------- raices exactas y radicales simplificados ----------
@@ -689,7 +799,7 @@ def _s_hojas():
             i += 1
         print("0 regresar")
         s = input("? ").strip()
-        if s == "0" or s == "":
+        if s == "0" or s == "" or s == "q":
             return
         if s.isdigit() and 1 <= int(s) <= len(SAT_TEMAS):
             _s_muestra(SAT_TEMAS[int(s) - 1])
@@ -2051,7 +2161,8 @@ def _s_identidad():
     out.append("(como la regresion ~ de Desmos)")
     _s_out(out)
     while True:
-        t = _sat_entrada("calcula algo (ej a*b), enter=no: ").strip()
+        t = _sat_entrada("calcula algo (ej a*b), enter=no: ",
+                         "q" in cons).strip()
         if t == "":
             return
         fn = _s_func(t, cons)
@@ -2074,7 +2185,7 @@ def _s_despeja():
         return
     print("letras: " + ", ".join(nombres))
     while True:
-        obj = _sat_entrada("cual despejo? ").strip()
+        obj = _sat_entrada("cual despejo? ", "q" in nombres).strip()
         if obj in nombres:
             break
         print("escribe una de: " + ", ".join(nombres))
@@ -2105,7 +2216,7 @@ def _s_terminos():
     f, nombres, e = _s_ecuacion("ecuacion: ")
     print("letras: " + ", ".join(nombres))
     while True:
-        obj = _sat_entrada("cual despejan? ").strip()
+        obj = _sat_entrada("cual despejan? ", "q" in nombres).strip()
         if obj in nombres:
             break
         print("escribe una de: " + ", ".join(nombres))
@@ -2122,7 +2233,7 @@ def _s_terminos():
     print("escribe cada opcion en terminos")
     print("de " + ", ".join(otros) + " (enter = salir)")
     while True:
-        t = _sat_entrada(obj + " = ").strip()
+        t = _sat_entrada(obj + " = ", "q" in otros).strip()
         if t == "":
             return
         fn = _s_func(t, otros)
@@ -2254,7 +2365,7 @@ def _s_largo_txt(v):
 def _s_pide_num(texto):
     """Numero o cuenta con raiz: 8, 7/2, 6sqrt(13). Enter = None."""
     while True:
-        t = _sat_entrada(texto).strip()
+        t = _s_cola(_sat_entrada(texto))
         if t == "":
             return None
         try:
@@ -2268,6 +2379,7 @@ def _s_pide_num(texto):
         except Exception:
             pass
         print("no entendi. ej: 8, 7/2, 6sqrt(13)")
+        print("(q = regresar al menu)")
 
 
 def _s_altura_hip():
@@ -2413,6 +2525,7 @@ def sat():
     print("")
     print("Tu CAS NO entra al SAT: esto es")
     print("para estudiar. Examen = Desmos.")
+    print("q en cualquier dato = menu")
     while True:
         print("")
         print("== SAT MATH (estudio) ==")
@@ -2452,6 +2565,8 @@ def sat():
             else:
                 print("escribe un numero del 0 al 17")
                 continue
+        except _SMenu:
+            continue
         except Exception as err:
             print("Algo fallo: " + str(err))
         input("-- enter --")
