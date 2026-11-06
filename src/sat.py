@@ -8,7 +8,7 @@
 # ASCII, sin f-strings, sin eval: MicroPython 1.11.
 
 # --- bundle: skip ---
-from math import sqrt, log, atan, pi
+from math import sqrt, log, atan, pi, sin, cos, tan, exp, log10
 # --- bundle: end skip ---
 
 _S_ANCHO = 36   # caracteres por renglon del shell
@@ -1381,6 +1381,811 @@ def _s_expo_2p():
             + "% por unidad de x"])
 
 
+# ---------- polinomios (coeficientes de mayor a menor grado) ----------
+
+_S_CERO = (0, 1)
+
+
+def _s_ptxt(c, var="x"):
+    """[2,-3,0,5] -> 2x^3 - 3x^2 + 5."""
+    n = len(c) - 1
+    out = ""
+    for i in range(len(c)):
+        a = c[i]
+        if a[0] == 0:
+            continue
+        g = n - i
+        mon = "" if g == 0 else (var if g == 1 else "{}^{}".format(var, g))
+        if out == "":
+            out = _s_sh(a) if g == 0 else _s_coef(a, mon)
+        else:
+            ab = (abs(a[0]), a[1])
+            out += (" - " if a[0] < 0 else " + ") + (_s_sh(ab) if g == 0 else _s_coef(ab, mon))
+    return out if out else "0"
+
+
+def _s_limpia(c):
+    """Quita ceros del frente (grado real)."""
+    i = 0
+    while i < len(c) - 1 and c[i][0] == 0:
+        i += 1
+    return c[i:]
+
+
+def _s_ppide(texto):
+    print(texto)
+    print("coeficientes de mayor a menor;")
+    print("pon 0 si falta: 2x^3-3x^2+5")
+    print("-> 2 -3 0 5")
+    return _s_limpia(_s_pide_lista("coeficientes: "))
+
+
+def _s_horner(c, a):
+    """Division sintetica entre (x - a): (cociente, residuo)."""
+    b = [c[0]]
+    for k in c[1:]:
+        b.append(_s_add(k, _s_mul(b[-1], a)))
+    return b[:-1], b[-1]
+
+
+def _s_pdiv(n, d):
+    """n / d con fracciones: (cociente, residuo)."""
+    n = list(n)
+    d = _s_limpia(d)
+    if len(d) == 1 and d[0][0] == 0:
+        raise ZeroDivisionError("division entre 0")
+    q = []
+    while len(n) >= len(d):
+        f = _s_div(n[0], d[0])
+        q.append(f)
+        for i in range(len(d)):
+            n[i] = _s_sub(n[i], _s_mul(f, d[i]))
+        n = n[1:]
+    if not q:
+        q = [_S_CERO]
+    return q, _s_limpia(n if n else [_S_CERO])
+
+
+def _s_pmul(a, b):
+    r = [_S_CERO] * (len(a) + len(b) - 1)
+    for i in range(len(a)):
+        for j in range(len(b)):
+            r[i + j] = _s_add(r[i + j], _s_mul(a[i], b[j]))
+    return r
+
+
+def _s_divisores(n):
+    n = abs(n)
+    ds = []
+    i = 1
+    while i * i <= n:
+        if n % i == 0:
+            ds.append(i)
+            if i * i != n:
+                ds.append(n // i)
+        i += 1
+    return ds
+
+
+def _s_mcm(a, b):
+    return a // _s_mcd(a, b) * b
+
+
+def _s_p_eval():
+    c = _s_ppide("p(x) =")
+    a = _s_pide("a (para p(a)) = ")
+    q, r = _s_horner(c, a)
+    out = ["p(x) = " + _s_ptxt(c)]
+    # Horner paso a paso
+    acc = c[0]
+    out.append("Horner: empiezo con " + _s_sh(acc))
+    for k in c[1:]:
+        nuevo = _s_add(k, _s_mul(acc, a))
+        kk = _s_sh(k) if k[0] >= 0 else "(" + _s_sh(k) + ")"
+        aa = _s_sh(a) if a[0] >= 0 else "(" + _s_sh(a) + ")"
+        out.append("{}*{} + {} = {}".format(_s_sh(acc), aa, kk, _s_sh(nuevo)))
+        acc = nuevo
+    out.append("p(" + _s_sh(a) + ") = " + _s_txt(r))
+    out.append("residuo de p(x)/(x - " + _s_sh(a) + ") = " + _s_sh(r))
+    out.append("(teorema del residuo)")
+    if r[0] == 0:
+        out.append("p(a) = 0: (x - " + _s_sh(a) + ") SI es factor")
+        out.append("y x = " + _s_sh(a) + " es raiz/x-intercept")
+    else:
+        out.append("p(a) != 0: (x - " + _s_sh(a) + ") NO es factor")
+    _s_out(out)
+
+
+def _s_p_sintetica():
+    c = _s_ppide("p(x) =")
+    a = _s_pide("divido entre x - a, a = ")
+    q, r = _s_horner(c, a)
+    fila2 = []
+    acc = c[0]
+    for k in c[1:]:
+        fila2.append(_s_mul(acc, a))
+        acc = _s_add(k, _s_mul(acc, a))
+    out = ["(" + _s_ptxt(c) + ")/(" + _s_ptxt([(1, 1), _s_neg(a)]) + ")",
+           "division sintetica con " + _s_sh(a) + ":",
+           "  " + "  ".join([_s_sh(k) for k in c]),
+           "    " + "  ".join([_s_sh(k) for k in fila2]),
+           "  " + "  ".join([_s_sh(k) for k in q]) + " | " + _s_sh(r),
+           "cociente = " + _s_ptxt(q),
+           "residuo = " + _s_sh(r)]
+    if r[0] == 0:
+        out.append("exacta: p(x) = (" + _s_ptxt([(1, 1), _s_neg(a)]) + ")(" + _s_ptxt(q) + ")")
+    else:
+        out.append("p(x) = (x - a)*cociente + residuo")
+    _s_out(out)
+
+
+def _s_p_division():
+    n = _s_ppide("dividendo p(x) =")
+    d = _s_ppide("divisor d(x) =")
+    q, r = _s_pdiv(n, d)
+    _s_out(["(" + _s_ptxt(n) + ")/(" + _s_ptxt(d) + ")",
+            "cociente = " + _s_ptxt(q),
+            "residuo = " + _s_ptxt(r),
+            "p = d*cociente + residuo",
+            "d es factor" if r == [_S_CERO] else "d NO es factor (residuo != 0)"])
+
+
+def _s_p_multiplica():
+    a = _s_ppide("primer polinomio =")
+    b = _s_ppide("segundo polinomio =")
+    print("1 multiplicar  2 sumar  3 restar (1o - 2o)")
+    op = input("? ").strip()
+    if op == "2" or op == "3":
+        n = max(len(a), len(b))
+        a2 = [_S_CERO] * (n - len(a)) + a
+        b2 = [_S_CERO] * (n - len(b)) + b
+        r = [_s_add(a2[i], b2[i]) if op == "2" else _s_sub(a2[i], b2[i]) for i in range(n)]
+        r = _s_limpia(r)
+        signo = ") + (" if op == "2" else ") - ("
+    else:
+        r = _s_pmul(a, b)
+        signo = ")("
+    _s_out(["(" + _s_ptxt(a) + signo + _s_ptxt(b) + ")",
+            "= " + _s_ptxt(r),
+            "grado " + str(len(r) - 1)
+            + ", coef. principal " + _s_sh(r[0])])
+
+
+def _s_p_raices():
+    c = _s_ppide("p(x) = 0 con")
+    if len(c) < 2:
+        print("p es constante: no tiene raices")
+        return
+    out = ["p(x) = " + _s_ptxt(c)]
+    # a enteros
+    L = 1
+    for a in c:
+        L = _s_mcm(L, a[1])
+    ent = [a[0] * (L // a[1]) for a in c]
+    g = 0
+    for v in ent:
+        g = _s_mcd(abs(v), g)
+    ent = [v // g for v in ent]
+    if ent[0] < 0:
+        ent = [-v for v in ent]
+    pol = [(v, 1) for v in ent]
+    lider = c[0]
+    raices = []
+    while len(pol) > 1 and pol[-1][0] == 0:
+        raices.append(_S_CERO)
+        pol = pol[:-1]
+    if len(pol) > 1:
+        cands = []
+        for pp in _s_divisores(pol[-1][0]):
+            for qq in _s_divisores(pol[0][0]):
+                for sg in (1, -1):
+                    f = _s_fr(sg * pp, qq)
+                    if f not in cands:
+                        cands.append(f)
+        cands.sort(key=_s_float)
+        for f in cands:
+            while len(pol) > 1:
+                q, r = _s_horner(pol, f)
+                if r[0] != 0:
+                    break
+                raices.append(f)
+                pol = q
+    out.append("raices racionales (p/q):")
+    if raices:
+        vistos = []
+        for r in raices:
+            if r not in vistos:
+                vistos.append(r)
+                m = raices.count(r)
+                out.append("x = " + _s_txt(r) + ("  (multiplicidad " + str(m) + ")" if m > 1 else ""))
+    else:
+        out.append("ninguna")
+    resto = []
+    if len(pol) == 3:
+        D, xs, extra = _s_raices_txt(pol[0], pol[1], pol[2])
+        out.append("queda " + _s_ptxt(pol) + " = 0")
+        out.append("D = " + _s_sh(D))
+        if D[0] < 0:
+            out.append("D < 0: sin mas raices reales")
+        out += extra
+        for x in xs:
+            out.append("x = " + _s_num_txt(x))
+        resto = pol
+    elif len(pol) == 2:
+        x = _s_div(_s_neg(pol[1]), pol[0])
+        raices.append(x)
+        out.append("x = " + _s_txt(x))
+    elif len(pol) > 3:
+        out.append("queda " + _s_ptxt(pol) + " (grado " + str(len(pol) - 1) + ")")
+        out.append("sin raices racionales;")
+        reales = _s_reales_num(pol)
+        if reales:
+            out.append("reales aprox: " + ", ".join([_s_g(x) for x in reales]))
+        else:
+            out.append("no encontre raices reales")
+        resto = pol
+    # forma factorizada: p = K * prod(q x - p) * resto
+    den = resto[0] if resto else (1, 1)
+    for r in raices:
+        den = _s_mul(den, (r[1], 1))
+    K = _s_div(lider, den)
+    fac = "" if K == (1, 1) else ("-" if K == (-1, 1) else (_s_sh(K) if K[1] == 1 else "(" + _s_sh(K) + ")"))
+    vistos = []
+    for r in raices:
+        if r in vistos:
+            continue
+        vistos.append(r)
+        f = _s_menos_var("x", r) if r[1] == 1 else "(" + _s_ptxt([(r[1], 1), (-r[0], 1)]) + ")"
+        if f == "x" and raices.count(r) > 1:
+            f = "x"
+        m = raices.count(r)
+        fac += f + ("^" + str(m) if m > 1 else "")
+    if resto:
+        fac += "(" + _s_ptxt(resto) + ")"
+    if raices:
+        out.append("factorizado: " + fac)
+    out.append("x-intercepts = raices reales")
+    _s_out(out)
+
+
+def _s_reales_num(pol):
+    """Raices reales aprox de un polinomio por cambios de signo."""
+    c = [_s_float(a) for a in pol]
+    B = 1 + max([abs(a / c[0]) for a in c[1:]])
+
+    def ev(x):
+        v = 0.0
+        for a in c:
+            v = v * x + a
+        return v
+    n = 4000
+    xs = []
+    x0 = -B
+    f0 = ev(x0)
+    for i in range(1, n + 1):
+        x1 = -B + 2 * B * i / n
+        f1 = ev(x1)
+        if f0 == 0:
+            xs.append(x0)
+        elif f0 * f1 < 0:
+            a, b = x0, x1
+            fa = f0
+            for _ in range(60):
+                m = (a + b) / 2
+                fm = ev(m)
+                if fa * fm <= 0:
+                    b = m
+                else:
+                    a, fa = m, fm
+            xs.append((a + b) / 2)
+        x0, f0 = x1, f1
+    return xs
+
+
+def _s_p_vieta():
+    c = _s_ppide("p(x) = 0 con")
+    n = len(c) - 1
+    if n < 1:
+        print("necesito grado >= 1")
+        return
+    suma = _s_div(_s_neg(c[1]), c[0])
+    prod = _s_div(c[-1], c[0])
+    if n % 2:
+        prod = _s_neg(prod)
+    _s_out(["grado " + str(n) + ": " + str(n) + " raices (contando",
+            "complejas y repetidas)",
+            "suma = -(2o coef)/(1er coef)",
+            "     = " + _s_txt(suma),
+            "producto = (-1)^n*(ultimo)/(1o)",
+            "     = " + _s_txt(prod)])
+
+
+def _s_polinomios():
+    print("1 evaluar p(a) / residuo / factor")
+    print("2 dividir entre (x - a)")
+    print("3 dividir entre otro polinomio")
+    print("4 multiplicar / sumar / restar")
+    print("5 raices y factorizar")
+    print("6 suma y producto de raices")
+    op = input("? ").strip()
+    fns = {"1": _s_p_eval, "2": _s_p_sintetica, "3": _s_p_division,
+           "4": _s_p_multiplica, "5": _s_p_raices, "6": _s_p_vieta}
+    if op in fns:
+        fns[op]()
+    else:
+        print("opcion no valida")
+
+
+# ---------- ecuaciones con letras (multi-variable) ----------
+
+_S_FUNC = ("sqrt", "sin", "cos", "tan", "abs", "ln", "log", "exp")
+
+
+def _s_expr(t):
+    """Texto tecleado -> (expresion de Python, nombres de variables).
+    2x -> 2*x, 3(x+1) -> 3*(x+1), ab -> a*b, b1 queda junto, ^ -> **."""
+    for a, b in (("\u2212", "-"), ("^", "**"), ("\u03c0", "pi")):
+        t = t.replace(a, b)
+    toks = []
+    i = 0
+    n = len(t)
+    while i < n:
+        ch = t[i]
+        if ch == " ":
+            i += 1
+            continue
+        if ch in "0123456789.":
+            j = i
+            while j < n and t[j] in "0123456789.":
+                j += 1
+            toks.append(("n", t[i:j]))
+            i = j
+        elif ("a" <= ch <= "z") or ("A" <= ch <= "Z"):
+            j = i
+            while j < n and (("a" <= t[j] <= "z") or ("A" <= t[j] <= "Z")):
+                j += 1
+            letras = t[i:j]
+            k = j
+            while k < n and t[k] in "0123456789":
+                k += 1
+            dig = t[j:k]
+            if letras in _S_FUNC and dig == "":
+                toks.append(("f", letras))
+            else:
+                q = 0
+                while q < len(letras):
+                    ult = q == len(letras) - 1
+                    if letras[q:q + 2] == "pi" and not (q + 2 == len(letras) and dig):
+                        toks.append(("v", "pi"))
+                        q += 2
+                        continue
+                    toks.append(("v", letras[q] + (dig if ult else "")))
+                    q += 1
+            i = k
+        elif ch in "+-*/()":
+            if ch == "*" and i + 1 < n and t[i + 1] == "*":
+                toks.append(("o", "**"))
+                i += 2
+            else:
+                toks.append(("o", ch))
+                i += 1
+        else:
+            raise ValueError("no entiendo '" + ch + "'")
+    out = []
+    nombres = []
+    prev = None
+    for tk in toks:
+        if prev is not None:
+            pa = prev[0] in ("n", "v") or prev == ("o", ")")
+            nx = tk[0] in ("n", "v", "f") or tk == ("o", "(")
+            if pa and nx:
+                out.append("*")
+        if tk[0] == "f":
+            out.append({"ln": "log"}.get(tk[1], tk[1]))
+        else:
+            out.append(tk[1])
+        if tk[0] == "v" and tk[1] != "pi" and tk[1] not in nombres:
+            nombres.append(tk[1])
+        prev = tk
+    return "".join(out), nombres
+
+
+def _s_ecuacion(texto):
+    """Pide 'lado = lado' y regresa (funcion f(**vars) = izq - der, vars)."""
+    while True:
+        e = _sat_entrada(texto).strip()
+        if e.count("=") != 1:
+            print("escribe UNA igualdad: izq = der")
+            continue
+        izq, der = e.split("=")
+        try:
+            pi_, n1 = _s_expr(izq)
+            pd_, n2 = _s_expr(der)
+            nombres = n1 + [v for v in n2 if v not in n1]
+            src = "lambda " + ",".join(nombres) + ": (" + pi_ + ")-(" + pd_ + ")"
+            f = eval(src, {"sqrt": sqrt, "sin": sin, "cos": cos, "tan": tan,
+                           "abs": abs, "log": log, "exp": exp, "pi": pi})
+            return f, nombres, e
+        except Exception as err:
+            print("no la entendi: " + str(err))
+
+
+def _s_func(texto, nombres):
+    """Expresion en terminos de 'nombres' -> funcion, o None."""
+    try:
+        pe, ns = _s_expr(texto)
+        for v in ns:
+            if v not in nombres:
+                print("'" + v + "' no esta en la ecuacion")
+                return None
+        return eval("lambda " + ",".join(nombres) + ": " + pe,
+                    {"sqrt": sqrt, "sin": sin, "cos": cos, "tan": tan,
+                     "abs": abs, "log": log, "exp": exp, "pi": pi})
+    except Exception as err:
+        print("no la entendi: " + str(err))
+        return None
+
+
+def _s_frac_aprox(x):
+    """2.444444 -> '22/9' si es una fraccion sencilla, si no ''."""
+    if abs(x - round(x)) < 1e-9 * max(1.0, abs(x)):
+        return str(int(round(x)))
+    h0, h1, k0, k1 = 0, 1, 1, 0
+    v = x
+    for _ in range(20):
+        a = int(v // 1)
+        h0, h1 = h1, a * h1 + h0
+        k0, k1 = k1, a * k1 + k0
+        if k1 > 2000:
+            return ""
+        if abs(x - h1 / k1) < 1e-9 * max(1.0, abs(x)):
+            return "{}/{}".format(h1, k1) if k1 != 1 else str(h1)
+        r = v - a
+        if r == 0:
+            break
+        v = 1 / r
+    return ""
+
+
+def _s_num_fr(x):
+    f = _s_frac_aprox(x)
+    if f and "/" in f:
+        return f + " = " + _s_g(x)
+    return f if f else _s_g(x)
+
+
+def _s_raices_1(g):
+    """Raices reales de g(t) por cambios de signo en una malla amplia."""
+    pts = [0.0]
+    v = 1e-4
+    while v < 1e6:
+        pts.append(v)
+        pts.append(-v)
+        v *= 1.05
+    pts.sort()
+    vals = []
+    for t in pts:
+        try:
+            vals.append(g(t))
+        except Exception:
+            vals.append(None)
+    rs = []
+    for i in range(len(pts) - 1):
+        a, b = pts[i], pts[i + 1]
+        fa, fb = vals[i], vals[i + 1]
+        if fa is None or fb is None:
+            continue
+        if fa == 0:
+            rs.append(a)
+            continue
+        if fa * fb < 0:
+            for _ in range(80):
+                m = (a + b) / 2
+                try:
+                    fm = g(m)
+                except Exception:
+                    break
+                if fa * fm <= 0:
+                    b = m
+                else:
+                    a, fa = m, fm
+            # salto (asintota) y no raiz: |g| grande junto al corte
+            try:
+                if abs(g((a + b) / 2)) > 1e-6 * (1 + abs(fb) + abs(vals[i])):
+                    continue
+            except Exception:
+                continue
+            rs.append((a + b) / 2)
+    limpio = []
+    for r in rs:
+        if not limpio or abs(r - limpio[-1]) > 1e-7 * max(1.0, abs(r)):
+            limpio.append(r)
+    return [0.0 if abs(r) < 1e-12 else r for r in limpio]
+
+
+def _s_gauss(A, b):
+    """Resuelve A x = b (pequeno) por eliminacion; None si es singular."""
+    n = len(b)
+    M = [list(A[i]) + [b[i]] for i in range(n)]
+    for c in range(n):
+        piv = max(range(c, n), key=lambda r: abs(M[r][c]))
+        if abs(M[piv][c]) < 1e-14:
+            return None
+        M[c], M[piv] = M[piv], M[c]
+        for r in range(n):
+            if r != c:
+                f = M[r][c] / M[c][c]
+                for k in range(c, n + 1):
+                    M[r][k] -= f * M[c][k]
+    return [M[i][n] / M[i][i] for i in range(n)]
+
+
+def _s_identidad():
+    print("ecuacion que vale para TODA x")
+    print("con constantes que no sabes,")
+    print("ej: a/(x-5) + b/(x+4) =")
+    print("    (3x+7)/((x-5)(x+4))")
+    f, nombres, e = _s_ecuacion("identidad: ")
+    if "x" not in nombres:
+        print("necesito la variable x")
+        return
+    cons = [v for v in nombres if v != "x"]
+    if not cons:
+        print("no hay constantes que hallar")
+        return
+    k = len(cons)
+    ix = nombres.index("x")
+    xs = []
+    for x in (6.3, 7.1, 8.7, 9.2, 10.9, -3.7, 2.45, 13.1, -7.9, 0.37, 4.6, -1.3):
+        xs.append(x)
+    m = max(2 * k + 3, 6)
+    xs = xs[:m]
+
+    def res(th):
+        r = []
+        for x in xs:
+            args = []
+            j = 0
+            for v in nombres:
+                if v == "x":
+                    args.append(x)
+                else:
+                    args.append(th[j])
+                    j += 1
+            r.append(f(*args))
+        return r
+    sols = []
+    for ini in (1.0, 0.5, -1.0, 2.0, -0.5, 3.0, 0.1, -2.0):
+        th = [ini + 0.01 * i for i in range(k)]
+        try:
+            for _ in range(60):
+                r = res(th)
+                J = []
+                for j in range(k):
+                    h = 1e-6 * max(1.0, abs(th[j]))
+                    t2 = list(th)
+                    t2[j] += h
+                    r2 = res(t2)
+                    J.append([(r2[i] - r[i]) / h for i in range(len(r))])
+                A = [[sum([J[a][i] * J[b][i] for i in range(len(r))]) for b in range(k)] for a in range(k)]
+                g = [-sum([J[a][i] * r[i] for i in range(len(r))]) for a in range(k)]
+                d = _s_gauss(A, g)
+                if d is None:
+                    break
+                th = [th[j] + d[j] for j in range(k)]
+                if max([abs(v) for v in d]) < 1e-12 * max([1.0] + [abs(v) for v in th]):
+                    break
+            r = res(th)
+            esc = 1.0 + max([abs(v) for v in th])
+            if max([abs(v) for v in r]) < 1e-8 * esc:
+                nuevo = True
+                for s0 in sols:
+                    if max([abs(s0[j] - th[j]) for j in range(k)]) < 1e-6 * esc:
+                        nuevo = False
+                if nuevo:
+                    sols.append(th)
+        except Exception:
+            pass
+    out = ["identidad: " + e]
+    if not sols:
+        out.append("no encontre constantes que")
+        out.append("la cumplan para toda x")
+        _s_out(out)
+        return
+    if len(sols) > 1:
+        out.append(str(len(sols)) + " soluciones:")
+    for th in sols:
+        for j in range(k):
+            out.append(cons[j] + " = " + _s_num_fr(th[j]))
+        if len(sols) > 1:
+            out.append("--")
+    out.append("(como la regresion ~ de Desmos)")
+    _s_out(out)
+    while True:
+        t = _sat_entrada("calcula algo (ej a*b), enter=no: ").strip()
+        if t == "":
+            return
+        fn = _s_func(t, cons)
+        if fn is None:
+            continue
+        for th in sols:
+            try:
+                print(t + " = " + _s_num_fr(fn(*th)))
+            except Exception as err:
+                print("no se pudo: " + str(err))
+
+
+def _s_despeja():
+    print("ecuacion con letras: das todas")
+    print("menos una y la despejo")
+    print("ej: P = 2l + 2w")
+    f, nombres, e = _s_ecuacion("ecuacion: ")
+    if not nombres:
+        print("no hay letras")
+        return
+    print("letras: " + ", ".join(nombres))
+    while True:
+        obj = _sat_entrada("cual despejo? ").strip()
+        if obj in nombres:
+            break
+        print("escribe una de: " + ", ".join(nombres))
+    val = {}
+    for v in nombres:
+        if v != obj:
+            val[v] = _s_float(_s_pide(v + " = "))
+    i = nombres.index(obj)
+
+    def g(t):
+        args = [val[v] if v != obj else t for v in nombres]
+        return f(*args)
+    rs = _s_raices_1(g)
+    out = [e]
+    for v in nombres:
+        if v != obj:
+            out.append(v + " = " + _s_g(val[v]))
+    if not rs:
+        out.append("no encontre " + obj + " real")
+    for r in rs:
+        out.append(obj + " = " + _s_num_fr(r))
+    _s_out(out)
+
+
+def _s_terminos():
+    print("'in terms of': checa cual opcion")
+    print("despeja bien una letra")
+    f, nombres, e = _s_ecuacion("ecuacion: ")
+    print("letras: " + ", ".join(nombres))
+    while True:
+        obj = _sat_entrada("cual despejan? ").strip()
+        if obj in nombres:
+            break
+        print("escribe una de: " + ", ".join(nombres))
+    otros = [v for v in nombres if v != obj]
+    juegos = []
+    for base in ((1.7, 2.3, 3.1, 0.6, 4.4, 1.3), (2.9, 0.8, 1.9, 3.7, 2.2, 5.1)):
+        val = {}
+        for q in range(len(otros)):
+            val[otros[q]] = base[q % len(base)] + 0.37 * (q // len(base))
+
+        def g(t, val=val):
+            return f(*[val[v] if v != obj else t for v in nombres])
+        juegos.append((val, _s_raices_1(g)))
+    print("escribe cada opcion en terminos")
+    print("de " + ", ".join(otros) + " (enter = salir)")
+    while True:
+        t = _sat_entrada(obj + " = ").strip()
+        if t == "":
+            return
+        fn = _s_func(t, otros)
+        if fn is None:
+            continue
+        ok = True
+        for val, rs in juegos:
+            try:
+                y = fn(*[val[v] for v in otros])
+            except Exception:
+                ok = False
+                break
+            if not [r for r in rs if abs(r - y) < 1e-6 * max(1.0, abs(r))]:
+                ok = False
+        print("SI es correcta" if ok else "NO es correcta")
+
+
+def _s_letras():
+    print("1 identidad para toda x:")
+    print("  hallar constantes (a, b...)")
+    print("2 despejar una letra con valores")
+    print("3 checar opciones 'in terms of'")
+    op = input("? ").strip()
+    if op == "1":
+        _s_identidad()
+    elif op == "2":
+        _s_despeja()
+    elif op == "3":
+        _s_terminos()
+    else:
+        print("opcion no valida")
+
+
+# ---------- triangulos especiales ----------
+
+def _s_kraiz(k, r):
+    """k*sqrt(r) simplificado (k fraccion, r entero >= 1): texto."""
+    t, u = _s_radical(r) if r > 1 else (1, 1)
+    c = _s_mul(k, (t, 1))
+    val = _s_float(c) * sqrt(u)
+    if u == 1:
+        return _s_txt(c)
+    if c == (1, 1):
+        s = "sqrt({})".format(u)
+    elif c[1] == 1:
+        s = "{}*sqrt({})".format(c[0], u)
+    elif c[0] == 1:
+        s = "sqrt({})/{}".format(u, c[1])
+    else:
+        s = "{}*sqrt({})/{}".format(c[0], u, c[1])
+    return "{} = {}".format(s, _s_g(val))
+
+
+def _s_especiales():
+    print("1 45-45-90:  x, x, x*sqrt(2)")
+    print("2 30-60-90:  x, x*sqrt(3), 2x")
+    tipo = input("? ").strip()
+    if tipo == "1":
+        print("que lado tienes?")
+        print("1 un cateto (leg)  2 la hipotenusa")
+    elif tipo == "2":
+        print("que lado tienes?")
+        print("1 cateto corto (frente a 30)")
+        print("2 cateto largo (frente a 60)")
+        print("3 hipotenusa (frente a 90)")
+    else:
+        print("opcion no valida")
+        return
+    lado = input("? ").strip()
+    print("lado = k*sqrt(r)  (ej 4*sqrt(3):")
+    print("k = 4, r = 3; sin raiz: r = 1)")
+    k = _s_pide("k = ")
+    r = _s_pide("r (enter = 1) = ", (1, 1))
+    if r[1] != 1 or r[0] < 1:
+        print("r debe ser entero >= 1")
+        return
+    r = r[0]
+    out = []
+    if tipo == "1":
+        if lado == "2":
+            # cateto = h/sqrt(2) = h*sqrt(2)/2
+            cat = _s_kraiz(_s_div(k, (2, 1)), 2 * r)
+            hip = _s_kraiz(k, r)
+            out.append("cateto = hip/sqrt(2) = hip*sqrt(2)/2")
+        else:
+            cat = _s_kraiz(k, r)
+            hip = _s_kraiz(k, 2 * r)
+            out.append("hip = cateto*sqrt(2)")
+        out.append("catetos (legs) = " + cat)
+        out.append("hipotenusa = " + hip)
+        out.append("angulos: 45, 45, 90")
+    else:
+        if lado == "1":
+            corto = (k, r)
+            out.append("largo = corto*sqrt(3), hip = 2*corto")
+        elif lado == "2":
+            corto = (_s_div(k, (3, 1)), 3 * r)
+            out.append("corto = largo/sqrt(3) = largo*sqrt(3)/3")
+        else:
+            corto = (_s_div(k, (2, 1)), r)
+            out.append("corto = hip/2")
+        kc, rc = corto
+        out.append("corto (frente a 30) = " + _s_kraiz(kc, rc))
+        out.append("largo (frente a 60) = " + _s_kraiz(kc, 3 * rc))
+        out.append("hipotenusa = " + _s_kraiz(_s_mul((2, 1), kc), rc))
+        out.append("sin 30 = cos 60 = 1/2")
+        out.append("sin 60 = cos 30 = sqrt(3)/2")
+    out.append("TIP: el lado mas chico va")
+    out.append("frente al angulo mas chico")
+    _s_out(out)
+
+
 # ---------- menu ----------
 
 def sat():
@@ -1403,6 +2208,9 @@ def sat():
         print("11 exponencial por 2 puntos")
         print("12 triangulo rectangulo y trig")
         print("13 valor absoluto |ax+b| = c")
+        print("14 polinomios")
+        print("15 ecuaciones con letras")
+        print("16 triangulos especiales")
         print(" 0 salir")
         op = input("? ").strip()
         if op == "0" or op == "" or op == "q":
@@ -1410,7 +2218,9 @@ def sat():
         fns = {"2": _s_recta, "3": _s_sistema, "4": _s_sistema_k,
                "5": _s_cuad, "6": _s_discr, "7": _s_porc,
                "8": _s_estad, "9": _s_circulo, "10": _s_expo,
-               "11": _s_expo_2p, "12": _s_triang, "13": _s_absoluto}
+               "11": _s_expo_2p, "12": _s_triang, "13": _s_absoluto,
+               "14": _s_polinomios, "15": _s_letras,
+               "16": _s_especiales}
         try:
             if op == "1":
                 _s_hojas()
@@ -1418,7 +2228,7 @@ def sat():
             elif op in fns:
                 fns[op]()
             else:
-                print("escribe un numero del 0 al 13")
+                print("escribe un numero del 0 al 16")
                 continue
         except Exception as err:
             print("Algo fallo: " + str(err))
