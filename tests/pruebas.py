@@ -773,6 +773,22 @@ _SATP = [
 for _n, _f, _e, _x in _SATP:
     caso("sat " + _n, _f, _e, _x)
 
+# ---------- SAT: semejanza y altura a la hipotenusa ----------
+
+_SATS = [
+    ("altura video", S._s_altura_hip, ["8", "18", "", "", "", ""],
+     ["CD = 12", "AB = 26", "AC = 4*sqrt(13) = 14.4222", "BC = 6*sqrt(13) = 21.6333"]),
+    ("altura catetos", S._s_altura_hip, ["", "", "", "6", "8", ""],
+     ["AD = 18/5 = 3.6", "DB = 32/5 = 6.4", "CD = 24/5 = 4.8", "AB = 10"]),
+    ("altura CD y AD", S._s_altura_hip, ["4", "", "6", "", "", ""], ["DB = 9", "AC = 2*sqrt(13) = 7.2111"]),
+    ("altura CD y AB dos ordenes", S._s_altura_hip, ["", "", "12", "", "", "26"], ["-- si AD = 18:", "AD = 8"]),
+    ("altura AD y BC con raiz", S._s_altura_hip, ["8", "", "", "", "6sqrt(13)", ""], ["DB = 18", "CD = 12"]),
+    ("semejantes", S._s_semejantes, ["4", "10", "6", "7/2", ""],
+     ["escala k = fig2/fig1 = 5/2 = 2.5", "areas: k^2 = 25/4 = 6.25", "en la figura 2: 15", "en la figura 2: 35/4 = 8.75"]),
+]
+for _n, _f, _e, _x in _SATS:
+    caso("sat " + _n, _f, _e, _x)
+
 # ---------- resultado ----------
 
 if fallas:
