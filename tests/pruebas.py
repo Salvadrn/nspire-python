@@ -744,6 +744,35 @@ _SATN = [
 for _n, _f, _e, _x in _SATN:
     caso("sat " + _n, _f, _e, _x)
 
+# ---------- SAT: polinomios, ecuaciones con letras, triangulos especiales ----------
+
+_SATP = [
+    ("p(a) residuo", S._s_p_eval, ["2 -3 0 5", "2"], ["p(2) = 9", "(x - 2) NO es factor"]),
+    ("factor", S._s_p_eval, ["1 -6 11 -6", "3"], ["p(3) = 0", "(x - 3) SI es factor"]),
+    ("sintetica", S._s_p_sintetica, ["1 -6 11 -6", "1"], ["cociente = x^2 - 5x + 6", "residuo = 0"]),
+    ("division larga", S._s_p_division, ["1 2 -5 1", "1 0 1"], ["cociente = x + 2", "residuo = -6x - 1"]),
+    ("multiplicar", S._s_p_multiplica, ["2 3", "1 -1 1", "1"], ["= 2x^3 + x^2 - x + 3"]),
+    ("restar", S._s_p_multiplica, ["3 2 1", "1 5", "3"], ["(3x^2 + 2x + 1) - (x + 5)", "= 3x^2 + x - 4"]),
+    ("raices enteras", S._s_p_raices, ["1 -6 11 -6"], ["factorizado: (x - 1)(x - 2)(x - 3)"]),
+    ("raices fraccion", S._s_p_raices, ["2 -3 -11 6"], ["x = 1/2 = 0.5", "factorizado: (x + 2)(2x - 1)(x - 3)"]),
+    ("raices radical", S._s_p_raices, ["1 0 -2 0"], ["x = 0", "= (0 +- 2*sqrt(2))/2", "factorizado: x(x^2 - 2)"]),
+    ("raiz doble", S._s_p_raices, ["1 0 -3 2"], ["x = 1  (multiplicidad 2)", "factorizado: (x + 2)(x - 1)^2"]),
+    ("sin racionales", S._s_p_raices, ["1 0 1 1"], ["reales aprox: -0.682328"]),
+    ("vieta", S._s_p_vieta, ["2 -3 -11 6"], ["= 3/2 = 1.5", "= -3"]),
+    ("identidad desmos", S._s_identidad, ["a/(x-5) + b/(x+4) = (3x+7)/((x-5)(x+4))", "a*b", ""],
+     ["a = 22/9 = 2.44444", "b = 5/9 = 0.555556", "a*b = 110/81 = 1.35802"]),
+    ("identidad bilineal", S._s_identidad, ["(ax+3)(2x+b) = 6x^2 + 12x + 6", ""], ["a = 3", "b = 2"]),
+    ("despejar w", S._s_despeja, ["P = 2l + 2w", "w", "40", "12"], ["w = 8"]),
+    ("despejar r con pi", S._s_despeja, ["A = pi r^2", "r", "50"], ["letras: A, r", "r = 3.98942"]),
+    ("in terms of", S._s_terminos, ["V = (1/3)pi r^2 h", "h", "3V/(pi r^2)", "V/(3pi r^2)", ""],
+     ["SI es correcta", "NO es correcta"]),
+    ("45-45-90 hip", S._s_especiales, ["1", "2", "10", ""], ["catetos (legs) = 5*sqrt(2) = 7.07107"]),
+    ("30-60-90 largo", S._s_especiales, ["2", "2", "6", ""], ["corto (frente a 30) = 2*sqrt(3) = 3.4641", "hipotenusa = 4*sqrt(3) = 6.9282"]),
+    ("30-60-90 hip", S._s_especiales, ["2", "3", "10", ""], ["corto (frente a 30) = 5", "largo (frente a 60) = 5*sqrt(3) = 8.66025"]),
+]
+for _n, _f, _e, _x in _SATP:
+    caso("sat " + _n, _f, _e, _x)
+
 # ---------- resultado ----------
 
 if fallas:
