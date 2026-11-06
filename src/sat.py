@@ -2186,6 +2186,177 @@ def _s_especiales():
     _s_out(out)
 
 
+# ---------- semejanza: altura a la hipotenusa y escala ----------
+
+_S_NOSE = (-1, 1)
+
+
+def _s_largo_txt(v):
+    """Largo con raiz exacta si su cuadrado es racional sencillo."""
+    f = _s_frac_aprox(v * v)
+    if f:
+        if "/" in f:
+            num, den = f.split("/")
+            return _s_raiz_txt(_s_fr(int(num), int(den)))
+        return _s_raiz_txt((int(f), 1))
+    return _s_g(v)
+
+
+def _s_pide_num(texto):
+    """Numero o cuenta con raiz: 8, 7/2, 6sqrt(13). Enter = None."""
+    while True:
+        t = _sat_entrada(texto).strip()
+        if t == "":
+            return None
+        try:
+            return _s_float(_s_lee(t))
+        except Exception:
+            pass
+        try:
+            pe, ns = _s_expr(t)
+            if not ns:
+                return float(eval(pe, {"sqrt": sqrt, "pi": pi}))
+        except Exception:
+            pass
+        print("no entendi. ej: 8, 7/2, 6sqrt(13)")
+
+
+def _s_altura_hip():
+    print("triangulo ABC con angulo recto")
+    print("en C; la altura CD cae en AB.")
+    print("AD junto a A, DB junto a B;")
+    print("AC cateto de A, BC cateto de B")
+    print("da 2 datos (enter = no se)")
+    print("con raiz: 6sqrt(13)")
+    nombres = ["AD", "DB", "CD", "AC", "BC", "AB"]
+    v = {}
+    for n in nombres:
+        x = _s_pide_num(n + " = ")
+        if x is not None:
+            if x <= 0:
+                print("los lados son > 0")
+                return
+            v[n] = x
+    if len(v) != 2:
+        print("necesito exactamente 2 datos")
+        return
+    g = v.get
+    pq = []
+    try:
+        if "AD" in v and "DB" in v:
+            pq = [(g("AD"), g("DB"))]
+        elif "AD" in v and "CD" in v:
+            pq = [(g("AD"), g("CD") ** 2 / g("AD"))]
+        elif "DB" in v and "CD" in v:
+            pq = [(g("CD") ** 2 / g("DB"), g("DB"))]
+        elif "AD" in v and "AB" in v:
+            pq = [(g("AD"), g("AB") - g("AD"))]
+        elif "DB" in v and "AB" in v:
+            pq = [(g("AB") - g("DB"), g("DB"))]
+        elif "AD" in v and "AC" in v:
+            c = g("AC") ** 2 / g("AD")
+            pq = [(g("AD"), c - g("AD"))]
+        elif "DB" in v and "BC" in v:
+            c = g("BC") ** 2 / g("DB")
+            pq = [(c - g("DB"), g("DB"))]
+        elif "AD" in v and "BC" in v:
+            p = g("AD")
+            q = (-p + sqrt(p * p + 4 * g("BC") ** 2)) / 2
+            pq = [(p, q)]
+        elif "DB" in v and "AC" in v:
+            q = g("DB")
+            p = (-q + sqrt(q * q + 4 * g("AC") ** 2)) / 2
+            pq = [(p, q)]
+        elif "CD" in v and "AB" in v:
+            c, h = g("AB"), g("CD")
+            dd = c * c - 4 * h * h
+            if dd < 0:
+                print("imposible: CD > AB/2")
+                return
+            p1 = (c - sqrt(dd)) / 2
+            pq = [(p1, c - p1)]
+            if dd > 0:
+                pq.append((c - p1, p1))
+        elif "AC" in v and "BC" in v:
+            c = sqrt(g("AC") ** 2 + g("BC") ** 2)
+            pq = [(g("AC") ** 2 / c, g("BC") ** 2 / c)]
+        elif "AC" in v and "AB" in v:
+            p = g("AC") ** 2 / g("AB")
+            pq = [(p, g("AB") - p)]
+        elif "BC" in v and "AB" in v:
+            q = g("BC") ** 2 / g("AB")
+            pq = [(g("AB") - q, q)]
+        elif "CD" in v and "BC" in v:
+            q = sqrt(g("BC") ** 2 - g("CD") ** 2)
+            pq = [(g("CD") ** 2 / q, q)]
+        elif "CD" in v and "AC" in v:
+            p = sqrt(g("AC") ** 2 - g("CD") ** 2)
+            pq = [(p, g("CD") ** 2 / p)]
+    except (ValueError, ZeroDivisionError):
+        print("imposible con esos datos")
+        return
+    out = ["triangulos semejantes:",
+           "ACD ~ CBD ~ ABC",
+           "CD^2 = AD*DB  (media geometrica)",
+           "AC^2 = AD*AB,  BC^2 = DB*AB",
+           "AD/CD = CD/DB"]
+    for p, q in pq:
+        if p <= 0 or q <= 0:
+            out.append("imposible con esos datos")
+            continue
+        c = p + q
+        if len(pq) > 1:
+            out.append("-- si AD = " + _s_largo_txt(p).split(" = ")[0] + ":")
+        out.append("AD = " + _s_largo_txt(p))
+        out.append("DB = " + _s_largo_txt(q))
+        out.append("CD = " + _s_largo_txt(sqrt(p * q)))
+        out.append("AB = " + _s_largo_txt(c))
+        out.append("AC = " + _s_largo_txt(sqrt(p * c)))
+        out.append("BC = " + _s_largo_txt(sqrt(q * c)))
+    _s_out(out)
+
+
+def _s_semejantes():
+    print("triangulos (o figuras) semejantes")
+    print("lado de la figura 1 y el que le")
+    print("corresponde en la figura 2:")
+    a1 = _s_pide("lado en 1 = ")
+    a2 = _s_pide("su par en 2 = ")
+    if a1[0] == 0:
+        print("el lado no puede ser 0")
+        return
+    k = _s_div(a2, a1)
+    out = ["escala k = fig2/fig1 = " + _s_txt(k),
+           "areas: k^2 = " + _s_txt(_s_mul(k, k)),
+           "volumenes: k^3 = " + _s_txt(_s_mul(k, _s_mul(k, k))),
+           "los angulos NO cambian"]
+    _s_out(out)
+    while True:
+        print("otro lado de la figura 1")
+        t = _sat_entrada("(enter = salir) = ").strip()
+        if t == "":
+            return
+        try:
+            b1 = _s_lee(t)
+        except Exception:
+            print("no entendi. ej: 3, 7/2")
+            continue
+        print("en la figura 2: " + _s_txt(_s_mul(b1, k)))
+
+
+def _s_semejanza():
+    print("1 altura a la hipotenusa")
+    print("  (AD, DB, CD, catetos)")
+    print("2 semejantes: escala y lados")
+    op = input("? ").strip()
+    if op == "1":
+        _s_altura_hip()
+    elif op == "2":
+        _s_semejantes()
+    else:
+        print("opcion no valida")
+
+
 # ---------- menu ----------
 
 def sat():
@@ -2211,6 +2382,7 @@ def sat():
         print("14 polinomios")
         print("15 ecuaciones con letras")
         print("16 triangulos especiales")
+        print("17 semejanza / altura a hipot.")
         print(" 0 salir")
         op = input("? ").strip()
         if op == "0" or op == "" or op == "q":
@@ -2220,7 +2392,7 @@ def sat():
                "8": _s_estad, "9": _s_circulo, "10": _s_expo,
                "11": _s_expo_2p, "12": _s_triang, "13": _s_absoluto,
                "14": _s_polinomios, "15": _s_letras,
-               "16": _s_especiales}
+               "16": _s_especiales, "17": _s_semejanza}
         try:
             if op == "1":
                 _s_hojas()
@@ -2228,7 +2400,7 @@ def sat():
             elif op in fns:
                 fns[op]()
             else:
-                print("escribe un numero del 0 al 16")
+                print("escribe un numero del 0 al 17")
                 continue
         except Exception as err:
             print("Algo fallo: " + str(err))
