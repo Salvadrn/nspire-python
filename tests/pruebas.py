@@ -348,7 +348,7 @@ def _hojas_sat():
 
 
 caso("hojas AP", _hojas_ap, [], ["renglones=431"])
-caso("hojas SAT", _hojas_sat, [], ["renglones=443"])
+caso("hojas SAT", _hojas_sat, [], ["renglones=528"])
 
 # ---------- IA: el examen de Adrian de punta a punta ----------
 
@@ -798,6 +798,31 @@ caso("sat formulario area superficial", lambda: _buf.append("\n".join(
      ["Cilindro: 2*pi*r*h + 2*pi*r^2", "Esfera: 4*pi*r^2",
       "Cono: pi*r*(r + sqrt(h^2+r^2))", "  l*w + l*sqrt((w/2)^2+h^2)",
       "      + w*sqrt((l/2)^2+h^2)"])
+
+caso("sat formulario desmos", lambda: _buf.append("\n".join(
+         [l for tema in S.SAT_TEMAS for l in tema[1]])), [],
+     ["-- tabla y regresion ~ --",
+      "y1~mx1+b   lineal (da m, b, r)", "stdevp(L)  (de poblacion)",
+      "media = total(V*C)/total(C)", "1 variable: teclea 3x+5=2x-1",
+      "OJO: x, y, r, e, t ya estan"])
+
+
+def _sat_q_menu():
+    S.sat()
+    if "Algo fallo" not in "\n".join(_buf):
+        _buf.append("regreso limpio al menu")
+
+
+caso("sat q en un dato regresa al menu", _sat_q_menu,
+     ["2", "abc", "q", "0"], ["no entendi", "(q = regresar al menu)",
+                              "regreso limpio al menu"])
+caso("sat q en una lista regresa al menu", _sat_q_menu,
+     ["8", "q", "0"], ["regreso limpio al menu"])
+caso("sat rescata el numero pegado a la pregunta",
+     lambda: _buf.append("dato=" + S._s_txt(S._s_pide("x1 = "))),
+     ["AC): 90"], ["dato=90"])
+caso("sat q es letra al despejar", S._s_despeja, ["p = 2q + 3", "q", "7"],
+     ["letras: p, q", "q = 2"])
 
 # ---------- resultado ----------
 
